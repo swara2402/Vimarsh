@@ -1,0 +1,60 @@
+# VIMARSH Baseline Experiment Configuration
+# Milestone 1: ML Baseline Establishment
+
+# Random seeds for reproducibility
+random_seed: 42
+np_random_seed: 42
+torch_random_seed: 42
+
+# Data splitting configuration
+train_size: 0.7
+val_size: 0.15
+test_size: 0.15
+stratify: true
+
+# Target definition (experimental choice - quality >=6 is "good")
+quality_threshold: 6
+binary_target: true
+
+# Dataset paths
+raw_data_dir: "research/datasets/raw"
+processed_data_dir: "research/datasets/processed"
+
+# Model configuration
+models:
+  logistic_regression:
+    enabled: true
+    max_iter: 1000
+    random_state: 42
+  random_forest:
+    enabled: true
+    n_estimators: 100
+    random_state: 42
+  gradient_boosting:
+    enabled: true
+    n_estimators: 100
+    learning_rate: 0.1
+    random_state: 42
+
+# Calibration configuration
+calibration:
+  method: "isotonic"  # or "sigmoid"
+  cv_folds: 5
+
+# Confidence analysis configuration
+confidence_buckets:
+  - [0.5, 0.6]
+  - [0.6, 0.7]
+  - [0.7, 0.8]
+  - [0.8, 0.9]
+  - [0.9, 1.0]
+
+# ECE calculation configuration
+ece_bins: 10  # Number of bins for expected calibration error
+
+# Output paths
+models_dir: "research/models"
+results_dir: "research/results"
+metrics_dir: "research/results/metrics"
+predictions_dir: "research/results/predictions"
+figures_dir: "research/results/figures"

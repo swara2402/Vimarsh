@@ -1,0 +1,25 @@
+# VIMARSH Research Baseline Dependencies
+# Milestone 1: ML Baseline Establishment
+
+# Core data processing
+pandas>=2.0.0
+numpy>=1.24.0
+scipy>=1.10.0
+
+# Machine learning
+scikit-learn>=1.2.0
+joblib>=1.2.0
+
+# Visualization
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Configuration
+pyyaml>=6.0
+
+# HTTP requests for dataset download
+requests>=2.31.0
+
+# Jupyter for notebooks (optional)
+jupyter>=1.0.0
+notebook>=6.5.0

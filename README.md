@@ -90,7 +90,7 @@ vimarsh/
 
 The repository contains implemented baseline classification, reliability-analysis, and verification-action research code. Milestone 3.2 adds outcome and execution-cost auditing. Milestone 4 adds a reliability-to-verification inference bridge, serializable model artifacts, and an integrated experiment runner.
 
-The integrated experiment is still research-stage: it relies on the Wine Quality benchmark, simulated human review, assumed action-effectiveness factors, and a random split with known cross-partition duplicates. It is not a production deployment or evidence of cross-domain generalization. The API and React dashboard remain planned.
+The integrated experiment is still research-stage: it relies on the Wine Quality benchmark, simulated human review, and assumed action-effectiveness factors. The current experiment pipeline uses grouped stratification to keep identical feature rows within one split while retaining duplicate observations, but this does not establish cross-domain generalization or real-world action effectiveness. The API and React dashboard remain planned.
 
 ## Getting started
 

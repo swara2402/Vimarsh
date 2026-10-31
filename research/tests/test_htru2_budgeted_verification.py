@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 
 from experiments.run_htru2_budgeted_verification import (
-    class_harm_weights, select_under_budget, evaluate_selection,
+    class_harm_weights, select_under_budget, select_top_budget, evaluate_selection,
 )
 from src.datasets.htru2 import parse_htru2_csv
 
@@ -25,6 +25,23 @@ def test_selection_is_deterministic_and_does_not_accept_unprofitable_cases():
     second = select_under_budget(scores, harms, budget_count=3, seed=42)
     np.testing.assert_array_equal(first, second)
     assert not first.any()
+
+
+def test_matched_capacity_ranking_selects_exact_common_budget():
+    scores = np.array([0.9, 0.8, 0.4, 0.01, 0.7])
+    harms = np.array([1.0, 5.0, 1.0, 5.0, 1.0])
+    chosen = select_top_budget(scores, harms, budget_count=2)
+    assert chosen.sum() == 2
+    # Ranking is score multiplied by predicted-error-direction scenario harm.
+    assert chosen[1] and chosen[3]
+
+
+def test_matched_capacity_can_fill_budget_even_when_net_benefit_is_negative():
+    scores = np.array([0.001, 0.002, 0.003])
+    harms = np.ones(3)
+    chosen = select_top_budget(scores, harms, budget_count=2)
+    assert chosen.sum() == 2
+    assert chosen[1] and chosen[2]
 
 
 def test_asymmetric_scenario_harm_depends_on_predicted_error_direction():

@@ -75,15 +75,6 @@ def run_integrated_experiment(budget: float = 500.0, output_path: Path = None):
     primary_predictions = primary_model.predict(processed_test).tolist()
     harms = generate_harm_estimates(X_test)
 
-    config = VerificationEngineConfig(
-        total_verification_budget=budget,
-        decision_profile=DecisionProfile.BALANCED,
-        base_model_path=base_dir / Path(bundle["base_model_dir"]),
-        original_model_name=bundle["base_model_names"][primary_index],
-        enable_evidence_provider=False,
-        enable_human_reviewer=True,
-        max_human_reviews=50,
-    )
     pipeline = ReliabilityVerificationPipeline(
         bundle["feature_extractor"], bundle["reliability_estimator"]
     )
@@ -105,6 +96,8 @@ def run_integrated_experiment(budget: float = 500.0, output_path: Path = None):
     }
 
     policy_comparisons = {}
+    reliability_validator = None
+    reliability_engine = None
     for policy_name, error_scores in policy_scores.items():
         policy_config = VerificationEngineConfig(
             total_verification_budget=budget,
@@ -139,13 +132,16 @@ def run_integrated_experiment(budget: float = 500.0, output_path: Path = None):
             )
         policy_metrics = validator.calculate_policy_metrics(policy_name)
         policy_comparisons[policy_name] = policy_metrics.__dict__
+        if policy_name == "reliability_driven":
+            reliability_validator = validator
+            reliability_engine = policy_engine
 
     policy_metrics = policy_comparisons["reliability_driven"]
-    alternate_checks = validator.validate_alternate_model_independence(
+    alternate_checks = reliability_validator.validate_alternate_model_independence(
         X_test, primary_model, preprocessor
     )
-    evidence_checks = validator.validate_evidence_no_label_leakage()
-    human_checks = validator.validate_simulated_human_review()
+    evidence_checks = reliability_validator.validate_evidence_no_label_leakage()
+    human_checks = reliability_validator.validate_simulated_human_review()
 
     result = {
         "milestone": "4.2 - Integrated Reliability-Driven Verification",
@@ -186,9 +182,13 @@ def run_integrated_experiment(budget: float = 500.0, output_path: Path = None):
     print("Integrated reliability-driven verification complete.")
     print(f"Samples: {len(X_test)}")
     print(f"Mean estimated error probability: {result['error_probability_summary']['mean']:.4f}")
-    print(f"Coverage: {policy_metrics.coverage:.2%}")
-    print(f"Observed covered-sample error rate: {policy_metrics.observed_error_rate:.2%}")
-    print(f"Net corrections: {policy_metrics.net_corrections}")
+    for name, metrics in policy_comparisons.items():
+        error_rate = metrics["observed_error_rate"]
+        error_text = "n/a" if error_rate is None else f"{error_rate:.2%}"
+        print(
+            f"{name}: coverage={metrics['coverage']:.2%}, "
+            f"covered_error={error_text}, net_corrections={metrics['net_corrections']}"
+        )
     print(f"Results: {results_file}")
     return result
 

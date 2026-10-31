@@ -363,20 +363,25 @@ class OutcomeValidator:
         import json
         table_path = Path(f"results/verification/{policy_name}_evaluation_table_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
         table_path.parent.mkdir(parents=True, exist_ok=True)
-        # Convert sample outcomes to serializable dicts
+        # Convert sample outcomes to serializable dicts (convert numpy types to native Python)
         evaluation_table = []
         for o in self.sample_outcomes:
+            # Convert numpy numeric types to native Python types for JSON serialization
+            def to_python(v):
+                if isinstance(v, (np.integer, np.floating, np.bool_)):
+                    return v.item()
+                return v
             evaluation_table.append({
                 "sample_id": o.sample_id,
-                "y_true": o.true_label,
-                "original_prediction": o.base_prediction,
+                "y_true": to_python(o.true_label),
+                "original_prediction": to_python(o.base_prediction),
                 "selected_action": o.selected_action,
-                "final_prediction": o.final_prediction,
-                "is_covered": o.is_covered,
-                "original_correct": o.original_correct,
-                "final_correct": o.final_correct,
-                "was_corrected": o.corrected_prediction,
-                "introduced_error": o.introduced_error
+                "final_prediction": to_python(o.final_prediction),
+                "is_covered": to_python(o.is_covered),
+                "original_correct": to_python(o.original_correct),
+                "final_correct": to_python(o.final_correct),
+                "was_corrected": to_python(o.corrected_prediction),
+                "introduced_error": to_python(o.introduced_error)
             })
         with open(table_path, 'w') as f:
             json.dump(evaluation_table, f, indent=2)
@@ -467,12 +472,26 @@ class OutcomeValidator:
         """
         output_path.mkdir(parents=True, exist_ok=True)
         
-        # Convert dataclasses to serializable dicts
+        # Convert dataclasses to serializable dicts, convert numpy types to native Python
+        def to_python(v):
+            if isinstance(v, (np.integer, np.floating, np.bool_)):
+                return v.item()
+            return v
+            
+        # Process sample outcomes to convert all numpy types
+        serializable_samples = []
+        for o in self.sample_outcomes:
+            sample_dict = o.__dict__.copy()
+            # Convert all numpy numeric values to Python native types
+            for key, value in sample_dict.items():
+                sample_dict[key] = to_python(value)
+            serializable_samples.append(sample_dict)
+            
         results = {
             "policy_comparison": policy_metrics.__dict__,
             "action_metrics": {k: v.__dict__ for k, v in action_metrics.items()},
             "integrity_validations": validations,
-            "individual_sample_outcomes": [o.__dict__ for o in self.sample_outcomes],
+            "individual_sample_outcomes": serializable_samples,
             "validation_timestamp": str(pd.Timestamp.now())
         }
         

@@ -504,7 +504,7 @@ def main():
             'reliability_estimator': best_model,
             'base_models': raw_full_models,
             'preprocessor': full_preprocessor,
-            'base_model_dir': str(inference_model_dir),
+            'base_model_dir': str(Path('models') / 'reliability' / 'inference_models'),
             'primary_model_index': 1,
             'base_model_names': base_model_names,
             'feature_names': list(feature_extractor.feature_names),

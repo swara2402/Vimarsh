@@ -1,30 +1,49 @@
-# Independent benchmark protocol: UCI MAGIC Gamma Telescope
+# MAGIC Gamma Telescope second-dataset experiment
 
-## Dataset selection
+## Status and scope
 
-The second benchmark is the UCI MAGIC Gamma Telescope dataset (UCI dataset 159):
-https://archive.ics.uci.edu/dataset/159/magic+gamma+telescope
+The MAGIC adapter and parser tests are complemented by an executable grouped,
+multi-seed reliability and five-policy evaluation. The benchmark uses the UCI
+MAGIC Gamma Telescope dataset (UCI dataset 159), with ten continuous numeric
+features and the binary target mapping gamma = 1, hadron = 0. The dataset is
+distributed by the UCI Machine Learning Repository under CC BY 4.0.
 
-It contains ten continuous numerical measurements from simulated air showers and a binary class label. The experiment maps gamma (g) to 1 and hadron (h) to 0. UCI lists the dataset under CC BY 4.0. It is selected as a non-high-stakes binary classification benchmark with a numerical feature schema compatible with the current reliability feature analyzers.
+Source: https://archive.ics.uci.edu/dataset/159/magic+gamma+telescope
 
-## Data handling
+## Experimental protocol
 
-The adapter is implemented in src/datasets/magic_gamma.py. It downloads the official raw CSV only when no local copy exists, validates the ten-column numerical feature schema, rejects unknown target labels and non-finite values, and returns features and labels separately. Dataset metadata records the source, dataset identifier, license, target mapping, row count, and class counts.
+- Seeds: 17, 42, and 73.
+- Train/validation/test partitions use stratified grouping by exact feature
+  vectors. Duplicate feature vectors remain in one partition, and all rows are
+  retained, including groups whose repeated rows may have differing labels.
+- Five-fold grouped out-of-fold predictions train the reliability estimator.
+- Logistic Regression, Random Forest, and Gradient Boosting are trained in
+  each fold. Random Forest (model index 1) is the primary prediction model and
+  its OOF errors are the reliability-estimator target.
+- The reliability estimator's own train/calibration partition is also grouped
+  by exact feature vectors.
+- The final grouped test set compares reliability-driven, confidence-only,
+  predictive-entropy, ensemble-disagreement, and always-accept policies using
+  the same verification budget, action costs, and executor configuration.
+- Test labels are used only after action selection to simulate offline outcomes.
+  They are not inputs to the policy scores or action-selection step.
+- The script writes one JSON result per seed and an aggregate summary to
+  `research/results/magic_gamma/`.
 
-Unit tests validate target mapping, feature order, numeric parsing, and rejection of invalid labels and non-finite values. The loader tests do not download data during CI.
+## Consequence and simulation assumptions
 
-## Evaluation status
+MAGIC is a telescope-event classification benchmark and does not provide
+decision-specific harm labels. The experiment therefore uses a constant harm
+score of 5.0/10 for every test observation. This is a common scenario parameter,
+not a learned or empirically grounded risk estimate. Human review is simulated;
+the configured reviewer accuracy and action-effectiveness factors are
+assumptions, not measured causal effects. Evidence-provider actions are
+disabled.
 
-This commit adds the dataset adapter and its parser tests only. It does not yet constitute a second-dataset reliability or policy evaluation. No MAGIC model metrics, policy comparisons, or cross-dataset generalization claims should be reported until the full leakage-controlled training, reliability-estimator fitting, inference, and five-policy verification experiment has completed.
+## Interpretation boundary
 
-## Required protocol before reporting results
-
-1. Create grouped stratified train/validation/test partitions using exact feature vectors as groups, preserving repeated rows and any conflicting labels within a group.
-2. Generate grouped out-of-fold probabilities for Logistic Regression, Random Forest, and Gradient Boosting. Keep Random Forest as the primary model to preserve the current feature-extractor contract.
-3. Fit the reliability estimator using out-of-fold primary-model error labels, with a grouped calibration holdout that is disjoint by feature group.
-4. Evaluate the untouched test partition using the same five policies as the Wine experiment: reliability-driven, confidence-only, predictive entropy, ensemble disagreement, and always accept.
-5. Use identical test observations, action budget, costs, executor settings, and documented harm assumptions across policies. Ground truth may only be used after action selection for offline outcome evaluation.
-6. Repeat across multiple independent seeds and report per-seed values, means, and descriptive population standard deviations. Do not tune on the final test set.
-7. Document that human review and action effectiveness remain simulated unless independently measured.
-
-The MAGIC benchmark differs in source domain and input measurements from Wine Quality, but both are tabular classification tasks. A successful result would provide a second-domain benchmark, not proof of broad real-world generalization.
+A completed run would provide a second tabular benchmark under the stated
+protocol. It would not establish broad cross-domain generalization, production
+suitability, real human-review effectiveness, or measured real-world harm
+reduction. Results must be read alongside the per-seed metrics and limitations.
+No thresholds are selected using final test outcomes.

@@ -148,6 +148,69 @@ def deduplicated_stratified_data_splitting(
     
     return X_train, X_val, X_test, y_train, y_val, y_test
 
+def grouped_stratified_holdout_indices(
+    X: pd.DataFrame,
+    y: pd.Series,
+    test_size: float = 0.2,
+    random_state: int = 42,
+    n_splits: int = 5,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Return train/holdout indices with exact duplicate feature rows grouped."""
+    from sklearn.model_selection import StratifiedGroupKFold
+
+    if len(X) != len(y):
+        raise ValueError("X and y must contain the same number of rows")
+    if not 0 < test_size < 1:
+        raise ValueError("test_size must be between 0 and 1")
+    if len(X) == 0:
+        raise ValueError("X must not be empty")
+
+    groups = pd.MultiIndex.from_frame(X).factorize(sort=False)[0]
+    if len(np.unique(groups)) < n_splits:
+        raise ValueError("Not enough unique feature groups for requested n_splits")
+
+    splitter = StratifiedGroupKFold(
+        n_splits=n_splits, shuffle=True, random_state=random_state
+    )
+    candidates = []
+    prevalence = float(np.mean(y))
+    for train_idx, holdout_idx in splitter.split(X, y, groups):
+        size_error = abs(len(holdout_idx) / len(X) - test_size)
+        class_error = abs(float(np.mean(y.iloc[holdout_idx])) - prevalence)
+        candidates.append((size_error + 0.5 * class_error, train_idx, holdout_idx))
+
+    _, train_idx, holdout_idx = min(candidates, key=lambda item: item[0])
+    train_groups = set(groups[train_idx])
+    holdout_groups = set(groups[holdout_idx])
+    if train_groups & holdout_groups:
+        raise AssertionError("Identical feature groups leaked across holdout split")
+    return train_idx, holdout_idx
+
+
+def grouped_stratified_kfold_indices(
+    X: pd.DataFrame,
+    y: pd.Series,
+    n_splits: int = 5,
+    random_state: int = 42,
+):
+    """Yield stratified folds with exact duplicate feature rows kept together."""
+    from sklearn.model_selection import StratifiedGroupKFold
+
+    if len(X) != len(y):
+        raise ValueError("X and y must contain the same number of rows")
+    groups = pd.MultiIndex.from_frame(X).factorize(sort=False)[0]
+    if len(np.unique(groups)) < n_splits:
+        raise ValueError("Not enough unique feature groups for requested n_splits")
+
+    splitter = StratifiedGroupKFold(
+        n_splits=n_splits, shuffle=True, random_state=random_state
+    )
+    for train_idx, validation_idx in splitter.split(X, y, groups):
+        if set(groups[train_idx]) & set(groups[validation_idx]):
+            raise AssertionError("Identical feature groups leaked across CV fold")
+        yield train_idx, validation_idx
+
+
 def grouped_stratified_data_splitting(
     df: pd.DataFrame,
     target_column: str,

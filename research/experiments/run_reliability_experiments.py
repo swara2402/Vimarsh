@@ -484,6 +484,29 @@ def main():
     print("\n[7/10] Running perturbation experiments...")
     # Use the best reliability model (random_forest as default for perturbation testing)
     best_model = reliability_models.get('random_forest', next(iter(reliability_models.values())))
+
+    # Persist a complete inference bundle for the Milestone 4 verification bridge.
+    # The bundle is fitted using training/OOF data only; test labels are not stored.
+    artifact_path = base_dir / 'models' / 'reliability' / 'wine_quality_reliability_bundle.joblib'
+    artifact_path.parent.mkdir(parents=True, exist_ok=True)
+    joblib.dump(
+        {
+            'feature_extractor': feature_extractor,
+            'reliability_estimator': best_model,
+            'base_models': full_models,
+            'preprocessor': full_preprocessor,
+            'primary_model_index': 1,
+            'base_model_names': ['logistic_regression', 'random_forest', 'gradient_boosting'],
+            'feature_names': list(feature_extractor.feature_names),
+            'target_threshold': int(config['quality_threshold']),
+            'random_seed': int(config['random_seed']),
+            'training_split_size': int(len(X_train)),
+            'artifact_version': 1,
+        },
+        artifact_path,
+    )
+    print(f"Serializable reliability inference bundle saved to: {artifact_path}")
+
     # Run perturbation experiments - pass exact same preprocessor and primary test predictions from main evaluation
     perturbation_results = run_perturbation_experiments(
         X_test,

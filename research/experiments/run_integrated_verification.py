@@ -93,6 +93,7 @@ def run_integrated_experiment(budget: float = 500.0, output_path: Path = None):
         "confidence_only": 1.0 - primary_confidences,
         "predictive_entropy": np.clip(entropy_baseline, 0.0, 1.0),
         "ensemble_disagreement": reliability_features["disagreement_fraction"].to_numpy(),
+        "always_accept": np.zeros(len(X_test), dtype=float),
     }
 
     policy_comparisons = {}

@@ -206,3 +206,53 @@ def test_no_label_leakage_in_action_selection():
     assert not any('true_label in' in line and 'action' in line for line in lines)
     
     # Core integrity check passes: labels are only used for offline evaluation, not inferences
+
+def test_human_review_capacity_exhaustion_is_not_successful():
+    """A review beyond max_reviews must be reported as not executed."""
+    reviewer = SimulatedHumanReviewer(
+        accuracy=0.95, cost=3.0, available=True, max_reviews=1, reviews_completed=1
+    )
+    executor = VerificationActionExecutor(human_reviewer=reviewer)
+    result = executor.execute_human_review(
+        pd.Series({"feature": 1}), original_prediction=0,
+        original_confidence=0.8, true_label=1
+    )
+    assert result.success is False
+    assert result.cost_incurred == 0.0
+    assert result.additional_data["reason"] == "Human review capacity exhausted"
+    assert reviewer.reviews_completed == 1
+
+
+def test_policy_cost_reconciles_to_sample_execution_costs():
+    """Policy total cost must equal the sum of recorded per-sample execution costs."""
+    validator = OutcomeValidator(Mock())
+    validator.sample_outcomes.extend([
+        SampleOutcome(
+            sample_id="cost_1", true_label=1, base_prediction=1, base_correct=True,
+            error_probability=0.1, harm=1.0, baseline_risk=0.1,
+            selected_action=ActionType.ACCEPT.value, final_prediction=1,
+            final_correct=True, cost_incurred=0.0
+        ),
+        SampleOutcome(
+            sample_id="cost_2", true_label=0, base_prediction=1, base_correct=False,
+            error_probability=0.2, harm=2.0, baseline_risk=0.4,
+            selected_action=ActionType.ALTERNATE_MODEL.value, final_prediction=0,
+            final_correct=True, corrected_prediction=True, cost_incurred=4.0
+        ),
+    ])
+    metrics = validator.calculate_policy_metrics("cost_reconciliation_test")
+    assert metrics.total_verification_cost == pytest.approx(4.0)
+
+
+def test_policy_metrics_reject_duplicate_sample_ids():
+    """Duplicate sample IDs must fail before an ambiguous evaluation table is exported."""
+    validator = OutcomeValidator(Mock())
+    sample = SampleOutcome(
+        sample_id="duplicate", true_label=1, base_prediction=1, base_correct=True,
+        error_probability=0.1, harm=1.0, baseline_risk=0.1,
+        selected_action=ActionType.ACCEPT.value, final_prediction=1, final_correct=True
+    )
+    validator.sample_outcomes.extend([sample, sample])
+    with pytest.raises(AssertionError, match="duplicate sample IDs"):
+        validator.calculate_policy_metrics("duplicate_id_test")
+

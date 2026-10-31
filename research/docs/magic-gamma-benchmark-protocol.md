@@ -109,3 +109,19 @@ Across seeds 17, 42, and 73, each policy threshold was selected from validation 
 The reliability-driven policy's actual coverage was 1.14 percentage points higher than confidence-only on average, while its observed error rate was 0.20 percentage points higher. Thus the results are close but do not show a reliability-driven error advantage at this nominal operating point. Confidence-only and predictive entropy produced identical accepted sets in these runs. Ensemble disagreement exceeded the nominal target because its score distribution contains ties and the threshold accepts scores less than or equal to the validation-selected quantile.
 
 This diagnostic is more comparable than the original cost-sensitive action-engine table, but actual test coverage is not exactly equal across policies. It does not establish statistically significant differences or general superiority. Thresholds were not tuned on test outcomes. No policy produced net corrections in the action-engine simulation. The earlier limitations remain: simulated review, disabled evidence provider, assumed action-effectiveness factors, constant harm assumption, and only three seeds on one tabular dataset.
+
+
+## Validation-only reliability feature ablation
+
+The follow-up workflow [41227625014](https://github.com/swara2402/Vimarsh/actions/runs/41227625014) passed all four jobs: research tests, MAGIC Gamma policy comparison, Wine multi-seed comparison, and Wine end-to-end training. Its MAGIC artifact is [vimarsh-magic-gamma-policy-results](https://github.com/swara2402/Vimarsh/actions/runs/41227625014/artifacts/13052312639).
+
+A feature ablation was evaluated on the validation partition only for seeds 17, 42, and 73. The four variants add feature groups progressively: (A) uncertainty only, (B) uncertainty plus ensemble disagreement, (C) plus input-quality features, and (D) full features including distribution-shift features. The table reports arithmetic means and population standard deviations across the three seeds.
+
+| Feature set | Features | Mean ROC AUC | ROC AUC SD | Mean PR AUC | PR AUC SD | Mean Brier | Mean log loss | Mean ECE |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| A. Uncertainty only | 4 | 0.6854 | 0.0257 | 0.2588 | 0.0285 | 0.1168 | 0.3902 | 0.0092 |
+| B. + disagreement | 10 | 0.7589 | 0.0144 | 0.3585 | 0.0168 | 0.1081 | 0.3607 | 0.0272 |
+| C. + input quality | 18 | 0.7771 | 0.0081 | 0.3872 | 0.0214 | 0.1052 | 0.3509 | 0.0270 |
+| D. Full features | 21 | 0.7903 | 0.0097 | 0.4040 | 0.0220 | 0.1035 | 0.3454 | 0.0310 |
+
+Across these three validation runs, adding disagreement, input-quality, and distribution-shift feature groups progressively improved mean ROC AUC and PR AUC and reduced mean Brier score and log loss. However, ECE increased from the uncertainty-only baseline, so better ranking and proper scoring did not translate into better expected calibration error under this metric. The full feature set had the strongest mean validation ranking scores, but also the highest mean ECE. These are validation-only model-selection diagnostics, not independent test-set confirmation; they do not establish causal feature importance, broad generalization, or a patentable contribution. The ablation should be followed by a pre-specified evaluation on a fresh held-out dataset or domain before making stronger claims.

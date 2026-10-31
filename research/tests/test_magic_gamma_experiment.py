@@ -28,3 +28,30 @@ def test_grouped_magic_split_is_deterministic_for_seed():
     second = grouped_magic_split(X, y, seed=42)
     for a, b in zip(first, second):
         np.testing.assert_array_equal(a, b)
+
+
+from experiments.run_magic_gamma_policy_comparison import validation_threshold_metrics
+
+
+def test_validation_threshold_is_selected_without_using_test_labels():
+    validation_scores = np.arange(100, dtype=float) / 100.0
+    test_scores = np.array([0.1, 0.2, 0.8, 0.9])
+    predictions = np.array([0, 0, 1, 1])
+    labels = np.array([0, 1, 1, 0])
+
+    result = validation_threshold_metrics(
+        validation_scores, test_scores, predictions, labels, target_coverage=0.5
+    )
+
+    assert result["validation_selected_threshold"] == 0.5
+    assert result["target_coverage"] == 0.5
+    assert result["test_coverage"] == 0.5
+    assert result["accepted_test_observations"] == 2
+    assert result["observed_error_rate"] == 0.5
+
+
+def test_validation_threshold_rejects_nonfinite_scores():
+    with np.testing.assert_raises(ValueError):
+        validation_threshold_metrics(
+            np.array([0.1, np.nan]), np.array([0.2]), np.array([0]), np.array([0])
+        )

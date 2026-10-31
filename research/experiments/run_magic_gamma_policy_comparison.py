@@ -74,6 +74,36 @@ def grouped_magic_split(X, y, seed):
     return train_idx, val_idx, test_idx
 
 
+def validation_threshold_metrics(validation_scores, test_scores, test_predictions, test_labels, target_coverage=0.75):
+    """Select a risk-score threshold on validation data, then evaluate untouched test rows."""
+    validation_scores = np.asarray(validation_scores, dtype=float)
+    test_scores = np.asarray(test_scores, dtype=float)
+    test_predictions = np.asarray(test_predictions)
+    test_labels = np.asarray(test_labels)
+    if validation_scores.ndim != 1 or test_scores.ndim != 1:
+        raise ValueError("Risk scores must be one-dimensional")
+    if not 0.0 < target_coverage < 1.0:
+        raise ValueError("target_coverage must be between zero and one")
+    if len(test_scores) != len(test_predictions) or len(test_scores) != len(test_labels):
+        raise ValueError("Test scores, predictions, and labels must have equal lengths")
+    if not np.isfinite(validation_scores).all() or not np.isfinite(test_scores).all():
+        raise ValueError("Risk scores must be finite")
+    threshold = float(np.quantile(validation_scores, target_coverage, method="higher"))
+    accepted = test_scores <= threshold
+    accepted_count = int(accepted.sum())
+    observed_error = (
+        float(np.mean(test_predictions[accepted] != test_labels[accepted]))
+        if accepted_count else None
+    )
+    return {
+        "validation_selected_threshold": threshold,
+        "target_coverage": float(target_coverage),
+        "test_coverage": float(accepted.mean()),
+        "accepted_test_observations": accepted_count,
+        "observed_error_rate": observed_error,
+    }
+
+
 def _fit_models(X, y, config, seed):
     cfg = yaml.safe_load((RESEARCH_DIR / "configs" / "baseline_config.yaml").read_text())
     cfg["random_seed"] = seed
@@ -140,6 +170,28 @@ def run_seed(seed, output_dir):
         oof_features.iloc[rel_cal_idx], oof_error[rel_cal_idx],
     )
 
+    processed_val = final_preprocessor.transform(X_val)
+    val_probs = [
+        np.asarray(model.predict_proba(processed_val), dtype=float)
+        for model in final_models
+    ]
+    val_features = extractor.extract_features_batch(
+        X_val,
+        [[val_probs[m][i] for m in range(len(final_models))] for i in range(len(X_val))],
+    )
+    val_reliability_scores = estimator.predict_error_probability(val_features)
+    val_primary_probs = val_probs[1]
+    val_entropy = -np.sum(
+        np.clip(val_primary_probs, 1e-12, 1.0) * np.log(np.clip(val_primary_probs, 1e-12, 1.0)),
+        axis=1,
+    ) / np.log(val_primary_probs.shape[1])
+    validation_policy_scores = {
+        "reliability_driven": val_reliability_scores,
+        "confidence_only": 1.0 - val_primary_probs.max(axis=1),
+        "predictive_entropy": val_entropy,
+        "ensemble_disagreement": val_features["disagreement_fraction"].to_numpy(),
+    }
+
     processed_test = final_preprocessor.transform(X_test)
     model_probs = [
         np.asarray(model.predict_proba(processed_test), dtype=float)
@@ -151,7 +203,7 @@ def run_seed(seed, output_dir):
     )
     reliability_scores = estimator.predict_error_probability(test_features)
     primary_probs = model_probs[1]
-    predictions = final_models[1].predict(processed_test).tolist()
+    predictions = np.asarray(final_models[1].predict(processed_test))
     confidences = primary_probs.max(axis=1)
 
     # MAGIC supplies no harm labels. A constant 5/10 consequence score is used
@@ -167,6 +219,14 @@ def run_seed(seed, output_dir):
         "predictive_entropy": class_entropy,
         "ensemble_disagreement": test_features["disagreement_fraction"].to_numpy(),
         "always_accept": np.zeros(len(X_test)),
+    }
+
+    validation_matched_coverage = {
+        name: validation_threshold_metrics(
+            validation_policy_scores[name], policy_scores[name],
+            predictions, y_test.to_numpy(), target_coverage=0.75,
+        )
+        for name in validation_policy_scores
     }
 
     comparisons = {}
@@ -220,7 +280,9 @@ def run_seed(seed, output_dir):
         "cross_partition_duplicate_groups": 0,
         "primary_model": "random_forest",
         "reliability_training": "five-fold grouped OOF predictions; primary RF errors; grouped reliability train/calibration holdout",
+        "matched_coverage_protocol": "For each ranking policy, select a 75% risk-score quantile threshold using validation scores only, then evaluate coverage and observed error on the untouched test partition. Test labels are used only for the final metric.",
         "policy_comparisons": comparisons,
+        "validation_threshold_matched_coverage": validation_matched_coverage,
         "harm_assumption": "Constant 5.0/10 for every test observation; MAGIC provides no domain harm labels.",
         "limitations": [
             "Human review is simulated and ground truth is used only after action selection for offline outcome simulation.",

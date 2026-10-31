@@ -52,3 +52,31 @@ The successful GitHub Actions run is [run 41218257057](https://github.com/swara2
 2. Re-run the same grouped split, leakage controls, and five-policy comparison without tuning on the final test set.
 3. Diagnose why the learned reliability score loses to confidence-only at matched coverage using validation-only feature ablations and calibration diagnostics.
 4. Measure real action effectiveness before making claims about practical risk reduction.
+
+
+## Second-dataset benchmark: UCI MAGIC Gamma Telescope
+
+The grouped multi-seed MAGIC benchmark completed successfully in GitHub Actions run [41224170086](https://github.com/swara2402/Vimarsh/actions/runs/41224170086). The workflow passed the research test suite, MAGIC grouped experiment tests, and the MAGIC policy-comparison job; the separate Wine end-to-end job also passed. The MAGIC artifact contains one result JSON per seed and the aggregate summary.
+
+The benchmark uses 19,020 observations, ten continuous features, and a binary gamma/hadron target. Exact feature duplicates are kept within partitions. Each seed has 2,718 test observations, with class prevalence near 64.8% in each split.
+
+| Policy | Mean coverage | Coverage SD | Mean observed error rate | Error-rate SD | Mean net corrections |
+|---|---:|---:|---:|---:|---:|
+| Reliability-driven | 78.27% | 0.54 pp | 7.76% | 0.32 pp | 0 |
+| Confidence-only | 75.50% | 0.00 pp | 14.91% | 0.59 pp | 0 |
+| Predictive entropy | 51.09% | 0.47 pp | 8.16% | 0.35 pp | 0 |
+| Ensemble disagreement | 82.62% | 0.32 pp | 9.97% | 0.41 pp | 0 |
+| Always accept | 100.00% | 0.00 pp | 14.02% | 0.48 pp | 0 |
+
+On MAGIC, reliability-driven selection recorded a lower mean observed error rate and slightly higher mean coverage than confidence-only. This is encouraging but not a matched-coverage comparison, so it does not establish superior ranking quality at a common operating point. No policy produced net corrections. The MAGIC results are a second tabular benchmark, not broad cross-domain generalization.
+
+The dataset has no decision-specific harm labels; a constant 5.0/10 harm score was used as a disclosed scenario assumption. Human review was simulated, evidence-provider actions were disabled, and action-effectiveness factors were assumptions rather than measured causal effects. These limitations prevent real-world harm-reduction claims.
+
+Detailed protocol, results, and limitations: [MAGIC Gamma benchmark protocol](magic-gamma-benchmark-protocol.md). Artifact: [vimarsh-magic-gamma-policy-results](https://github.com/swara2402/Vimarsh/actions/runs/41224170086/artifacts/13051567045).
+
+## Revised research priorities
+
+1. Add a validation-only threshold-selection and matched-coverage comparison so ranking quality can be compared at a common operating point without test-set tuning.
+2. Diagnose reliability calibration and feature contributions using validation-only ablations across both benchmarks.
+3. Evaluate additional datasets or repeated temporal/domain splits before making broader generalization claims.
+4. Measure real action effectiveness before making claims about practical risk reduction.

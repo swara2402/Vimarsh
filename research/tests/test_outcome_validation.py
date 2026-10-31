@@ -239,7 +239,7 @@ def test_policy_cost_reconciles_to_sample_execution_costs(tmp_path, monkeypatch)
             error_probability=0.2, harm=2.0, baseline_risk=0.4,
             selected_action=ActionType.ALTERNATE_MODEL.value, final_prediction=0,
             final_correct=True, original_correct=False, is_covered=True,
-            corrected_prediction=True, cost_incurred=4.0
+            corrected_prediction=True, action_result={"success": True, "cost_incurred": 4.0}, cost_incurred=4.0
         ),
     ])
     metrics = validator.calculate_policy_metrics("cost_reconciliation_test")
@@ -259,4 +259,19 @@ def test_policy_metrics_reject_duplicate_sample_ids(tmp_path, monkeypatch):
     validator.sample_outcomes.extend([sample, sample])
     with pytest.raises(AssertionError, match="duplicate sample IDs"):
         validator.calculate_policy_metrics("duplicate_id_test")
+
+def test_policy_metrics_reject_action_cost_mismatch(tmp_path, monkeypatch):
+    """Recorded sample cost must match the cost returned by its executed action."""
+    monkeypatch.chdir(tmp_path)
+    validator = OutcomeValidator(Mock())
+    validator.sample_outcomes.append(SampleOutcome(
+        sample_id="cost_mismatch", true_label=1, base_prediction=1, base_correct=True,
+        error_probability=0.1, harm=1.0, baseline_risk=0.1,
+        selected_action=ActionType.ACCEPT.value, final_prediction=1, final_correct=True,
+        original_correct=True, is_covered=True,
+        action_result={"success": True, "cost_incurred": 2.0},
+        cost_incurred=1.0
+    ))
+    with pytest.raises(AssertionError, match="Sample execution cost mismatch"):
+        validator.calculate_policy_metrics("cost_mismatch_test")
 

@@ -70,3 +70,25 @@ On this benchmark, reliability-driven selection achieved a higher mean coverage 
 Predictive entropy operated at substantially lower coverage (51.09%) with an 8.16% observed error rate. Ensemble disagreement had the highest nontrivial coverage (82.62%) and a 9.97% observed error rate. Always-accept coverage was 100% with a 14.02% observed error rate. No policy produced net corrections in any seed.
 
 These results are not directly comparable with Wine Quality results: the datasets, sample sizes, class distributions, and task difficulty differ. The MAGIC benchmark provides a second tabular evaluation, not broad cross-domain generalization. The constant harm score is a scenario assumption, not a learned harm estimate; human review is simulated; action-effectiveness settings are assumptions; and evidence-provider actions are disabled. Three seeds provide descriptive stability evidence, not confidence intervals. No final-test threshold tuning was performed.
+
+
+## Validation-selected matched-coverage diagnostic
+
+The experiment now also evaluates the four ranking policies at a common nominal
+75% coverage target. For each policy, its score threshold is selected from the
+validation partition's score distribution using the 75th percentile (higher
+quantile). That fixed threshold is then applied to the untouched test partition.
+Test labels are read only after the accepted subset has been determined, to
+calculate its observed error rate. Actual test coverage is reported because
+distribution differences and tied scores can move it away from exactly 75%.
+
+This diagnostic isolates ranking behavior more directly than the verification
+engine's cost-sensitive action metrics, which may produce different coverage
+for each policy. It is reported separately and does not replace the five-policy
+action-engine comparison. The always-accept baseline is not part of the
+four-policy matched-coverage ranking diagnostic.
+
+Regression tests verify that the threshold is derived from validation scores,
+that test labels do not affect threshold selection, and that non-finite scores
+are rejected. The updated three-seed CI run must complete before matched-
+coverage performance results are added here.

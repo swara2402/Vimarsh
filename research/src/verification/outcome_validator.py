@@ -96,7 +96,9 @@ class PolicyComparison:
     # Error metrics among covered samples
     covered_errors: int = 0
     observed_error_rate: Optional[float] = None  # Null if no samples covered
-    total_observed_errors: int = 0
+    total_observed_errors: int = 0  # Errors among covered samples only
+    unresolved_samples: int = 0  # Abstained samples requiring a deferred decision
+    evaluation_table_path: Optional[str] = None
     # Outcome changes
     total_corrected: int = 0
     total_introduced: int = 0
@@ -256,6 +258,13 @@ class OutcomeValidator:
                 m.corrected_predictions += 1
             if outcome.introduced_error:
                 m.introduced_errors += 1
+
+            # Abstentions are unresolved, not unchanged predictions.
+            if outcome.is_covered and outcome.final_correct is not None:
+                if outcome.base_correct and outcome.final_correct:
+                    m.unchanged_correct += 1
+                elif not outcome.base_correct and not outcome.final_correct:
+                    m.unchanged_incorrect += 1
                 
             m.total_cost += outcome.cost_incurred
             m.total_estimated_risk_reduction += outcome.estimated_risk_reduction
@@ -312,18 +321,24 @@ class OutcomeValidator:
         # --------------------------
         # Milestone 3.2.1: Consistency Assertions (fail experiment if violated)
         # --------------------------
-        if covered > 0:
-            # 1. Corrections - new errors must equal net improvement
-            assert (total_corrected - total_introduced) == (total_corrected - total_introduced), "Net improvement calculation invalid"
-            # 2. Covered errors must equal number of incorrect final predictions among covered samples
-            calculated_covered_errors = sum(1 for o in self.sample_outcomes if o.is_covered and o.final_correct is False)
-            assert covered_errors == calculated_covered_errors, f"Covered errors mismatch: counted {covered_errors}, actual {calculated_covered_errors}"
-            # 3. Covered samples + abstained samples must equal total samples
-            assert covered + abstained == total_samples, f"Sample count mismatch: covered={covered} + abstained={abstained} != total={total_samples}"
-            # 4. Coverage must match actual covered sample count
-            calculated_coverage = covered / total_samples
-            assert abs(calculated_coverage - (covered / total_samples)) < 1e-9, "Coverage calculation invalid"
-        
+        calculated_covered = sum(1 for o in self.sample_outcomes if o.is_covered)
+        calculated_abstained = sum(1 for o in self.sample_outcomes if not o.is_covered)
+        calculated_covered_errors = sum(
+            1 for o in self.sample_outcomes if o.is_covered and o.final_correct is False
+        )
+        calculated_corrected = sum(1 for o in self.sample_outcomes if o.corrected_prediction)
+        calculated_introduced = sum(1 for o in self.sample_outcomes if o.introduced_error)
+        assert covered == calculated_covered, f"Covered count mismatch: {covered} != {calculated_covered}"
+        assert abstained == calculated_abstained, f"Abstained count mismatch: {abstained} != {calculated_abstained}"
+        assert covered_errors == calculated_covered_errors, f"Covered errors mismatch: {covered_errors} != {calculated_covered_errors}"
+        assert total_corrected == calculated_corrected, f"Correction count mismatch: {total_corrected} != {calculated_corrected}"
+        assert total_introduced == calculated_introduced, f"Introduced-error count mismatch: {total_introduced} != {calculated_introduced}"
+        assert total_corrected - total_introduced == calculated_corrected - calculated_introduced, "Net improvement calculation invalid"
+        assert covered + abstained == total_samples, f"Sample count mismatch: covered={covered} + abstained={abstained} != {total_samples}"
+        assert abs((covered / total_samples) + (abstained / total_samples) - 1.0) < 1e-9, "Coverage and abstention rates must sum to 1"
+        for outcome in self.sample_outcomes:
+            assert outcome.original_correct == outcome.base_correct, f"Original correctness mismatch for sample {outcome.sample_id}"
+            assert outcome.is_covered == (outcome.selected_action != ActionType.ABSTAIN.value), f"Coverage/action mismatch for sample {outcome.sample_id}"        
         # If this is the always_accept policy, verify it matches baseline
         if policy_name == "always_accept":
             baseline_errors = sum(1 for o in self.sample_outcomes if not o.original_correct)
@@ -340,7 +355,8 @@ class OutcomeValidator:
             abstention_rate=abstained / total_samples,
             covered_errors=covered_errors,
             observed_error_rate=covered_errors / covered if covered > 0 else None,  # Null if no samples covered
-            total_observed_errors=covered_errors + abstained,  # Abstentions count as unresolved
+            total_observed_errors=covered_errors,
+            unresolved_samples=abstained,
             total_corrected=total_corrected,
             total_introduced=total_introduced,
             net_corrections=total_corrected - total_introduced,
@@ -385,6 +401,7 @@ class OutcomeValidator:
             })
         with open(table_path, 'w') as f:
             json.dump(evaluation_table, f, indent=2)
+        comparison.evaluation_table_path = str(table_path)
         print(f"Exported evaluation table for {policy_name} to: {table_path}")
         
         return comparison
@@ -442,10 +459,15 @@ class OutcomeValidator:
         
         return {
             "evidence_available": self.action_executor.evidence_provider.available,
+            "provider_type": "synthetic_simulation",
+            "external_source_connected": False,
+            "evidence_used_to_update_prediction": False,
+            "evidence_is_real_world": False,
             "code_inspected": True,
             "potential_label_leakage_detected": leaked,
             "leakage_indicators_found": [i for i in leakage_indicators if i in evidence_source],
-            "evidence_generations_is_valid": not leaked
+            "evidence_generations_is_valid": not leaked,
+            "integrity_interpretation": "No label leakage detected in the inspected method; this does not establish real-world evidence retrieval or prediction improvement."
         }
     
     def validate_simulated_human_review(self) -> Dict[str, Any]:

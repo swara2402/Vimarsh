@@ -61,8 +61,20 @@ This is an integrated research experiment, not a production deployment. Exact du
 
 The dataset-backed GitHub Actions run completed successfully on the current Milestone 4.2 pull-request head. Both jobs passed: the research test suite (including compilation and grouped-splitting, model-alignment, integration, calibration-serialization, outcome-validation, and batch-feature tests) and the end-to-end Wine Quality workflow. The workflow uploaded the generated result files as a downloadable artifact.
 
+## Multi-seed validation harness
+
+A repeatable runner is now implemented at `research/experiments/run_multiseed_policy_comparison.py`. It defaults to seeds 17, 42, and 73. For every seed it:
+
+1. Overrides the data-split, OOF, calibration, reliability-estimator, and base-model random states.
+2. Retrains the base models and reliability estimator from scratch.
+3. Saves a seed-specific inference bundle.
+4. Runs the same five-policy comparison and writes an isolated per-seed result JSON.
+5. Aggregates coverage, covered error rate, and net corrections as arithmetic means and population standard deviations, retaining each seed's raw value.
+
+The GitHub Actions workflow now runs this three-seed experiment and uploads its summary, per-seed outputs, and seed-specific model bundles. The run triggered by the multi-seed harness implementation is in progress; no multi-seed outcome is claimed until the job completes and the aggregated JSON is inspected. The aggregation unit tests cover mean/dispersion calculations and missing metric handling.
+
 ## Next work
 
-- Repeat the complete training and policy comparison across multiple random seeds and report mean and dispersion for each policy.
+- Inspect the completed multi-seed results and determine whether policy rankings are stable across seeds.
 - Validate on at least one additional tabular dataset.
 - Measure real action effectiveness before making claims about practical risk reduction.

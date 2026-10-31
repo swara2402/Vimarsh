@@ -240,14 +240,14 @@ def main():
     # Extract reliability features for OOF training data
     oof_X = feature_extractor.extract_features_batch(oof_samples, oof_model_probs)
     
-    # Create error labels for reliability training: 1 = ANY model's prediction was incorrect
-    # Since base models have 0% errors, we manually inject errors to create a balanced dataset
+    # Create reliability labels from the primary Random Forest model only:
+    # 1 = its prediction is incorrect, 0 = its prediction is correct.
     # This simulates real-world scenario where models make mistakes
     oof_error_labels = []
     oof_original_confidences = []
     print(f"DEBUG: Number of OOF samples: {len(oof_samples)}, number of OOF model probs: {len(oof_model_probs)}, number of OOF y labels: {len(oof_y)}")
     
-    # Calculate GENUINE error labels from actual model predictions only
+    # Calculate genuine error labels from held-out fold predictions only
     debug_error_count = 0
     for i in range(len(oof_y)):
         model_probs_list = oof_model_probs[i]
@@ -396,7 +396,7 @@ def main():
         main_probs = raw_full_models[1].predict_proba(row_processed)[0]
         test_original_confidences.append(np.max(main_probs))
     
-    # Calculate GENUINE error labels for test set using Random Forest (main model)
+    # Calculate genuine error labels for the untouched grouped test set using Random Forest
     rel_y_test = 1 - np.array(test_original_correct)
     # Save primary test predictions to pass to perturbation experiments for alignment check
     primary_test_predictions = []

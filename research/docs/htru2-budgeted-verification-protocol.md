@@ -37,6 +37,14 @@ The reliability policy selected 33, 35, and 38 cases across the three seeds (1.2
 
 The results therefore do not support a claim that the learned reliability score is superior to confidence on HTRU2. They do show that the cost-sensitive eligibility rule can leave budget unused and that policy rankings depend on the assumed review cost, effectiveness, and asymmetric consequences. The comparison is under a common capacity ceiling and scenario, **not** at matched review counts or matched utilization.
 
+## Matched-capacity ranking diagnostic
+
+A second, explicitly separate diagnostic now evaluates ranking quality when every signal receives the same review count. For each seed, the diagnostic selects exactly the predeclared 10% test capacity (255 observations) using each score multiplied by the predicted-class scenario consequence weight and the fixed review-effectiveness factor. Because per-case review cost is constant across cases, subtracting that constant does not change the ranking. The compared signals are learned reliability, confidence risk, predictive entropy, ensemble disagreement, and random selection.
+
+Unlike the positive-net-benefit policy above, this diagnostic intentionally fills the budget even when the selected cases have negative estimated net benefit. It therefore isolates ranking performance at common utilization and must not be interpreted as the recommended cost-sensitive operating policy. Selection uses model scores and predicted classes only; test labels are accessed afterward for offline outcome scoring. The diagnostic is reported separately from the positive-net-benefit results, preserving the distinction between ranking quality and budget-utilization/eligibility behavior.
+
+The updated CI run will provide the first measured results for this diagnostic. No matched-capacity outcome is claimed until its artifact has been inspected.
+
 ## Interpretation boundary
 
 A positive simulated net benefit is conditional on the assumed consequence weights, review cost, and reviewer effectiveness. It does not establish real review efficacy, real-world harm reduction, broad domain generalization, or patent novelty. Three seeds provide descriptive stability evidence only. The present HTRU2 result is a negative comparative finding for the learned reliability score versus confidence, and should be reported as such rather than hidden.

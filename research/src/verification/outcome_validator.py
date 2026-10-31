@@ -145,7 +145,7 @@ class OutcomeValidator:
             SampleOutcome with complete tracking of all outcome metrics
         """
         # Create base outcome object
-        base_correct = (base_prediction == true_label)
+        base_correct = bool(base_prediction == true_label)
         outcome = SampleOutcome(
             sample_id=evaluation.sample_id,
             true_label=true_label,
@@ -209,7 +209,7 @@ class OutcomeValidator:
                     outcome.introduced_error = True
                     outcome.observed_outcome_change = True
             else:
-                final_correct = (final_prediction == true_label)
+                final_correct = bool(final_prediction == true_label)
                 outcome.final_correct = final_correct
                 
                 # Determine if prediction was corrected or error introduced (Milestone 3.2.1 definitions)

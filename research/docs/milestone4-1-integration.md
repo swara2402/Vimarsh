@@ -42,6 +42,6 @@ The tests cover row alignment, probability validation, estimator output validati
 ## Next work
 
 - Complete and archive the dataset-backed experiment with grouped out-of-fold splits.
-- Compare reliability-driven action selection against confidence-only, predictive-entropy, and ensemble-disagreement scoring under the same action costs and budget.
+- Compare reliability-driven action selection against confidence-only, predictive-entropy, ensemble-disagreement, and always-accept scoring under the same action costs and budget.
 - Repeat the policy comparison across multiple random seeds and then validate on at least one additional tabular dataset.
 - Measure real action effectiveness before making claims about practical risk reduction.

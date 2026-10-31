@@ -45,3 +45,25 @@ jobs:
         run: python -m pytest -q tests/test_primary_model_feature_alignment.py
       - name: Run grouped-splitting tests
         run: python -m pytest -q tests/test_grouped_splitting.py
+
+  wine-end-to-end:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: research
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install experiment dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pandas numpy scipy scikit-learn joblib pyyaml matplotlib seaborn requests
+      - name: Train reliability models and save inference bundle
+        run: python experiments/run_reliability_experiments.py
+      - name: Run integrated reliability-driven verification
+        run: python experiments/run_integrated_verification.py

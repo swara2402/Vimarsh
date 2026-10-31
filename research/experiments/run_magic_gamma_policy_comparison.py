@@ -365,7 +365,8 @@ def run_seed(seed, output_dir):
         "reliability_training": "five-fold grouped OOF predictions; primary RF errors; grouped reliability train/calibration holdout",
         "matched_coverage_protocol": "For each ranking policy, select a 75% risk-score quantile threshold using validation scores only, then evaluate coverage and observed error on the untouched test partition. Test labels are used only for the final metric.",
         "policy_comparisons": comparisons,
-        "validation_threshold_matched_coverage": validation_matched_coverage,\n        "validation_feature_ablation": validation_ablation_results,
+        "validation_threshold_matched_coverage": validation_matched_coverage,
+        "validation_feature_ablation": validation_ablation_results,
         "harm_assumption": "Constant 5.0/10 for every test observation; MAGIC provides no domain harm labels.",
         "limitations": [
             "Human review is simulated and ground truth is used only after action selection for offline outcome simulation.",

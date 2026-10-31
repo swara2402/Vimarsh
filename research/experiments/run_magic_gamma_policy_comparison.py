@@ -104,6 +104,80 @@ def validation_threshold_metrics(validation_scores, test_scores, test_prediction
     }
 
 
+
+def reliability_ablation_metrics(
+    oof_features, oof_error, train_indices, calibration_indices,
+    validation_features, validation_error, random_state,
+):
+    """Fit feature-group ablations on OOF training data; score validation only."""
+    from sklearn.metrics import (
+        average_precision_score, brier_score_loss, log_loss, roc_auc_score,
+    )
+
+    groups = {
+        "uncertainty": [
+            "max_probability", "predictive_entropy", "probability_margin",
+            "uncertainty_score",
+        ],
+        "disagreement": [
+            "count_class0", "count_class1", "disagreement_fraction",
+            "probability_variance", "probability_std", "ensemble_entropy",
+        ],
+        "input_quality": [
+            "missing_feature_count", "missing_feature_ratio",
+            "invalid_value_count", "out_of_range_count", "z_score_anomaly_count",
+            "isolation_forest_anomaly", "isolation_forest_score",
+            "overall_input_quality_score",
+        ],
+        "distribution_shift": [
+            "mahalanobis_distance", "mahalanobis_percentile", "is_extreme_distance",
+        ],
+    }
+    variants = {
+        "A_uncertainty_only": groups["uncertainty"],
+        "B_uncertainty_disagreement": groups["uncertainty"] + groups["disagreement"],
+        "C_plus_input_quality": (
+            groups["uncertainty"] + groups["disagreement"] + groups["input_quality"]
+        ),
+        "D_full_features": sum(groups.values(), []),
+    }
+    results = {}
+    for name, columns in variants.items():
+        estimator = ReliabilityEstimator(model_type="random_forest", random_state=random_state)
+        estimator.train(
+            oof_features.iloc[train_indices][columns],
+            np.asarray(oof_error)[train_indices],
+            oof_features.iloc[calibration_indices][columns],
+            np.asarray(oof_error)[calibration_indices],
+        )
+        probabilities = estimator.predict_error_probability(validation_features[columns])
+        results[name] = {
+            "validation_roc_auc": float(roc_auc_score(validation_error, probabilities)),
+            "validation_pr_auc": float(average_precision_score(validation_error, probabilities)),
+            "validation_brier_score": float(brier_score_loss(validation_error, probabilities)),
+            "validation_log_loss": float(log_loss(validation_error, probabilities, labels=[0, 1])),
+            "validation_ece": float(_expected_calibration_error(validation_error, probabilities)),
+            "feature_count": len(columns),
+        }
+    return results
+
+
+def _expected_calibration_error(labels, probabilities, bins=10):
+    labels = np.asarray(labels, dtype=int)
+    probabilities = np.asarray(probabilities, dtype=float)
+    edges = np.linspace(0.0, 1.0, bins + 1)
+    error = 0.0
+    for index in range(bins):
+        mask = (probabilities >= edges[index]) & (
+            probabilities < edges[index + 1] if index < bins - 1 else probabilities <= edges[index + 1]
+        )
+        if np.any(mask):
+            error += float(mask.mean()) * abs(
+                float(probabilities[mask].mean()) - float(labels[mask].mean())
+            )
+    return error
+
+
 def _fit_models(X, y, config, seed):
     cfg = yaml.safe_load((RESEARCH_DIR / "configs" / "baseline_config.yaml").read_text())
     cfg["random_seed"] = seed
@@ -180,6 +254,15 @@ def run_seed(seed, output_dir):
         [[val_probs[m][i] for m in range(len(final_models))] for i in range(len(X_val))],
     )
     val_reliability_scores = estimator.predict_error_probability(val_features)
+
+    validation_primary_predictions = np.asarray(final_models[1].predict(processed_val))
+    validation_error_labels = (
+        validation_primary_predictions != y_val.to_numpy()
+    ).astype(int)
+    validation_ablation_results = reliability_ablation_metrics(
+        oof_features, oof_error, rel_train_idx, rel_cal_idx,
+        val_features, validation_error_labels, seed,
+    )
     val_primary_probs = val_probs[1]
     val_entropy = -np.sum(
         np.clip(val_primary_probs, 1e-12, 1.0) * np.log(np.clip(val_primary_probs, 1e-12, 1.0)),
@@ -282,7 +365,7 @@ def run_seed(seed, output_dir):
         "reliability_training": "five-fold grouped OOF predictions; primary RF errors; grouped reliability train/calibration holdout",
         "matched_coverage_protocol": "For each ranking policy, select a 75% risk-score quantile threshold using validation scores only, then evaluate coverage and observed error on the untouched test partition. Test labels are used only for the final metric.",
         "policy_comparisons": comparisons,
-        "validation_threshold_matched_coverage": validation_matched_coverage,
+        "validation_threshold_matched_coverage": validation_matched_coverage,\n        "validation_feature_ablation": validation_ablation_results,
         "harm_assumption": "Constant 5.0/10 for every test observation; MAGIC provides no domain harm labels.",
         "limitations": [
             "Human review is simulated and ground truth is used only after action selection for offline outcome simulation.",

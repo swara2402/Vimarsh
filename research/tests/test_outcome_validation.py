@@ -224,8 +224,8 @@ def test_human_review_capacity_exhaustion_is_not_successful():
 
 
 def test_policy_cost_reconciles_to_sample_execution_costs(tmp_path, monkeypatch):
-    monkeypatch.chdir(tmp_path)
     """Policy total cost must equal the sum of recorded per-sample execution costs."""
+    monkeypatch.chdir(tmp_path)
     validator = OutcomeValidator(Mock())
     validator.sample_outcomes.extend([
         SampleOutcome(
@@ -247,8 +247,8 @@ def test_policy_cost_reconciles_to_sample_execution_costs(tmp_path, monkeypatch)
 
 
 def test_policy_metrics_reject_duplicate_sample_ids(tmp_path, monkeypatch):
-    monkeypatch.chdir(tmp_path)
     """Duplicate sample IDs must fail before an ambiguous evaluation table is exported."""
+    monkeypatch.chdir(tmp_path)
     validator = OutcomeValidator(Mock())
     sample = SampleOutcome(
         sample_id="duplicate", true_label=1, base_prediction=1, base_correct=True,

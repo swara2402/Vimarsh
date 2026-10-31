@@ -122,7 +122,9 @@ def run_integrated_experiment(budget: float = 500.0, output_path: Path = None):
         "test_set_size": int(len(X_test)),
         "reliability_probability_source": "fitted reliability estimator from out-of-fold training features",
         "split_strategy": bundle.get("split_strategy", "legacy_random_stratified"),
-        "duplicate_group_isolation": bundle.get("split_strategy") == "stratified_grouped_exact_feature_rows",\n        "oof_split_strategy": "stratified_grouped_exact_feature_rows",\n        "reliability_calibration_split_strategy": "stratified_grouped_exact_feature_rows",
+        "duplicate_group_isolation": bundle.get("split_strategy") == "stratified_grouped_exact_feature_rows",
+        "oof_split_strategy": "stratified_grouped_exact_feature_rows",
+        "reliability_calibration_split_strategy": "stratified_grouped_exact_feature_rows",
         "error_probability_summary": {
             "minimum": float(np.min(integrated.error_probabilities)),
             "mean": float(np.mean(integrated.error_probabilities)),

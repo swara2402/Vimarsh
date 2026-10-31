@@ -90,5 +90,22 @@ four-policy matched-coverage ranking diagnostic.
 
 Regression tests verify that the threshold is derived from validation scores,
 that test labels do not affect threshold selection, and that non-finite scores
-are rejected. The updated three-seed CI run must complete before matched-
-coverage performance results are added here.
+are rejected. The updated three-seed CI run completed successfully (run 41225143359). The measured results are recorded below.
+
+
+### Completed validation-selected matched-coverage results
+
+The updated experiment completed successfully in [GitHub Actions run 41225143359](https://github.com/swara2402/Vimarsh/actions/runs/41225143359). Research tests, the MAGIC three-seed comparison, the Wine multi-seed comparison, and Wine end-to-end training all passed. The refreshed MAGIC artifact is [vimarsh-magic-gamma-policy-results](https://github.com/swara2402/Vimarsh/actions/runs/41225143359/artifacts/13051212563).
+
+Across seeds 17, 42, and 73, each policy threshold was selected from validation scores for a nominal 75% target and then applied unchanged to its test partition. Values below are arithmetic means and population standard deviations across seeds:
+
+| Ranking policy | Mean actual test coverage | Coverage SD | Mean test observed error | Error SD |
+|---|---:|---:|---:|---:|
+| Reliability-driven | 75.67% | 1.06 pp | 7.24% | 0.43 pp |
+| Confidence-only | 74.53% | 0.99 pp | 7.04% | 0.36 pp |
+| Predictive entropy | 74.53% | 0.99 pp | 7.04% | 0.36 pp |
+| Ensemble disagreement | 82.62% | 0.32 pp | 9.97% | 0.41 pp |
+
+The reliability-driven policy's actual coverage was 1.14 percentage points higher than confidence-only on average, while its observed error rate was 0.20 percentage points higher. Thus the results are close but do not show a reliability-driven error advantage at this nominal operating point. Confidence-only and predictive entropy produced identical accepted sets in these runs. Ensemble disagreement exceeded the nominal target because its score distribution contains ties and the threshold accepts scores less than or equal to the validation-selected quantile.
+
+This diagnostic is more comparable than the original cost-sensitive action-engine table, but actual test coverage is not exactly equal across policies. It does not establish statistically significant differences or general superiority. Thresholds were not tuned on test outcomes. No policy produced net corrections in the action-engine simulation. The earlier limitations remain: simulated review, disabled evidence provider, assumed action-effectiveness factors, constant harm assumption, and only three seeds on one tabular dataset.

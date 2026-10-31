@@ -132,6 +132,15 @@ class ReliabilityVerificationPipeline:
         if primary_model_index < 0 or primary_model_index >= len(model_probabilities):
             raise ValueError("primary_model_index is outside the model probability list")
 
+        extractor_primary_index = getattr(
+            self.feature_extractor, "primary_model_index", primary_model_index
+        )
+        if extractor_primary_index != primary_model_index:
+            raise ValueError(
+                "primary_model_index must match the feature extractor's configured "
+                f"primary model ({extractor_primary_index}); received {primary_model_index}"
+            )
+
         features, error_probabilities = self.score(samples, model_probabilities)
         primary_confidences = np.asarray(
             model_probabilities[primary_model_index], dtype=float

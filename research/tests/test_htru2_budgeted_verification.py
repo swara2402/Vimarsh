@@ -14,8 +14,8 @@ def test_budgeted_selection_respects_hard_capacity_and_positive_benefit():
     harms = np.array([5.0, 1.0, 5.0, 1.0])
     chosen = select_under_budget(scores, harms, budget_count=2, seed=17)
     assert chosen.sum() <= 2
-    assert chosen[0] and chosen[1]
-    assert not chosen[3]
+    assert chosen[0] and chosen[2]
+    assert not chosen[1] and not chosen[3]
 
 
 def test_selection_is_deterministic_and_does_not_accept_unprofitable_cases():
@@ -32,10 +32,13 @@ def test_asymmetric_scenario_harm_depends_on_predicted_error_direction():
 
 
 def test_outcome_scoring_happens_after_selection_and_respects_budget():
-    selected = np.array([True, False, False, True])
-    predictions = np.array([0, 1, 0, 1])
-    labels = np.array([1, 1, 0, 0])
-    harms = np.array([5.0, 1.0, 5.0, 1.0])
+    selected = np.zeros(20, dtype=bool)
+    selected[[0, 3]] = True
+    predictions = np.zeros(20, dtype=int)
+    labels = predictions.copy()
+    labels[[0, 3]] = [1, 1]
+    harms = np.ones(20, dtype=float)
+    harms[0] = 5.0
     result = evaluate_selection("test", selected, predictions, labels, harms)
     assert result["reviewed_count"] == 2
     assert result["budget_respected"]

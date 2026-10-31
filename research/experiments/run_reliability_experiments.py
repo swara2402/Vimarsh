@@ -522,7 +522,7 @@ def main():
         X_test,
         y_test,
         feature_extractor,
-        full_models,
+        raw_full_models,
         reliability_model=best_model,
         save_dir=base_dir / 'results' / 'reliability' / 'metrics',
         preprocessor=full_preprocessor,  # Pass exact same preprocessor used in main test evaluation

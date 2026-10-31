@@ -113,7 +113,7 @@ def test_abstention_not_counted_as_correct():
     assert policy.abstention_rate == 0.8  # 8/10 abstained
     assert policy.coverage == 0.2  # 2/10 covered
     assert policy.observed_error_rate == 0.5  # 1 error out of 2 covered samples
-    assert policy.total_observed_errors == 9  # 1 covered error + 8 abstentions
+    assert policy.total_observed_errors == 1  # Abstentions are deferred, not observed prediction errors
 
 
 def test_corrected_prediction_detection():

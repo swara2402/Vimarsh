@@ -2,7 +2,11 @@
 import numpy as np
 import pandas as pd
 
-from src.preprocessing import (\n    grouped_stratified_data_splitting,\n    grouped_stratified_holdout_indices,\n    grouped_stratified_kfold_indices,\n)
+from src.preprocessing import (
+    grouped_stratified_data_splitting,
+    grouped_stratified_holdout_indices,
+    grouped_stratified_kfold_indices,
+)
 
 
 def make_duplicate_dataset():

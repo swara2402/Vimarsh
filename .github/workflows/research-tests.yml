@@ -41,3 +41,5 @@ jobs:
         run: python -m pytest -q tests/verification/test_reliability_integration.py
       - name: Run calibration serialization tests
         run: python -m pytest -q tests/test_calibration_serialization.py
+      - name: Run primary-model feature alignment tests
+        run: python -m pytest -q tests/test_primary_model_feature_alignment.py

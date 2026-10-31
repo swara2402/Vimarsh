@@ -195,6 +195,8 @@ class OutcomeValidator:
         
         # Store action result
         outcome.action_result = action_result.__dict__ if action_result else None
+        # Record execution cost, not the selector's estimated/planned cost.
+        outcome.cost_incurred = float(action_result.cost_incurred) if action_result else 0.0
         outcome.final_prediction = final_prediction
         
         # Create immutable evaluation table entry per Milestone 3.2.1 requirements

@@ -574,7 +574,18 @@ def run_outcome_validation_experiments(output_path: Optional[Union[str, Path]] =
         "test_set_size": len(X_test),
         "baseline_error_rate": base_error_rate,
         "validation_timestamp": str(pd.Timestamp.now()),
-        "milestone": "3.2 - Verification Outcome Validation"
+        "milestone": "3.2 - Verification Outcome Validation",
+        "simulation_assumptions": [
+            "Error probabilities are generated synthetically for this experiment, not produced by a calibrated reliability model.",
+            "Human review is simulated at the configured accuracy and receives the true label solely to simulate post-selection review outcomes; it is not a real human review workflow.",
+            "The evidence provider is a synthetic placeholder that adds a flag to the sample; it does not retrieve external evidence or update the model prediction.",
+            "Alternate-model predictions are produced by separately trained models, but disagreement does not guarantee correctness.",
+            "Reported action costs are execution costs returned by the action executor; risk reduction remains an estimate from the action-selection stage."
+        ],
+        "dataset_validation_caveats": [
+            "The experiment uses the existing stratified random split with random_state=42.",
+            "The Wine Quality dataset contains duplicate rows, including duplicates across train, validation, and test partitions; test metrics may therefore be optimistic and should be re-evaluated with a duplicate-grouped split before making generalization claims."
+        ]
     }
     
     # Save results if output path provided

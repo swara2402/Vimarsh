@@ -121,6 +121,7 @@ class ReliabilityVerificationPipeline:
         predictions: Sequence[Any],
         model_probabilities: Sequence[np.ndarray],
         harms: Sequence[float],
+        primary_model_index: int = 0,
     ) -> ReliabilityVerificationResult:
         """Score samples, then pass real reliability estimates to the action engine."""
         if len(predictions) != len(samples):
@@ -128,8 +129,13 @@ class ReliabilityVerificationPipeline:
         if len(harms) != len(samples):
             raise ValueError("harms length must match samples")
 
+        if primary_model_index < 0 or primary_model_index >= len(model_probabilities):
+            raise ValueError("primary_model_index is outside the model probability list")
+
         features, error_probabilities = self.score(samples, model_probabilities)
-        primary_confidences = np.asarray(model_probabilities[0], dtype=float).max(axis=1)
+        primary_confidences = np.asarray(
+            model_probabilities[primary_model_index], dtype=float
+        ).max(axis=1)
         evaluations = engine.process_batch(
             samples=samples,
             predictions=list(predictions),

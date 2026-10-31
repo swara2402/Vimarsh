@@ -237,7 +237,7 @@ def grouped_stratified_data_splitting(
     if train_groups & val_groups or train_groups & test_groups or val_groups & test_groups:
         raise AssertionError("Identical feature groups leaked across data splits")
 
-    print("\\n=== GROUPED STRATIFIED SPLIT AUDIT ===")
+    print("\n=== GROUPED STRATIFIED SPLIT AUDIT ===")
     print(f"Unique feature groups: {len(unique_groups)}")
     print(f"Train: {len(X_train)} ({len(X_train) / len(X):.1%})")
     print(f"Validation: {len(X_val)} ({len(X_val) / len(X):.1%})")

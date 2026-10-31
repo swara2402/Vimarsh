@@ -9,12 +9,13 @@ on:
     branches:
       - main
       - milestone32-review-accounting-fixes
+      - milestone4-reliability-integration
     paths:
       - "research/**"
       - ".github/workflows/research-tests.yml"
 
 jobs:
-  outcome-validation:
+  research-tests:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -32,3 +33,5 @@ jobs:
           python -m pip install pytest pandas numpy scipy scikit-learn joblib pyyaml
       - name: Run outcome validation tests
         run: python -m pytest -q tests/test_outcome_validation.py
+      - name: Run reliability integration tests
+        run: python -m pytest -q tests/verification/test_reliability_integration.py

@@ -226,7 +226,7 @@ def main():
     
     # Step 3: Initialize reliability feature extractor
     print("\n[3/10] Initializing reliability feature extractor...")
-    feature_extractor = ReliabilityFeatureExtractor(X_train)
+    feature_extractor = ReliabilityFeatureExtractor(X_train, primary_model_index=1)
     print(f"Initialized feature extractor with {len(feature_extractor.feature_names)} reliability features")
     
     # Extract reliability features for OOF training data

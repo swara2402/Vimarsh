@@ -63,6 +63,28 @@ def calculate_ece(y_true: np.ndarray, y_prob: np.ndarray, n_bins: int = 10) -> T
 from sklearn.isotonic import IsotonicRegression
 from sklearn.linear_model import LogisticRegression as PlattScaling
 
+
+class CalibratedClassifierWrapper:
+    """Module-level calibrated model wrapper that can be serialized with joblib."""
+
+    def __init__(self, base_model: Any, calibrator: Any):
+        self.base_model = base_model
+        self.calibrator = calibrator
+        self.classes_ = np.asarray(getattr(base_model, "classes_", [0, 1]))
+
+    def predict(self, X):
+        return self.base_model.predict(X)
+
+    def predict_proba(self, X):
+        base_positive = self.base_model.predict_proba(X)[:, 1]
+        if hasattr(self.calibrator, "predict_proba"):
+            calibrated_positive = self.calibrator.predict_proba(
+                base_positive.reshape(-1, 1)
+            )[:, 1]
+        else:
+            calibrated_positive = self.calibrator.predict(base_positive)
+        return np.column_stack([1 - calibrated_positive, calibrated_positive])
+
 def calibrate_model(
     base_model: Any,
     X_val: np.ndarray,
@@ -89,24 +111,8 @@ def calibrate_model(
     
     calibrator.fit(y_prob_val, y_val)
     
-    # Create wrapped model that applies calibration
-    class CalibratedModel:
-        def __init__(self, base_model, calibrator):
-            self.base_model = base_model
-            self.calibrator = calibrator
-            
-        def predict(self, X):
-            return self.base_model.predict(X)
-            
-        def predict_proba(self, X):
-            # Get base probabilities and apply calibration
-            base_probs = self.base_model.predict_proba(X)
-            calibrated_probs_pos = self.calibrator.predict(base_probs[:, 1])
-            # Ensure probabilities sum to 1
-            calibrated_probs = np.stack([1 - calibrated_probs_pos, calibrated_probs_pos], axis=1)
-            return calibrated_probs
-    
-    calibrated = CalibratedModel(base_model, calibrator)
+    # Module-level wrapper keeps the calibrated model joblib-serializable.
+    calibrated = CalibratedClassifierWrapper(base_model, calibrator)
     print(f"Model calibrated successfully using {method} calibration")
     return calibrated
 

@@ -10,6 +10,25 @@ from sklearn.calibration import CalibratedClassifierCV
 from sklearn.metrics import roc_auc_score, average_precision_score, brier_score_loss, log_loss
 
 
+class CalibratedProbabilityModel:
+    """Pickle-safe wrapper that applies sigmoid calibration to a fitted model."""
+
+    def __init__(self, base_model: Any, calibrator: Any):
+        self.base_model = base_model
+        self.calibrator = calibrator
+        self.classes_ = np.asarray(getattr(base_model, "classes_", [0, 1]))
+
+    def predict(self, X):
+        return self.base_model.predict(X)
+
+    def predict_proba(self, X):
+        base_probs = self.base_model.predict_proba(X)[:, 1]
+        calibrated_positive = self.calibrator.predict_proba(
+            base_probs.reshape(-1, 1)
+        )[:, 1]
+        return np.column_stack([1 - calibrated_positive, calibrated_positive])
+
+
 class ReliabilityEstimator:
     """Supervised model that estimates probability that an original prediction is incorrect."""
     
@@ -66,20 +85,8 @@ class ReliabilityEstimator:
             calibrator = LogisticRegression(random_state=self.random_state)
             calibrator.fit(val_pred_proba.reshape(-1, 1), y_val)
             
-            # Create a wrapper that applies calibration
-            original_model = self.model
-            class CalibratedModelWrapper:
-                def __init__(self, base_model, calibrator):
-                    self.base_model = base_model
-                    self.calibrator = calibrator
-                def predict(self, X):
-                    return self.base_model.predict(X)
-                def predict_proba(self, X):
-                    base_probs = self.base_model.predict_proba(X)[:, 1]
-                    calibrated_probs_pos = self.calibrator.predict_proba(base_probs.reshape(-1, 1))[:, 1]
-                    return np.stack([1 - calibrated_probs_pos, calibrated_probs_pos], axis=1)
-            
-            self.model = CalibratedModelWrapper(original_model, calibrator)
+            # Use a module-level wrapper so the calibrated estimator is pickle-safe.
+            self.model = CalibratedProbabilityModel(self.model, calibrator)
         
         self.is_trained = True
         

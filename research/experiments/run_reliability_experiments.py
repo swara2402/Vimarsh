@@ -141,6 +141,9 @@ def generate_out_of_fold_predictions(
     lr_full = train_logistic_regression(X_train_processed, y_train, config)
     rf_full = train_random_forest(X_train_processed, y_train, config)
     gb_full = train_gradient_boosting(X_train_processed, y_train, config)
+    # Keep uncalibrated models for deployment because the reliability estimator
+    # is trained on out-of-fold probabilities from uncalibrated fold models.
+    raw_full_models = [lr_full, rf_full, gb_full]
     
     # Calibrate models using validation data (as in Milestone 1)
     # Split training data into training and calibration subsets (only uses training data to avoid leakage)
@@ -169,7 +172,7 @@ def generate_out_of_fold_predictions(
     oof_model_probs = [s[1] for s in oof_predictions]
     oof_y = np.array(oof_true_labels)
     
-    return oof_samples, oof_model_probs, oof_y, full_models, full_preprocessor
+    return oof_samples, oof_model_probs, oof_y, full_models, full_preprocessor, raw_full_models
 
 
 def main():
@@ -217,7 +220,7 @@ def main():
     
     # Step 2: Generate out-of-fold predictions for reliability training
     print("\n[2/10] Generating out-of-fold predictions for leakage-safe reliability training...")
-    oof_samples, oof_model_probs, oof_y, full_models, full_preprocessor = generate_out_of_fold_predictions(
+    oof_samples, oof_model_probs, oof_y, full_models, full_preprocessor, raw_full_models = generate_out_of_fold_predictions(
         X_train, y_train, config, base_dir
     )
     
@@ -484,6 +487,36 @@ def main():
     print("\n[7/10] Running perturbation experiments...")
     # Use the best reliability model (random_forest as default for perturbation testing)
     best_model = reliability_models.get('random_forest', next(iter(reliability_models.values())))
+
+    # Persist a complete inference bundle for the Milestone 4 verification bridge.
+    # The bundle is fitted using training/OOF data only; test labels are not stored.
+    artifact_path = base_dir / 'models' / 'reliability' / 'wine_quality_reliability_bundle.joblib'
+    artifact_path.parent.mkdir(parents=True, exist_ok=True)
+    inference_model_dir = base_dir / 'models' / 'reliability' / 'inference_models'
+    inference_model_dir.mkdir(parents=True, exist_ok=True)
+    base_model_names = ['logistic_regression', 'random_forest', 'gradient_boosting']
+    for model_name, fitted_model in zip(base_model_names, raw_full_models):
+        joblib.dump(fitted_model, inference_model_dir / f'{model_name}.joblib')
+    joblib.dump(full_preprocessor, inference_model_dir / 'preprocessor.joblib')
+    joblib.dump(
+        {
+            'feature_extractor': feature_extractor,
+            'reliability_estimator': best_model,
+            'base_models': raw_full_models,
+            'preprocessor': full_preprocessor,
+            'base_model_dir': str(Path('models') / 'reliability' / 'inference_models'),
+            'primary_model_index': 1,
+            'base_model_names': base_model_names,
+            'feature_names': list(feature_extractor.feature_names),
+            'target_threshold': int(config['quality_threshold']),
+            'random_seed': int(config['random_seed']),
+            'training_split_size': int(len(X_train)),
+            'artifact_version': 1,
+        },
+        artifact_path,
+    )
+    print(f"Serializable reliability inference bundle saved to: {artifact_path}")
+
     # Run perturbation experiments - pass exact same preprocessor and primary test predictions from main evaluation
     perturbation_results = run_perturbation_experiments(
         X_test,

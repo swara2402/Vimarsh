@@ -141,6 +141,9 @@ def generate_out_of_fold_predictions(
     lr_full = train_logistic_regression(X_train_processed, y_train, config)
     rf_full = train_random_forest(X_train_processed, y_train, config)
     gb_full = train_gradient_boosting(X_train_processed, y_train, config)
+    # Keep uncalibrated models for deployment because the reliability estimator
+    # is trained on out-of-fold probabilities from uncalibrated fold models.
+    raw_full_models = [lr_full, rf_full, gb_full]
     
     # Calibrate models using validation data (as in Milestone 1)
     # Split training data into training and calibration subsets (only uses training data to avoid leakage)
@@ -169,7 +172,7 @@ def generate_out_of_fold_predictions(
     oof_model_probs = [s[1] for s in oof_predictions]
     oof_y = np.array(oof_true_labels)
     
-    return oof_samples, oof_model_probs, oof_y, full_models, full_preprocessor
+    return oof_samples, oof_model_probs, oof_y, full_models, full_preprocessor, raw_full_models
 
 
 def main():
@@ -217,7 +220,7 @@ def main():
     
     # Step 2: Generate out-of-fold predictions for reliability training
     print("\n[2/10] Generating out-of-fold predictions for leakage-safe reliability training...")
-    oof_samples, oof_model_probs, oof_y, full_models, full_preprocessor = generate_out_of_fold_predictions(
+    oof_samples, oof_model_probs, oof_y, full_models, full_preprocessor, raw_full_models = generate_out_of_fold_predictions(
         X_train, y_train, config, base_dir
     )
     

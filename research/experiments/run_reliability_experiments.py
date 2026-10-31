@@ -55,7 +55,7 @@ sys.path.insert(0, research_dir)
 
 # Import VIMARSH modules
 from src.data_loader import load_dataset
-from src.preprocessing import stratified_data_splitting, create_preprocessing_pipeline
+from src.preprocessing import grouped_stratified_data_splitting, create_preprocessing_pipeline
 from src.calibration import calibrate_model
 from src.evaluate import evaluate_model
 from src.visualization import plot_roc_curves, plot_confusion_matrix
@@ -204,8 +204,7 @@ def main():
     data = create_binary_target(data, threshold=config['quality_threshold'])
     
       # Split data exactly as in Milestone 1 to ensure consistency
-    from src.preprocessing import stratified_data_splitting
-    X_train, X_val, X_test, y_train, y_val, y_test = stratified_data_splitting(
+    X_train, X_val, X_test, y_train, y_val, y_test = grouped_stratified_data_splitting(
         data, 'good_quality',
         train_size=config['train_size'],
         val_size=config['val_size'], 
@@ -511,7 +510,7 @@ def main():
             'target_threshold': int(config['quality_threshold']),
             'random_seed': int(config['random_seed']),
             'training_split_size': int(len(X_train)),
-            'artifact_version': 1,
+            'artifact_version': 2,\n            'split_strategy': 'stratified_grouped_exact_feature_rows',
         },
         artifact_path,
     )

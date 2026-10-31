@@ -394,6 +394,8 @@ class OutcomeValidator:
                 "y_true": to_python(o.true_label),
                 "original_prediction": to_python(o.base_prediction),
                 "selected_action": o.selected_action,
+                "action_succeeded": to_python(o.action_result.get("success")) if o.action_result else False,
+                "action_cost_incurred": to_python(o.cost_incurred),
                 "final_prediction": to_python(o.final_prediction),
                 "is_covered": to_python(o.is_covered),
                 "original_correct": to_python(o.original_correct),

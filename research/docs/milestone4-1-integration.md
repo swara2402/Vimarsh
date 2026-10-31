@@ -2,79 +2,53 @@
 
 ## Objective
 
-Connect the existing fitted reliability feature extractor and error-probability estimator to the verification action engine. The action engine must receive estimated probabilities of base-model error rather than synthetic random values.
+Connect the fitted reliability feature extractor and error-probability estimator to the verification action engine. The engine receives estimated probabilities of base-model error rather than synthetic random values.
 
 ## Inference-time contract
 
-The integration accepts:
+The integration accepts a batch of input feature rows, primary-model predictions, probability matrices from the primary and comparison models, and experiment-defined harm estimates. It validates probability matrices, extracts uncertainty/disagreement/input-quality/distribution-shift features, aligns them to the estimator's feature order, estimates one error probability per row, and passes those estimates into the verification engine.
 
-- A batch of input feature rows.
-- Predictions from the primary model.
-- Probability matrices from the primary model and independently trained comparison models.
-- Harm estimates defined by the experiment.
+Ground-truth labels are absent from the inference-time integration API. They are reserved for offline evaluation after action selection.
 
-It then:
+## Artifact production and leakage controls
 
-1. Validates probability matrix dimensions, finite values, bounds, and row sums.
-2. Extracts uncertainty, disagreement, input-quality, and distribution-shift features.
-3. Aligns extracted columns to the fitted reliability estimator's recorded feature order.
-4. Estimates one error probability per input row.
-5. Passes those estimates and primary-model confidence values into the existing verification engine.
+The reliability experiment writes a joblib bundle containing the fitted feature extractor, reliability estimator, uncalibrated base models, preprocessor, and feature metadata. Random Forest is the primary model (index 1). Ensemble disagreement still uses all base models.
 
-Ground-truth labels are intentionally absent from the inference-time integration API. They remain reserved for offline evaluation after action selection.
+Final train/validation/test partitions, out-of-fold folds, and reliability-estimator train/calibration holdouts use grouped stratification over exact feature rows. A separate grouped holdout is used to fit calibrated comparison models. Inference uses uncalibrated base models so probability features match the scale used to train the reliability estimator.
 
-## Artifact production and integrated runner
+## Multi-seed five-policy evaluation
 
-The reliability experiment now writes a joblib bundle containing the fitted feature extractor, reliability estimator, base models, and preprocessor. The base-model wrappers were moved to module scope so they can be serialized. The artifact also stores a relative model-directory path and feature metadata.
+The GitHub Actions run on 2026-10-31 completed successfully for all three jobs: research tests, the three-seed policy comparison, and the Wine Quality end-to-end workflow. The multi-seed artifact contains independent runs for seeds 17, 42, and 73, each with a 929-observation grouped test partition.
 
-The saved base models used for inference are the uncalibrated models corresponding to the uncalibrated out-of-fold probability features used to train the reliability estimator. The primary prediction model is Random Forest (index 1), while the feature extractor retains the original model ordering used during reliability training. Out-of-fold model predictions, the reliability-estimator train/calibration holdout, and the final train/validation/test partitions now use grouped stratification over exact feature rows. A separate grouped holdout is used to fit calibrated comparison models, so calibration observations are not used to fit those comparison estimators.
+The policies use the same test partition within each seed, harm estimates, configured budget, action costs, and executor settings. Only the error-probability ranking signal changes. Coverage, observed error rate among covered predictions, and net corrections are summarized as arithmetic means and population standard deviations across the three seeds.
 
-After generating the bundle, run `python experiments/run_integrated_verification.py` from the research directory. The runner loads the same deterministic Wine Quality split, computes model probabilities, invokes this bridge, executes the selected verification actions, and evaluates outcomes only after selection.
-
-## First grouped dataset-backed policy comparison
-
-The GitHub Actions run on 2026-10-31 completed both the research test job and the Wine Quality end-to-end job successfully. The integrated test partition contained 929 observations. The grouped split audit identified 5,320 unique exact-feature groups and zero groups shared across train, validation, and test. Class prevalence was 63.3% in each partition.
-
-The primary Random Forest's test error rate under the always-accept baseline was 23.04%. The five policies were evaluated on the same test rows with the same configured budget, action costs, harm estimates, and executor settings. Only the error-probability ranking signal changed.
-
-| Policy | Coverage | Error rate among covered predictions | Net corrections |
-|---|---:|---:|---:|
-| Reliability-driven | 28.31% | 17.49% | 0 |
-| Confidence-only | 28.31% | 10.27% | 0 |
-| Predictive entropy | 10.98% | 2.94% | 0 |
-| Ensemble disagreement | 82.99% | 17.64% | 0 |
-| Always accept | 100.00% | 23.04% | 0 |
+| Policy | Mean coverage | Coverage SD | Mean covered error rate | Error-rate SD | Mean net corrections |
+|---|---:|---:|---:|---:|---:|
+| Reliability-driven | 28.31% | 0.00 pp | 15.34% | 1.53 pp | 0 |
+| Confidence-only | 28.31% | 0.00 pp | 9.76% | 0.47 pp | 0 |
+| Predictive entropy | 11.09% | 0.40 pp | 4.80% | 1.90 pp | 0 |
+| Ensemble disagreement | 83.28% | 0.90 pp | 19.47% | 1.30 pp | 0 |
+| Always accept | 100.00% | 0.00 pp | 23.75% | 0.94 pp | 0 |
 
 ### Interpretation
 
-This run does not demonstrate that the learned reliability score improves action selection over the confidence-only baseline. At matched coverage, confidence-only had a lower observed error rate among covered predictions (10.27%) than reliability-driven selection (17.49%). Predictive entropy selected a smaller subset with a lower covered error rate, while ensemble disagreement covered a much larger fraction of the test set. These policies therefore expose different coverage/error trade-offs; this single run does not establish one universally superior policy.
+At matched mean coverage of 28.31%, confidence-only outperformed reliability-driven selection in all three seeds. The mean covered error rate was 9.76% for confidence-only and 15.34% for reliability-driven selection, a 5.58 percentage-point difference. The reliability-driven policy therefore has not demonstrated an advantage over the simple confidence baseline on this benchmark.
 
-No policy produced net corrections in this run. The experiment supports the implementation and comparison protocol, not a claim of demonstrated risk reduction or superior reliability-driven performance. The result is one deterministic grouped split and should be repeated across multiple seeds before drawing stronger conclusions.
+Predictive entropy selected a much smaller subset and had the lowest mean covered error rate (4.80%), illustrating a different coverage/error trade-off rather than a direct matched-coverage win. Ensemble disagreement retained high coverage but also a high covered error rate. No policy produced net corrections in any seed.
 
-The GitHub Actions run uploaded the generated metrics, report, integrated outcome JSON, and inference bundle as the `vimarsh-milestone4-experiment-results` artifact (14-day retention).
+The first single-seed run and the three-seed results should both remain in the research record. The multi-seed findings are negative evidence about the current reliability score, not a reason to tune thresholds against the test results and report the same test set as validation. Any feature or model changes should be developed on training/validation data and assessed on a fresh held-out evaluation.
 
-## Current implementation boundary
+## Implementation boundary and limitations
 
-This is an integrated research experiment, not a production deployment. Exact duplicate feature rows are kept within one partition, including during out-of-fold and reliability-estimator calibration splits. Human review remains simulated, the evidence provider is disabled because no real provider is configured, and action-effectiveness factors remain assumptions rather than measured causal effects. A single Wine Quality benchmark does not establish cross-domain generalization.
+This is a research experiment, not a production deployment. Exact duplicate feature rows are isolated across partitions, but the three seeds still use the same Wine Quality dataset and do not establish cross-domain generalization. Human review remains simulated; evidence-provider actions are disabled; and action-effectiveness factors are assumptions, not measured causal effects. The population standard deviations across three seeds are descriptive and are not confidence intervals. No real-world risk-reduction or correction claim is supported.
 
-## Validation
+## Validation and artifacts
 
-The dataset-backed GitHub Actions run completed successfully on the current Milestone 4.2 pull-request head. Both jobs passed: the research test suite (including compilation and grouped-splitting, model-alignment, integration, calibration-serialization, outcome-validation, and batch-feature tests) and the end-to-end Wine Quality workflow. The workflow uploaded the generated result files as a downloadable artifact.
+The successful GitHub Actions run is [run 41218257057](https://github.com/swara2402/Vimarsh/actions/runs/41218257057). All three jobs passed. The `vimarsh-multiseed-policy-results` artifact includes the aggregate summary, per-seed integrated outcome JSON files, and seed-specific inference bundles. The artifact is retained until 2026-11-30. The workflow also completed the separate Wine Quality end-to-end job and uploaded its experiment artifact.
 
-## Multi-seed validation harness
+## Next research steps
 
-A repeatable runner is now implemented at `research/experiments/run_multiseed_policy_comparison.py`. It defaults to seeds 17, 42, and 73. For every seed it:
-
-1. Overrides the data-split, OOF, calibration, reliability-estimator, and base-model random states.
-2. Retrains the base models and reliability estimator from scratch.
-3. Saves a seed-specific inference bundle.
-4. Runs the same five-policy comparison and writes an isolated per-seed result JSON.
-5. Aggregates coverage, covered error rate, and net corrections as arithmetic means and population standard deviations, retaining each seed's raw value.
-
-The GitHub Actions workflow now runs this three-seed experiment and uploads its summary, per-seed outputs, and seed-specific model bundles. The run triggered by the multi-seed harness implementation is in progress; no multi-seed outcome is claimed until the job completes and the aggregated JSON is inspected. The aggregation unit tests cover mean/dispersion calculations and missing metric handling.
-
-## Next work
-
-- Inspect the completed multi-seed results and determine whether policy rankings are stable across seeds.
-- Validate on at least one additional tabular dataset.
-- Measure real action effectiveness before making claims about practical risk reduction.
+1. Add a second, non-Wine tabular benchmark with a documented source, license, target definition, and preprocessing protocol. Prefer a non-high-stakes dataset with a sufficiently large sample and a multi-class or binary target supported by the current model interface.
+2. Re-run the same grouped split, leakage controls, and five-policy comparison without tuning on the final test set.
+3. Diagnose why the learned reliability score loses to confidence-only at matched coverage using validation-only feature ablations and calibration diagnostics.
+4. Measure real action effectiveness before making claims about practical risk reduction.

@@ -24,12 +24,17 @@ from src.verification.reliability_integration import ReliabilityVerificationPipe
 from src.verification.simulation import generate_harm_estimates
 
 
-def run_integrated_experiment(budget: float = 500.0, output_path: Path = None):
+def run_integrated_experiment(budget: float = 500.0, output_path: Path = None, bundle_path: Path = None):
     """Run action selection with estimated error probabilities, then evaluate outcomes."""
     base_dir = RESEARCH_DIR
-    bundle_path = (
-        base_dir / "models" / "reliability" / "wine_quality_reliability_bundle.joblib"
-    )
+    if bundle_path is None:
+        bundle_path = (
+            base_dir / "models" / "reliability" / "wine_quality_reliability_bundle.joblib"
+        )
+    else:
+        bundle_path = Path(bundle_path)
+        if not bundle_path.is_absolute():
+            bundle_path = base_dir / bundle_path
     if not bundle_path.exists():
         raise FileNotFoundError(
             f"Reliability bundle not found at {bundle_path}. "
@@ -198,5 +203,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--budget", type=float, default=500.0)
     parser.add_argument("--output", type=Path, default=None)
+    parser.add_argument("--bundle", type=Path, default=None, help="Optional seed-specific inference bundle.")
     arguments = parser.parse_args()
-    run_integrated_experiment(budget=arguments.budget, output_path=arguments.output)
+    run_integrated_experiment(
+        budget=arguments.budget,
+        output_path=arguments.output,
+        bundle_path=arguments.bundle,
+    )

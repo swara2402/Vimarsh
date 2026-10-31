@@ -90,7 +90,7 @@ vimarsh/
 
 The repository contains implemented baseline classification, reliability-analysis, and verification-action research code. Milestone 3.2 adds outcome and execution-cost auditing. Milestone 4 adds a reliability-to-verification inference bridge, serializable model artifacts, duplicate-grouped train/validation/test and out-of-fold splitting, and an integrated policy-comparison runner.
 
-The integrated experiment is still research-stage: it relies on the Wine Quality benchmark, simulated human review, and assumed action-effectiveness factors. Its runner compares reliability-driven verification with confidence-only, predictive-entropy, and ensemble-disagreement scoring under matched budgets and action settings. Grouped stratification keeps identical feature rows together across final partitions, out-of-fold folds, and reliability calibration splits while retaining duplicate observations. This does not establish cross-domain generalization or real-world action effectiveness. The API and React dashboard remain planned.
+The integrated experiment is still research-stage: it relies on the Wine Quality benchmark, simulated human review, and assumed action-effectiveness factors. Its runner compares reliability-driven verification with confidence-only, predictive-entropy, ensemble-disagreement, and always-accept scoring under matched budgets and action settings. Grouped stratification keeps identical feature rows together across final partitions, out-of-fold folds, and reliability calibration splits while retaining duplicate observations. This does not establish cross-domain generalization or real-world action effectiveness. The API and React dashboard remain planned.
 
 ## Getting started
 

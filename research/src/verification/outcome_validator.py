@@ -347,6 +347,17 @@ class OutcomeValidator:
             assert covered_errors == baseline_errors, "Always-accept policy doesn't match baseline error rate"
             assert covered == total_samples, "Always-accept policy must cover all samples"
         
+        # Reconcile each recorded sample cost with the executor's action result.
+        for outcome in self.sample_outcomes:
+            if outcome.action_result is not None and "cost_incurred" in outcome.action_result:
+                executed_cost = float(outcome.action_result["cost_incurred"])
+                assert np.isclose(outcome.cost_incurred, executed_cost, rtol=1e-9, atol=1e-9), (
+                    f"Sample execution cost mismatch for {outcome.sample_id}: "
+                    f"recorded={outcome.cost_incurred}, action_result={executed_cost}"
+                )
+        sample_ids = [str(outcome.sample_id) for outcome in self.sample_outcomes]
+        assert len(sample_ids) == len(set(sample_ids)), "Evaluation table contains duplicate sample IDs"
+
         # Create comprehensive policy comparison before validating its fields.
         comparison = PolicyComparison(
             policy_name=policy_name,

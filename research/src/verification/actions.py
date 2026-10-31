@@ -247,6 +247,17 @@ class VerificationActionExecutor:
                 success=False,
                 additional_data={"reason": "Human reviewer not available"}
             )
+
+        if (
+            self.human_reviewer.max_reviews is not None
+            and self.human_reviewer.reviews_completed >= self.human_reviewer.max_reviews
+        ):
+            return ActionResult(
+                action_type=ActionType.HUMAN_REVIEW,
+                success=False,
+                cost_incurred=0.0,
+                additional_data={"reason": "Human review capacity exhausted"}
+            )
             
         reviewed_prediction, updated_confidence, cost = self.human_reviewer.review_sample(
             sample, original_prediction, original_confidence, true_label

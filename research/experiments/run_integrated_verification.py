@@ -94,6 +94,7 @@ def run_integrated_experiment(budget: float = 500.0, output_path: Path = None):
         predictions=primary_predictions,
         model_probabilities=model_probabilities,
         harms=harms,
+        primary_model_index=primary_index,
     )
 
     # Ground truth is introduced only after action selection, for offline evaluation.

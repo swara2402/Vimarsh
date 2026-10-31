@@ -83,9 +83,22 @@ class ReliabilityFeatureExtractor:
             raise ValueError(
                 "samples and batch_model_probs must have the same number of rows"
             )
+        quality_batch = self.input_quality_analyzer.analyze_batch(samples)
+        shift_batch = self.shift_detector.analyze_batch(samples)
         features_list = []
         for i in range(len(samples)):
-            features_list.append(
-                self.extract_features_single_sample(samples.iloc[i], batch_model_probs[i])
+            model_probs = batch_model_probs[i]
+            if self.primary_model_index >= len(model_probs):
+                raise ValueError(
+                    f"primary_model_index {self.primary_model_index} is outside "
+                    f"the {len(model_probs)} supplied model probability arrays"
+                )
+            features = {}
+            features.update(
+                calculate_uncertainty_features(model_probs[self.primary_model_index])
             )
+            features.update(calculate_disagreement_features(model_probs))
+            features.update(quality_batch[i])
+            features.update(shift_batch[i])
+            features_list.append(features)
         return pd.DataFrame(features_list)

@@ -84,7 +84,9 @@ def test_abstention_not_counted_as_correct():
                 baseline_risk=5.0,
                 selected_action=ActionType.ABSTAIN.value,
                 final_prediction=None,
-                final_correct=None
+                final_correct=None,
+                original_correct=True,
+                is_covered=False
             )
         else:
             # Covered sample
@@ -98,7 +100,9 @@ def test_abstention_not_counted_as_correct():
                 baseline_risk=5.0,
                 selected_action=ActionType.ACCEPT.value,
                 final_prediction=1,
-                final_correct=i == 8
+                final_correct=i == 8,
+                original_correct=i == 8,
+                is_covered=True
             )
         validator.sample_outcomes.append(outcome)
     

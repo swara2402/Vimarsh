@@ -179,17 +179,6 @@ class VerificationEngine:
             sample, sample_id, base_prediction, base_confidence, error_probability, harm
         )
 
-        # Reserve the selector's planned cost so subsequent samples are evaluated
-        # against the remaining budget. This is a planning-budget reservation;
-        # executor-reported operational costs are audited separately.
-        planned_cost = float(evaluation.selected_risk_estimate.cost_incurred)
-        if not self.budget_manager.spend(planned_cost):
-            raise RuntimeError(
-                f"Selected action {evaluation.selected_action.value} exceeded the "
-                f"remaining planning budget for sample {sample_id}: "
-                f"planned cost={planned_cost}, remaining={self.budget_manager.get_remaining_budget()}"
-            )
-
         self.evaluations.append(evaluation)
         return evaluation
     

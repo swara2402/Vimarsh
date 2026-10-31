@@ -84,33 +84,63 @@ def run_integrated_experiment(budget: float = 500.0, output_path: Path = None):
         enable_human_reviewer=True,
         max_human_reviews=50,
     )
-    engine = VerificationEngine(config)
     pipeline = ReliabilityVerificationPipeline(
         bundle["feature_extractor"], bundle["reliability_estimator"]
     )
-    integrated = pipeline.run_verification(
-        engine=engine,
-        samples=X_test,
-        predictions=primary_predictions,
-        model_probabilities=model_probabilities,
-        harms=harms,
-        primary_model_index=primary_index,
+    reliability_features, reliability_error_probabilities = pipeline.score(
+        X_test, model_probabilities
     )
+    primary_probabilities = model_probabilities[primary_index]
+    primary_confidences = primary_probabilities.max(axis=1)
 
-    # Ground truth is introduced only after action selection, for offline evaluation.
-    validator = OutcomeValidator(engine.action_executor)
-    primary_confidences = model_probabilities[primary_index].max(axis=1)
-    for index, evaluation in enumerate(integrated.evaluations):
-        validator.execute_and_evaluate_action(
-            sample=X_test.iloc[index],
-            base_prediction=primary_predictions[index],
-            base_confidence=float(primary_confidences[index]),
-            action_type=evaluation.selected_action,
-            true_label=y_test.iloc[index],
-            evaluation=evaluation,
+    # Baselines use the same test samples, harm estimates, budget, and executor
+    # configuration. Only the error-probability scoring signal changes.
+    class_count = primary_probabilities.shape[1]
+    entropy_baseline = reliability_features["predictive_entropy"].to_numpy() / np.log(class_count)
+    policy_scores = {
+        "reliability_driven": reliability_error_probabilities,
+        "confidence_only": 1.0 - primary_confidences,
+        "predictive_entropy": np.clip(entropy_baseline, 0.0, 1.0),
+        "ensemble_disagreement": reliability_features["disagreement_fraction"].to_numpy(),
+    }
+
+    policy_comparisons = {}
+    for policy_name, error_scores in policy_scores.items():
+        policy_config = VerificationEngineConfig(
+            total_verification_budget=budget,
+            decision_profile=DecisionProfile.BALANCED,
+            base_model_path=base_dir / Path(bundle["base_model_dir"]),
+            original_model_name=bundle["base_model_names"][primary_index],
+            enable_evidence_provider=False,
+            enable_human_reviewer=True,
+            max_human_reviews=50,
+        )
+        policy_engine = VerificationEngine(policy_config)
+        policy_evaluations = policy_engine.process_batch(
+            samples=X_test,
+            predictions=primary_predictions,
+            confidences=primary_confidences.tolist(),
+            error_probabilities=np.asarray(error_scores, dtype=float).tolist(),
+            harms=harms,
         )
 
-    policy_metrics = validator.calculate_policy_metrics("milestone4_integrated")
+        # Ground truth is introduced only after action selection, for offline
+        # simulation of outcomes. Each policy gets a fresh executor and budget.
+        np.random.seed(42)
+        validator = OutcomeValidator(policy_engine.action_executor)
+        for index, evaluation in enumerate(policy_evaluations):
+            validator.execute_and_evaluate_action(
+                sample=X_test.iloc[index],
+                base_prediction=primary_predictions[index],
+                base_confidence=float(primary_confidences[index]),
+                action_type=evaluation.selected_action,
+                true_label=y_test.iloc[index],
+                evaluation=evaluation,
+            )
+        policy_metrics = validator.calculate_policy_metrics(policy_name)
+        policy_comparisons[policy_name] = policy_metrics.__dict__
+
+    policy_metrics = policy_comparisons["reliability_driven"]
     alternate_checks = validator.validate_alternate_model_independence(
         X_test, primary_model, preprocessor
     )
@@ -126,11 +156,13 @@ def run_integrated_experiment(budget: float = 500.0, output_path: Path = None):
         "oof_split_strategy": "stratified_grouped_exact_feature_rows",
         "reliability_calibration_split_strategy": "stratified_grouped_exact_feature_rows",
         "error_probability_summary": {
-            "minimum": float(np.min(integrated.error_probabilities)),
-            "mean": float(np.mean(integrated.error_probabilities)),
-            "maximum": float(np.max(integrated.error_probabilities)),
+            "minimum": float(np.min(reliability_error_probabilities)),
+            "mean": float(np.mean(reliability_error_probabilities)),
+            "maximum": float(np.max(reliability_error_probabilities)),
         },
-        "policy_metrics": policy_metrics.__dict__,
+        "policy_metrics": policy_metrics,
+        "policy_comparisons": policy_comparisons,
+        "policy_comparison_protocol": "Same grouped test set, harm estimates, budget, action costs, and executor settings; only error-probability scoring signal differs.",
         "integrity_checks": {
             "alternate_model": alternate_checks,
             "evidence_provider": evidence_checks,

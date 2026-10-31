@@ -23,17 +23,24 @@ It then:
 
 Ground-truth labels are intentionally absent from the inference-time integration API. They remain reserved for offline evaluation after action selection.
 
+## Artifact production and integrated runner
+
+The reliability experiment now writes a joblib bundle containing the fitted feature extractor, reliability estimator, base models, and preprocessor. The base-model wrappers were moved to module scope so they can be serialized. The artifact also stores a relative model-directory path and feature metadata.
+
+The saved base models used for inference are the uncalibrated models corresponding to the uncalibrated out-of-fold probability features used to train the reliability estimator. The primary prediction model is Random Forest (index 1), while the feature extractor retains the original model ordering used during reliability training.
+
+After generating the bundle, run `python experiments/run_integrated_verification.py` from the research directory. The runner loads the same deterministic Wine Quality split, computes model probabilities, invokes this bridge, executes the selected verification actions, and evaluates outcomes only after selection.
+
 ## Current implementation boundary
 
-This milestone adds a reusable inference bridge. It does not, by itself, train or persist the reliability estimator, guarantee that a compatible fitted extractor/estimator pair exists, or replace every legacy experiment runner. The training workflow must supply artifacts fitted without test-label leakage. Simulated evidence and human review remain explicitly simulated.
+This is an integrated research experiment, not a production deployment. It still depends on the existing Wine Quality split and configured action-effectiveness assumptions. Human review remains simulated, and the evidence provider is disabled because no real provider is configured. Cross-split duplicate records remain a limitation.
 
 ## Validation
 
-The integration tests cover row alignment, probability validation, estimator output validation, feature-schema compatibility, and forwarding the estimated error probabilities to the verification engine.
+The tests cover row alignment, probability validation, estimator output validation, feature-schema compatibility, forwarding estimated error probabilities to the verification engine, primary-model confidence alignment, and joblib serialization of calibrated model wrappers.
 
 ## Next work
 
-- Build a reproducible artifact-training command that produces a compatible feature extractor and reliability estimator from out-of-fold training predictions.
-- Add an experiment runner that loads those artifacts and uses this bridge for policy evaluation.
+- Run the full artifact-training and integrated experiment against the actual dataset in a reproducible environment.
 - Compare integrated policies against confidence-only, entropy, and always-accept baselines on a duplicate-grouped split.
 - Report risk, coverage, action costs, calibration, and uncertainty across multiple seeds.

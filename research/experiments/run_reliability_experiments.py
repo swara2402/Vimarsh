@@ -510,7 +510,8 @@ def main():
             'target_threshold': int(config['quality_threshold']),
             'random_seed': int(config['random_seed']),
             'training_split_size': int(len(X_train)),
-            'artifact_version': 2,\n            'split_strategy': 'stratified_grouped_exact_feature_rows',
+            'artifact_version': 2,
+            'split_strategy': 'stratified_grouped_exact_feature_rows',
         },
         artifact_path,
     )

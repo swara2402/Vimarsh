@@ -5,6 +5,7 @@ on:
     paths:
       - "research/**"
       - ".github/workflows/research-tests.yml"
+      - "README.md"
   push:
     branches:
       - main
@@ -13,6 +14,7 @@ on:
     paths:
       - "research/**"
       - ".github/workflows/research-tests.yml"
+      - "README.md"
 
 jobs:
   research-tests:

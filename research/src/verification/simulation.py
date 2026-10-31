@@ -530,9 +530,23 @@ def run_outcome_validation_experiments(output_path: Optional[Union[str, Path]] =
         policy_metrics = validator.calculate_policy_metrics(profile_name)
         
         # Store all results for this profile
+        actual_execution_cost = float(policy_metrics.total_verification_cost)
+        planned_budget_remaining = float(engine.budget_manager.get_remaining_budget())
+        planned_budget_spent = float(config.total_verification_budget - planned_budget_remaining)
+        actual_budget_overrun = max(0.0, actual_execution_cost - config.total_verification_budget)
+
         validation_results[profile_name] = {
             "policy_metrics": policy_metrics.__dict__,
             "action_metrics": {k: v.__dict__ for k, v in action_metrics.items()},
+            "budget_audit": {
+                "budget_limit": float(config.total_verification_budget),
+                "planned_budget_spent": planned_budget_spent,
+                "planned_budget_remaining": planned_budget_remaining,
+                "actual_execution_cost": actual_execution_cost,
+                "actual_cost_exceeds_budget": actual_execution_cost > config.total_verification_budget,
+                "actual_cost_overrun": actual_budget_overrun,
+                "budget_interpretation": "The selector budget constrains planned action costs. Executor-reported operational costs are audited separately and can exceed the planning limit when configured planning costs differ from execution costs."
+            },
             "integrity_checks": {
                 "alternate_model_validations": model_validations,
                 "evidence_validations": evidence_validations,

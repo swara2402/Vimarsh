@@ -28,12 +28,12 @@ def test_selection_is_deterministic_and_does_not_accept_unprofitable_cases():
 
 
 def test_matched_capacity_ranking_selects_exact_common_budget():
-    scores = np.array([0.9, 0.8, 0.4, 0.01, 0.7])
+    scores = np.array([0.9, 0.8, 0.4, 0.2, 0.7])
     harms = np.array([1.0, 5.0, 1.0, 5.0, 1.0])
     chosen = select_top_budget(scores, harms, budget_count=2)
     assert chosen.sum() == 2
     # Ranking is score multiplied by predicted-error-direction scenario harm.
-    assert chosen[1] and chosen[4]
+    assert chosen[1] and chosen[3]
 
 
 def test_matched_capacity_can_fill_budget_even_when_net_benefit_is_negative():

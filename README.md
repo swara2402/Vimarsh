@@ -88,11 +88,18 @@ vimarsh/
 
 ## Current status
 
-<sub>Early research setup. The repository currently contains project documentation and planned implementation areas; the framework and experiments are not yet implemented.</sub>
+The repository contains implemented baseline classification, reliability-analysis, and verification-action research code. Milestone 3.2 adds outcome and execution-cost auditing. Milestone 4 adds a reliability-to-verification inference bridge, serializable model artifacts, and an integrated experiment runner.
+
+The integrated experiment is still research-stage: it relies on the Wine Quality benchmark, simulated human review, assumed action-effectiveness factors, and a random split with known cross-partition duplicates. It is not a production deployment or evidence of cross-domain generalization. The API and React dashboard remain planned.
 
 ## Getting started
 
-Implementation instructions will be added as the backend, experiments, and frontend are developed. See [Research Plan](docs/research-plan.md) for the proposed sequence of work.
+1. Install the dependencies listed in [research/requirements.txt](research/requirements.txt).
+2. Obtain the Wine Quality dataset from the [UCI Machine Learning Repository](https://archive.ics.uci.edu/dataset/186/wine+quality) and place the source files under `research/datasets/raw/` using the filenames expected by the data loader.
+3. From the `research/` directory, run `python experiments/run_reliability_experiments.py` to train the reliability estimator and write its inference bundle.
+4. Run `python experiments/run_integrated_verification.py` to use estimated error probabilities for verification action selection and offline outcome evaluation.
+
+See [Milestone 4 integration notes](research/docs/milestone4-1-integration.md), [Research Plan](docs/research-plan.md), and [Architecture](docs/architecture.md) for assumptions, limitations, and the proposed sequence of work.
 
 ## License
 

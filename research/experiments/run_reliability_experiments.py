@@ -489,14 +489,21 @@ def main():
     # The bundle is fitted using training/OOF data only; test labels are not stored.
     artifact_path = base_dir / 'models' / 'reliability' / 'wine_quality_reliability_bundle.joblib'
     artifact_path.parent.mkdir(parents=True, exist_ok=True)
+    inference_model_dir = base_dir / 'models' / 'reliability' / 'inference_models'
+    inference_model_dir.mkdir(parents=True, exist_ok=True)
+    base_model_names = ['logistic_regression', 'random_forest', 'gradient_boosting']
+    for model_name, fitted_model in zip(base_model_names, full_models):
+        joblib.dump(fitted_model, inference_model_dir / f'{model_name}.joblib')
+    joblib.dump(full_preprocessor, inference_model_dir / 'preprocessor.joblib')
     joblib.dump(
         {
             'feature_extractor': feature_extractor,
             'reliability_estimator': best_model,
             'base_models': full_models,
             'preprocessor': full_preprocessor,
+            'base_model_dir': str(inference_model_dir),
             'primary_model_index': 1,
-            'base_model_names': ['logistic_regression', 'random_forest', 'gradient_boosting'],
+            'base_model_names': base_model_names,
             'feature_names': list(feature_extractor.feature_names),
             'target_threshold': int(config['quality_threshold']),
             'random_seed': int(config['random_seed']),

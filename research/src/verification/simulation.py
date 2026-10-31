@@ -532,7 +532,10 @@ def run_outcome_validation_experiments(output_path: Optional[Union[str, Path]] =
         # Store all results for this profile
         actual_execution_cost = float(policy_metrics.total_verification_cost)
         planned_budget_remaining = float(engine.budget_manager.get_remaining_budget())
-        planned_budget_spent = float(config.total_verification_budget - planned_budget_remaining)
+        planned_budget_spent = float(sum(
+            evaluation.selected_risk_estimate.cost_incurred for evaluation in evaluations
+        ))
+        planned_budget_overrun = max(0.0, planned_budget_spent - config.total_verification_budget)
         actual_budget_overrun = max(0.0, actual_execution_cost - config.total_verification_budget)
 
         validation_results[profile_name] = {
@@ -542,6 +545,8 @@ def run_outcome_validation_experiments(output_path: Optional[Union[str, Path]] =
                 "budget_limit": float(config.total_verification_budget),
                 "planned_budget_spent": planned_budget_spent,
                 "planned_budget_remaining": planned_budget_remaining,
+                "planned_budget_exceeded": planned_budget_spent > config.total_verification_budget,
+                "planned_budget_overrun": planned_budget_overrun,
                 "actual_execution_cost": actual_execution_cost,
                 "actual_cost_exceeds_budget": actual_execution_cost > config.total_verification_budget,
                 "actual_cost_overrun": actual_budget_overrun,

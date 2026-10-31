@@ -330,15 +330,7 @@ class OutcomeValidator:
             assert covered_errors == baseline_errors, "Always-accept policy doesn't match baseline error rate"
             assert covered == total_samples, "Always-accept policy must cover all samples"
         
-        # Additional Milestone 3.2.1 consistency assertions
-        # Verify that net_corrections matches actual calculation
-        assert (total_corrected - total_introduced) == comparison.net_corrections, "Net improvement mismatch in PolicyComparison"
-        # Verify that all policies use same test set size (if we have previous results, but for now just log)
-        print(f"Consistency checks passed for {policy_name}:")
-        print(f"  Corrections: {total_corrected}, New errors: {total_introduced}, Net: {total_corrected - total_introduced}")
-        print(f"  Covered errors: {covered_errors}, Coverage: {covered/total_samples:.2%}")
-            
-        # Create comprehensive policy comparison
+        # Create comprehensive policy comparison before validating its fields.
         comparison = PolicyComparison(
             policy_name=policy_name,
             total_samples=total_samples,
@@ -357,6 +349,14 @@ class OutcomeValidator:
             risk_reduction_per_unit_cost=total_estimated_risk_reduction / total_cost if total_cost > 0 else 0.0,
             action_distribution=action_distribution
         )
+
+        # Additional Milestone 3.2.1 consistency assertions
+        assert (
+            comparison.net_corrections == total_corrected - total_introduced
+        ), "Net improvement mismatch in PolicyComparison"
+        print(f"Consistency checks passed for {policy_name}:")
+        print(f"  Corrections: {total_corrected}, New errors: {total_introduced}, Net: {comparison.net_corrections}")
+        print(f"  Covered errors: {covered_errors}, Coverage: {covered/total_samples:.2%}")
         
         # Export immutable evaluation table to JSON (Milestone 3.2.1 requirement)
         from datetime import datetime

@@ -495,14 +495,14 @@ def main():
     inference_model_dir = base_dir / 'models' / 'reliability' / 'inference_models'
     inference_model_dir.mkdir(parents=True, exist_ok=True)
     base_model_names = ['logistic_regression', 'random_forest', 'gradient_boosting']
-    for model_name, fitted_model in zip(base_model_names, full_models):
+    for model_name, fitted_model in zip(base_model_names, raw_full_models):
         joblib.dump(fitted_model, inference_model_dir / f'{model_name}.joblib')
     joblib.dump(full_preprocessor, inference_model_dir / 'preprocessor.joblib')
     joblib.dump(
         {
             'feature_extractor': feature_extractor,
             'reliability_estimator': best_model,
-            'base_models': full_models,
+            'base_models': raw_full_models,
             'preprocessor': full_preprocessor,
             'base_model_dir': str(inference_model_dir),
             'primary_model_index': 1,

@@ -69,3 +69,15 @@ jobs:
         run: python experiments/run_reliability_experiments.py
       - name: Run integrated reliability-driven verification
         run: python experiments/run_integrated_verification.py
+      - name: Upload experiment results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vimarsh-milestone4-experiment-results
+          path: |
+            research/results/integrated_verification/
+            research/results/reliability/metrics/
+            research/docs/reliability-engine-report.md
+            research/models/reliability/wine_quality_reliability_bundle.joblib
+          if-no-files-found: warn
+          retention-days: 14

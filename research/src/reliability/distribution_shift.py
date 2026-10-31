@@ -105,8 +105,12 @@ class DistributionShiftDetector:
             raise ValueError("Batch feature columns must match the fitted training schema")
         values = samples.fillna(0).to_numpy(dtype=float)
         values = np.nan_to_num(values, nan=0.0, posinf=0.0, neginf=0.0)
-        squared_distances = self.covariance.mahalanobis(values)
-        distances = np.sqrt(np.maximum(squared_distances, 0.0))
+        # Reuse the exact scalar distance routine so tied duplicate rows receive
+        # the same percentile as analyze_single_sample (avoids floating-point
+        # rank changes between scipy and sklearn distance implementations).
+        distances = np.asarray([
+            self.calculate_mahalanobis_distance(row) for row in values
+        ], dtype=float)
         sorted_training_distances = np.sort(self.training_mahalanobis_dists)
         percentiles = (
             np.searchsorted(sorted_training_distances, distances, side="left")

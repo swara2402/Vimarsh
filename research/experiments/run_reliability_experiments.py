@@ -93,7 +93,9 @@ def generate_out_of_fold_predictions(
     full_models = []
     
     # First generate out-of-fold predictions for reliability training
-    for train_idx, val_idx in grouped_stratified_kfold_indices(\n        X_train, y_train, n_splits=5, random_state=config['np_random_seed']\n    ):
+    for train_idx, val_idx in grouped_stratified_kfold_indices(
+        X_train, y_train, n_splits=5, random_state=config['np_random_seed']
+    ):
         X_tr, X_val = X_train.iloc[train_idx], X_train.iloc[val_idx]
         y_tr, y_val = y_train.iloc[train_idx], y_train.iloc[val_idx]
         

@@ -2,7 +2,7 @@
 import numpy as np
 import pandas as pd
 
-from src.preprocessing import grouped_stratified_data_splitting
+from src.preprocessing import (\n    grouped_stratified_data_splitting,\n    grouped_stratified_holdout_indices,\n    grouped_stratified_kfold_indices,\n)
 
 
 def make_duplicate_dataset():
@@ -53,3 +53,22 @@ def test_grouped_split_is_reproducible():
 
     for first_part, second_part in zip(first, second):
         assert first_part.index.tolist() == second_part.index.tolist()
+
+
+def test_grouped_holdout_and_cv_keep_duplicate_rows_together():
+    data = make_duplicate_dataset()
+    X = data[["feature_a", "feature_b"]]
+    y = data["good_quality"]
+
+    train_idx, holdout_idx = grouped_stratified_holdout_indices(
+        X, y, test_size=0.2, random_state=23
+    )
+    groups = pd.MultiIndex.from_frame(X).factorize(sort=False)[0]
+    assert set(groups[train_idx]).isdisjoint(set(groups[holdout_idx]))
+
+    folds = list(grouped_stratified_kfold_indices(
+        X, y, n_splits=5, random_state=23
+    ))
+    assert len(folds) == 5
+    for fold_train, fold_validation in folds:
+        assert set(groups[fold_train]).isdisjoint(set(groups[fold_validation]))

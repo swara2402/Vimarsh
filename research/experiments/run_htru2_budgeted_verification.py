@@ -70,6 +70,27 @@ def select_under_budget(scores, harm_weights, budget_count, seed):
     return mask
 
 
+def select_top_budget(scores, harm_weights, budget_count):
+    """Select exactly the available capacity by risk ranking, independent of net-benefit eligibility."""
+    scores = np.asarray(scores, dtype=float)
+    harms = np.asarray(harm_weights, dtype=float)
+    if scores.ndim != 1 or harms.ndim != 1 or len(scores) != len(harms):
+        raise ValueError("Scores and harm weights must be aligned one-dimensional arrays")
+    if not np.isfinite(scores).all() or not np.isfinite(harms).all():
+        raise ValueError("Scores and harm weights must be finite")
+    if np.any(scores < 0) or np.any(harms < 0) or budget_count < 0 or budget_count > len(scores):
+        raise ValueError("Scores, harm weights, and budget must be non-negative and within capacity")
+    # Review cost is constant per case, so ranking by gross expected benefit is
+    # equivalent to ranking by net benefit. This diagnostic deliberately fills
+    # the common capacity to isolate ranking quality from eligibility/utilization.
+    ranking_score = scores * harms * REVIEW_EFFECTIVENESS
+    order = np.argsort(-ranking_score, kind="stable")
+    chosen = order[:budget_count]
+    mask = np.zeros(len(scores), dtype=bool)
+    mask[chosen] = True
+    return mask
+
+
 def evaluate_selection(name, selected, predictions, labels, harm_weights):
     """Use labels only after selection to calculate offline scenario outcomes."""
     selected = np.asarray(selected, dtype=bool)
@@ -179,6 +200,22 @@ def run_seed(seed, raw_dir, output_dir):
         name: evaluate_selection(name, mask, test_pred, y_test.to_numpy(), harms)
         for name, mask in selections.items()
     }
+
+    # Matched-capacity diagnostic: all ranking signals review exactly the same
+    # 10% test capacity. Selection uses scores and predicted-class scenario
+    # weights only; test labels are read solely by evaluate_selection afterward.
+    matched_rankings = {
+        "matched_capacity_reliability": rel,
+        "matched_capacity_confidence": conf,
+        "matched_capacity_entropy": ent,
+        "matched_capacity_disagreement": dis,
+    }
+    for name, score in matched_rankings.items():
+        mask = select_top_budget(score, harms, budget_count)
+        results[name] = evaluate_selection(name, mask, test_pred, y_test.to_numpy(), harms)
+    results["matched_capacity_random"] = evaluate_selection(
+        "matched_capacity_random", random_mask, test_pred, y_test.to_numpy(), harms
+    )
     # Include no-review reference for context.
     results["no_review"] = evaluate_selection(
         "no_review", np.zeros(len(X_test), dtype=bool), test_pred, y_test.to_numpy(), harms

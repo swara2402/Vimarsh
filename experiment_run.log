@@ -1,0 +1,270 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 203, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/Users/sam/Desktop/Vimarsh/vimarsh/research/experiments/run_reliability_experiments.py", line 732, in <module>
+    main()
+    ~~~~^^
+  File "/Users/sam/Desktop/Vimarsh/vimarsh/research/experiments/run_reliability_experiments.py", line 422, in main
+    model.save(base_dir / 'models' / 'reliability' / f'reliability_{model_type}.joblib')
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sam/Desktop/Vimarsh/vimarsh/research/src/reliability/reliability_model.py", line 153, in save
+    joblib.dump({
+    ~~~~~~~~~~~^^
+        'model': self.model,
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+        'feature_names': self.feature_names
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    }, path)
+    ^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/site-packages/joblib/numpy_pickle.py", line 600, in dump
+    NumpyPickler(f, protocol=protocol).dump(value)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/pickle.py", line 498, in dump
+    self.save(obj)
+    ~~~~~~~~~^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/site-packages/joblib/numpy_pickle.py", line 395, in save
+    return Pickler.save(self, obj)
+           ~~~~~~~~~~~~^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/pickle.py", line 572, in save
+    f(self, obj)  # Call unbound method with explicit self
+    ~^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/pickle.py", line 1058, in save_dict
+    self._batch_setitems(obj.items(), obj)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/pickle.py", line 1084, in _batch_setitems
+    save(v)
+    ~~~~^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/site-packages/joblib/numpy_pickle.py", line 395, in save
+    return Pickler.save(self, obj)
+           ~~~~~~~~~~~~^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/pickle.py", line 615, in save
+    self.save_reduce(obj=obj, *rv)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/pickle.py", line 715, in save_reduce
+    save(cls)
+    ~~~~^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/site-packages/joblib/numpy_pickle.py", line 395, in save
+    return Pickler.save(self, obj)
+           ~~~~~~~~~~~~^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/pickle.py", line 572, in save
+    f(self, obj)  # Call unbound method with explicit self
+    ~^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/pickle.py", line 1236, in save_type
+    return self.save_global(obj)
+           ~~~~~~~~~~~~~~~~^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/pickle.py", line 1157, in save_global
+    module_name = whichmodule(obj, name)
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/pickle.py", line 325, in whichmodule
+    raise PicklingError(f"Can't pickle local object {obj!r}")
+_pickle.PicklingError: Can't pickle local object <class 'src.reliability.reliability_model.ReliabilityEstimator.train.<locals>.CalibratedModelWrapper'>
+when serializing src.reliability.reliability_model.ReliabilityEstimator.train.<locals>.CalibratedModelWrapper class
+when serializing src.reliability.reliability_model.ReliabilityEstimator.train.<locals>.CalibratedModelWrapper object
+when serializing dict item 'model'
+================================================================================
+VIMARSH Milestone 2: Reliability Engine Implementation
+================================================================================
+
+[1/10] Loading and preparing dataset...
+Dataset loaded successfully:
+  Red wines: 1599 samples, 12 features
+  White wines: 4898 samples, 12 features
+  Combined: 6497 total samples
+  Missing values: 0 total
+  Duplicate records: 1177
+Binary target created with threshold=6:
+  Good quality (1): 4113 samples (63.3%)
+  Lower quality (0): 2384 samples (36.7%)
+Data splitting complete (stratified, random_state=42):
+  Train: 4547 samples (70.0%)
+  Validation: 975 samples (15.0%)
+  Test: 975 samples (15.0%)
+  Train class distribution: {1: 0.633164723993842, 0: 0.3668352760061579}
+  Val class distribution: {1: 0.6328205128205128, 0: 0.3671794871794872}
+  Test class distribution: {1: 0.6328205128205128, 0: 0.3671794871794872}
+Data splits maintained from Milestone 1:
+  Train: 4547 samples (70.0%)
+  Val: 975 samples (15.0%)
+  Test: 975 samples (15.0%)
+
+[2/10] Generating out-of-fold predictions for leakage-safe reliability training...
+Logistic Regression training complete
+Random Forest training complete
+Gradient Boosting training complete
+DEBUG Fold sample 0: true_label=1
+  LR: pred=1, probs=[0.15612145 0.84387855], correct=True
+  RF: pred=1, probs=[0.07157895 0.92842105], correct=True
+  GB: pred=1, probs=[0.08264268 0.91735732], correct=True
+DEBUG Fold sample 1: true_label=0
+  LR: pred=0, probs=[0.72268941 0.27731059], correct=True
+  RF: pred=0, probs=[0.6942058 0.3057942], correct=True
+  GB: pred=0, probs=[0.80882153 0.19117847], correct=True
+DEBUG Fold sample 2: true_label=0
+  LR: pred=0, probs=[0.58897049 0.41102951], correct=True
+  RF: pred=0, probs=[0.64642263 0.35357737], correct=True
+  GB: pred=0, probs=[0.69740797 0.30259203], correct=True
+DEBUG Fold sample 3: true_label=0
+  LR: pred=0, probs=[0.75199914 0.24800086], correct=True
+  RF: pred=0, probs=[0.70630242 0.29369758], correct=True
+  GB: pred=0, probs=[0.79152856 0.20847144], correct=True
+DEBUG Fold sample 4: true_label=0
+  LR: pred=0, probs=[0.58016462 0.41983538], correct=True
+  RF: pred=0, probs=[0.52522756 0.47477244], correct=True
+  GB: pred=0, probs=[0.69139233 0.30860767], correct=True
+Logistic Regression training complete
+Random Forest training complete
+Gradient Boosting training complete
+DEBUG Fold sample 0: true_label=0
+  LR: pred=1, probs=[0.45484889 0.54515111], correct=False
+  RF: pred=0, probs=[0.50244754 0.49755246], correct=True
+  GB: pred=0, probs=[0.60675329 0.39324671], correct=True
+DEBUG Fold sample 1: true_label=1
+  LR: pred=1, probs=[0.35098399 0.64901601], correct=True
+  RF: pred=1, probs=[0.36039494 0.63960506], correct=True
+  GB: pred=1, probs=[0.30786621 0.69213379], correct=True
+DEBUG Fold sample 2: true_label=1
+  LR: pred=1, probs=[0.15215321 0.84784679], correct=True
+  RF: pred=1, probs=[0.06244594 0.93755406], correct=True
+  GB: pred=1, probs=[0.10855653 0.89144347], correct=True
+DEBUG Fold sample 3: true_label=1
+  LR: pred=1, probs=[0.16886304 0.83113696], correct=True
+  RF: pred=1, probs=[0.11321515 0.88678485], correct=True
+  GB: pred=1, probs=[0.11355416 0.88644584], correct=True
+DEBUG Fold sample 4: true_label=1
+  LR: pred=1, probs=[0.0434679 0.9565321], correct=True
+  RF: pred=1, probs=[0.17193403 0.82806597], correct=True
+  GB: pred=1, probs=[0.08748595 0.91251405], correct=True
+Logistic Regression training complete
+Random Forest training complete
+Gradient Boosting training complete
+DEBUG Fold sample 0: true_label=1
+  LR: pred=1, probs=[0.49781579 0.50218421], correct=True
+  RF: pred=1, probs=[0.42253206 0.57746794], correct=True
+  GB: pred=1, probs=[0.48933515 0.51066485], correct=True
+DEBUG Fold sample 1: true_label=1
+  LR: pred=1, probs=[0.08741508 0.91258492], correct=True
+  RF: pred=1, probs=[0.04375987 0.95624013], correct=True
+  GB: pred=1, probs=[0.04834491 0.95165509], correct=True
+DEBUG Fold sample 2: true_label=1
+  LR: pred=1, probs=[0.13770601 0.86229399], correct=True
+  RF: pred=1, probs=[0.16761183 0.83238817], correct=True
+  GB: pred=1, probs=[0.12157343 0.87842657], correct=True
+DEBUG Fold sample 3: true_label=0
+  LR: pred=1, probs=[0.23948676 0.76051324], correct=False
+  RF: pred=1, probs=[0.20741773 0.79258227], correct=False
+  GB: pred=1, probs=[0.08957477 0.91042523], correct=False
+DEBUG Fold sample 4: true_label=0
+  LR: pred=0, probs=[0.77302289 0.22697711], correct=True
+  RF: pred=0, probs=[0.76557216 0.23442784], correct=True
+  GB: pred=0, probs=[0.89392187 0.10607813], correct=True
+Logistic Regression training complete
+Random Forest training complete
+Gradient Boosting training complete
+DEBUG Fold sample 0: true_label=1
+  LR: pred=1, probs=[0.11529118 0.88470882], correct=True
+  RF: pred=1, probs=[0.13273284 0.86726716], correct=True
+  GB: pred=1, probs=[0.10226906 0.89773094], correct=True
+DEBUG Fold sample 1: true_label=1
+  LR: pred=1, probs=[0.02370448 0.97629552], correct=True
+  RF: pred=1, probs=[0.07085122 0.92914878], correct=True
+  GB: pred=1, probs=[0.02703341 0.97296659], correct=True
+DEBUG Fold sample 2: true_label=1
+  LR: pred=1, probs=[0.06930404 0.93069596], correct=True
+  RF: pred=1, probs=[0.05903737 0.94096263], correct=True
+  GB: pred=1, probs=[0.02427406 0.97572594], correct=True
+DEBUG Fold sample 3: true_label=1
+  LR: pred=0, probs=[0.65631936 0.34368064], correct=False
+  RF: pred=0, probs=[0.71686692 0.28313308], correct=False
+  GB: pred=0, probs=[0.61530552 0.38469448], correct=False
+DEBUG Fold sample 4: true_label=1
+  LR: pred=1, probs=[0.37231711 0.62768289], correct=True
+  RF: pred=1, probs=[0.26684029 0.73315971], correct=True
+  GB: pred=1, probs=[0.19897793 0.80102207], correct=True
+Logistic Regression training complete
+Random Forest training complete
+Gradient Boosting training complete
+DEBUG Fold sample 0: true_label=0
+  LR: pred=0, probs=[0.68180433 0.31819567], correct=True
+  RF: pred=0, probs=[0.67576607 0.32423393], correct=True
+  GB: pred=0, probs=[0.60735667 0.39264333], correct=True
+DEBUG Fold sample 1: true_label=0
+  LR: pred=1, probs=[0.17816259 0.82183741], correct=False
+  RF: pred=1, probs=[0.26043692 0.73956308], correct=False
+  GB: pred=1, probs=[0.20766521 0.79233479], correct=False
+DEBUG Fold sample 2: true_label=1
+  LR: pred=1, probs=[0.13871001 0.86128999], correct=True
+  RF: pred=1, probs=[0.05653111 0.94346889], correct=True
+  GB: pred=1, probs=[0.04658943 0.95341057], correct=True
+DEBUG Fold sample 3: true_label=0
+  LR: pred=0, probs=[0.59934966 0.40065034], correct=True
+  RF: pred=0, probs=[0.62506194 0.37493806], correct=True
+  GB: pred=0, probs=[0.79101745 0.20898255], correct=True
+DEBUG Fold sample 4: true_label=1
+  LR: pred=1, probs=[0.43768418 0.56231582], correct=True
+  RF: pred=1, probs=[0.45759395 0.54240605], correct=True
+  GB: pred=1, probs=[0.41048827 0.58951173], correct=True
+
+Training final base models on complete training data...
+Logistic Regression training complete
+Random Forest training complete
+Gradient Boosting training complete
+Model calibrated successfully using isotonic calibration
+Model calibrated successfully using isotonic calibration
+Model calibrated successfully using isotonic calibration
+
+[3/10] Initializing reliability feature extractor...
+Initialized feature extractor with 21 reliability features
+DEBUG: Number of OOF samples: 4547, number of OOF model probs: 4547, number of OOF y labels: 4547
+DEBUG: Processed 1 OOF samples, genuine errors so far: 0
+DEBUG: Found genuine error! main_pred=0, true_label=1, model_probs=[0.61157283 0.38842717]
+DEBUG: Found genuine error! main_pred=1, true_label=0, model_probs=[0.24621273 0.75378727]
+DEBUG: Found genuine error! main_pred=1, true_label=0, model_probs=[0.43788698 0.56211302]
+DEBUG: Found genuine error! main_pred=0, true_label=1, model_probs=[0.66391335 0.33608665]
+DEBUG: Found genuine error! main_pred=1, true_label=0, model_probs=[0.20863915 0.79136085]
+DEBUG: Found genuine error! main_pred=1, true_label=0, model_probs=[0.4509956 0.5490044]
+DEBUG: Found genuine error! main_pred=1, true_label=0, model_probs=[0.3627189 0.6372811]
+DEBUG: Found genuine error! main_pred=1, true_label=0, model_probs=[0.45781035 0.54218965]
+DEBUG: Found genuine error! main_pred=1, true_label=0, model_probs=[0.03634853 0.96365147]
+DEBUG: Processed 501 OOF samples, genuine errors so far: 130
+DEBUG: Processed 1001 OOF samples, genuine errors so far: 244
+DEBUG: Processed 1501 OOF samples, genuine errors so far: 331
+DEBUG: Processed 2001 OOF samples, genuine errors so far: 435
+DEBUG: Processed 2501 OOF samples, genuine errors so far: 540
+DEBUG: Processed 3001 OOF samples, genuine errors so far: 641
+DEBUG: Processed 3501 OOF samples, genuine errors so far: 763
+DEBUG: Processed 4001 OOF samples, genuine errors so far: 886
+DEBUG: Processed 4501 OOF samples, genuine errors so far: 1008
+OOF sample-level genuine error rate: 22.34% (all from real model predictions)
+DEBUG: Total errors found in OOF data: 1016 out of 4547
+DEBUG: Final oof_error_labels length: 4547
+Debug - OOF shapes:
+  oof_X shape: (4547, 21)
+  oof_error_labels length: 4547
+
+=== NON-FINITE VALUE DIAGNOSTICS FOR OOF FEATURES ===
+✅ No NaN values found in OOF FEATURES
+✅ No infinite values found in OOF FEATURES
+✅ All values in OOF FEATURES are finite!
+
+[4/10] Extracting reliability features for validation and test sets...
+
+=== NON-FINITE VALUE DIAGNOSTICS FOR VALIDATION_FEATURES ===
+✅ No NaN values found in VALIDATION_FEATURES
+✅ No infinite values found in VALIDATION_FEATURES
+✅ All values in VALIDATION_FEATURES are finite!
+Validation set genuine error rate: 20.51% (all from real model predictions)
+
+=== NON-FINITE VALUE DIAGNOSTICS FOR TEST_FEATURES ===
+✅ No NaN values found in TEST_FEATURES
+✅ No infinite values found in TEST_FEATURES
+✅ All values in TEST_FEATURES are finite!
+Test set genuine error rate: 22.56% (all from real model predictions)
+
+[5/10] Training and evaluating reliability models...
+
+Training logistic_regression reliability estimator...
+Results for logistic_regression:
+  ROC-AUC: 0.7580
+  PR-AUC: 0.4493
+  Brier Score: 0.1545
+  ECE: 0.0544

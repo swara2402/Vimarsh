@@ -1,0 +1,54 @@
+
+=== STANDALONE: Milestone 3.2 Outcome Validation ===
+
+Dataset loaded successfully:
+  Red wines: 1599 samples, 12 features
+  White wines: 4898 samples, 12 features
+  Combined: 6497 total samples
+  Missing values: 0 total
+  Duplicate records: 1177
+Binary target created with threshold=6:
+  Good quality (1): 4113 samples (63.3%)
+  Lower quality (0): 2384 samples (36.7%)
+
+=== CROSS-SPLIT DUPLICATE AUDIT ===
+Total unique feature rows in entire dataset: 5320
+Train-validation cross-split duplicates: 257 (26.36% of val set)
+Train-test cross-split duplicates: 221 (22.67% of test set)
+Validation-test cross-split duplicates: 60 (6.15% of test set)
+Duplicates present in ALL three splits: 14
+
+Data splitting complete (stratified, random_state=42):
+  Train: 4547 samples (70.0%)
+  Validation: 975 samples (15.0%)
+  Test: 975 samples (15.0%)
+  Train class distribution: {1: 0.633164723993842, 0: 0.3668352760061579}
+  Val class distribution: {1: 0.6328205128205128, 0: 0.3671794871794872}
+  Test class distribution: {1: 0.6328205128205128, 0: 0.3671794871794872}
+
+=== Running OUTCOME VALIDATION for CONSERVATIVE profile ===
+Traceback (most recent call last):
+  File "/Users/sam/Desktop/Vimarsh/vimarsh/research/run_milestone32_standalone.py", line 12, in <module>
+    outcome_validation_results = run_outcome_validation_experiments(output_path=output_path)
+  File "/Users/sam/Desktop/Vimarsh/vimarsh/research/src/verification/simulation.py", line 530, in run_outcome_validation_experiments
+    policy_metrics = validator.calculate_policy_metrics(profile_name)
+  File "/Users/sam/Desktop/Vimarsh/vimarsh/research/src/verification/outcome_validator.py", line 372, in calculate_policy_metrics
+    json.dump(serializable_outcomes, f, indent=2)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/__init__.py", line 181, in dump
+    for chunk in iterable:
+                 ^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/encoder.py", line 442, in _iterencode
+    yield from _iterencode_list(o, _current_indent_level)
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/encoder.py", line 326, in _iterencode_list
+    yield from chunks
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/encoder.py", line 413, in _iterencode_dict
+    yield from chunks
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/encoder.py", line 451, in _iterencode
+    newobj = _default(o)
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/encoder.py", line 182, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+                    f'is not JSON serializable')
+TypeError: Object of type int64 is not JSON serializable
+when serializing dict item 'y_true'
+when serializing list item 0

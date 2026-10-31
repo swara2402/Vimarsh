@@ -1,0 +1,4 @@
+  File "/Users/sam/Desktop/Vimarsh/vimarsh/research/run_milestone32_standalone.py", line 24
+    print(f"  Total verification cost: ${pm['total_verification_cost']:.2f}")
+    ^^^^^
+IndentationError: expected an indented block after 'if' statement on line 23

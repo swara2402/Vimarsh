@@ -1,0 +1,83 @@
+
+=== STANDALONE: Milestone 3.2 Outcome Validation ===
+
+Dataset loaded successfully:
+  Red wines: 1599 samples, 12 features
+  White wines: 4898 samples, 12 features
+  Combined: 6497 total samples
+  Missing values: 0 total
+  Duplicate records: 1177
+Binary target created with threshold=6:
+  Good quality (1): 4113 samples (63.3%)
+  Lower quality (0): 2384 samples (36.7%)
+
+=== CROSS-SPLIT DUPLICATE AUDIT ===
+Total unique feature rows in entire dataset: 5320
+Train-validation cross-split duplicates: 257 (26.36% of val set)
+Train-test cross-split duplicates: 221 (22.67% of test set)
+Validation-test cross-split duplicates: 60 (6.15% of test set)
+Duplicates present in ALL three splits: 14
+
+Data splitting complete (stratified, random_state=42):
+  Train: 4547 samples (70.0%)
+  Validation: 975 samples (15.0%)
+  Test: 975 samples (15.0%)
+  Train class distribution: {1: 0.633164723993842, 0: 0.3668352760061579}
+  Val class distribution: {1: 0.6328205128205128, 0: 0.3671794871794872}
+  Test class distribution: {1: 0.6328205128205128, 0: 0.3671794871794872}
+
+=== Running OUTCOME VALIDATION for CONSERVATIVE profile ===
+  conservative coverage: 6.87%
+  Observed error rate (covered samples): 0.00%
+  Total predictions corrected: 0
+  New errors introduced: 2
+  Net improvement: -2
+
+=== Running OUTCOME VALIDATION for BALANCED profile ===
+  balanced coverage: 29.44%
+  Observed error rate (covered samples): 0.00%
+  Total predictions corrected: 0
+  New errors introduced: 0
+  Net improvement: 0
+
+=== Running OUTCOME VALIDATION for COVERAGE_ORIENTED profile ===
+  coverage_oriented coverage: 100.00%
+  Observed error rate (covered samples): 0.00%
+  Total predictions corrected: 12
+  New errors introduced: 12
+  Net improvement: 0
+
+=== Running OUTCOME VALIDATION for ALWAYS_ACCEPT baseline ===
+  Always-accept baseline error rate: 22.46%
+
+All Milestone 3.2 outcome validation results saved to: results/verification/outcome_validation_comprehensive_results.json
+
+=== SUCCESS: All Milestone 3.2 validation complete ===
+
+
+CONSERVATIVE:
+  Coverage: 6.87%
+  Observed error rate (covered): 0.00%
+  Net prediction changes: -2
+  Total verification cost: $481.50
+  Observed error rate (covered): 0.00%
+
+BALANCED:
+  Coverage: 29.44%
+  Observed error rate (covered): 0.00%
+  Net prediction changes: +0
+  Total verification cost: $516.00
+  Observed error rate (covered): 0.00%
+
+COVERAGE_ORIENTED:
+  Coverage: 100.00%
+  Observed error rate (covered): 0.00%
+  Net prediction changes: +0
+  Total verification cost: $484.00
+  Observed error rate (covered): 0.00%
+
+ALWAYS_ACCEPT:
+  Coverage: 100.00%
+  Observed error rate (covered): 22.46%
+  Net prediction changes: +0
+  Observed error rate (covered): 22.46%

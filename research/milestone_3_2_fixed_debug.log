@@ -1,0 +1,110 @@
+
+=== STANDALONE: Milestone 3.2 Outcome Validation ===
+
+Dataset loaded successfully:
+  Red wines: 1599 samples, 12 features
+  White wines: 4898 samples, 12 features
+  Combined: 6497 total samples
+  Missing values: 0 total
+  Duplicate records: 1177
+Binary target created with threshold=6:
+  Good quality (1): 4113 samples (63.3%)
+  Lower quality (0): 2384 samples (36.7%)
+
+=== CROSS-SPLIT DUPLICATE AUDIT ===
+Total unique feature rows in entire dataset: 5320
+Train-validation cross-split duplicates: 257 (26.36% of val set)
+Train-test cross-split duplicates: 221 (22.67% of test set)
+Validation-test cross-split duplicates: 60 (6.15% of test set)
+Duplicates present in ALL three splits: 14
+
+Data splitting complete (stratified, random_state=42):
+  Train: 4547 samples (70.0%)
+  Validation: 975 samples (15.0%)
+  Test: 975 samples (15.0%)
+  Train class distribution: {1: 0.633164723993842, 0: 0.3668352760061579}
+  Val class distribution: {1: 0.6328205128205128, 0: 0.3671794871794872}
+  Test class distribution: {1: 0.6328205128205128, 0: 0.3671794871794872}
+
+=== Running OUTCOME VALIDATION for CONSERVATIVE profile ===
+DEBUG: Sample 154: Prediction changed from 1 to 0 via HUMAN_REVIEW
+DEBUG: Sample 717: Prediction changed from 1 to 0 via HUMAN_REVIEW
+  conservative coverage: 6.87%
+  Observed error rate (covered samples): 0.00%
+  Total predictions corrected: 0
+  New errors introduced: 2
+  Net improvement: -2
+
+=== Running OUTCOME VALIDATION for BALANCED profile ===
+  balanced coverage: 29.44%
+  Observed error rate (covered samples): 0.00%
+  Total predictions corrected: 0
+  New errors introduced: 0
+  Net improvement: 0
+
+=== Running OUTCOME VALIDATION for COVERAGE_ORIENTED profile ===
+DEBUG: Sample 12: Prediction changed from 0 to 1 via ALTERNATE_MODEL
+DEBUG: Sample 69: Prediction changed from 0 to 1 via ALTERNATE_MODEL
+DEBUG: Sample 197: Prediction changed from 1 to 0 via ALTERNATE_MODEL
+DEBUG: Sample 241: Prediction changed from 0 to 1 via ALTERNATE_MODEL
+DEBUG: Sample 367: Prediction changed from 0 to 1 via ALTERNATE_MODEL
+DEBUG: Sample 399: Prediction changed from 0 to 1 via ALTERNATE_MODEL
+DEBUG: Sample 401: Prediction changed from 0 to 1 via ALTERNATE_MODEL
+DEBUG: Sample 405: Prediction changed from 1 to 0 via ALTERNATE_MODEL
+DEBUG: Sample 453: Prediction changed from 0 to 1 via ALTERNATE_MODEL
+DEBUG: Sample 473: Prediction changed from 1 to 0 via ALTERNATE_MODEL
+DEBUG: Sample 475: Prediction changed from 0 to 1 via ALTERNATE_MODEL
+DEBUG: Sample 489: Prediction changed from 0 to 1 via ALTERNATE_MODEL
+DEBUG: Sample 522: Prediction changed from 0 to 1 via ALTERNATE_MODEL
+DEBUG: Sample 594: Prediction changed from 0 to 1 via ALTERNATE_MODEL
+DEBUG: Sample 631: Prediction changed from 1 to 0 via ALTERNATE_MODEL
+DEBUG: Sample 661: Prediction changed from 0 to 1 via ALTERNATE_MODEL
+DEBUG: Sample 799: Prediction changed from 0 to 1 via ALTERNATE_MODEL
+DEBUG: Sample 810: Prediction changed from 0 to 1 via ALTERNATE_MODEL
+DEBUG: Sample 825: Prediction changed from 1 to 0 via ALTERNATE_MODEL
+DEBUG: Sample 843: Prediction changed from 0 to 1 via ALTERNATE_MODEL
+DEBUG: Sample 847: Prediction changed from 1 to 0 via ALTERNATE_MODEL
+DEBUG: Sample 891: Prediction changed from 0 to 1 via ALTERNATE_MODEL
+DEBUG: Sample 892: Prediction changed from 1 to 0 via ALTERNATE_MODEL
+DEBUG: Sample 943: Prediction changed from 1 to 0 via ALTERNATE_MODEL
+  coverage_oriented coverage: 100.00%
+  Observed error rate (covered samples): 0.00%
+  Total predictions corrected: 12
+  New errors introduced: 12
+  Net improvement: 0
+
+=== Running OUTCOME VALIDATION for ALWAYS_ACCEPT baseline ===
+  Always-accept baseline error rate: 22.46%
+
+All Milestone 3.2 outcome validation results saved to: results/verification/outcome_validation_comprehensive_results.json
+
+=== SUCCESS: All Milestone 3.2 validation complete ===
+
+
+CONSERVATIVE:
+  Coverage: 6.87%
+  Observed error rate (covered): 0.00%
+  Net prediction changes: -2
+  Total verification cost: $481.50
+
+BALANCED:
+  Coverage: 29.44%
+  Observed error rate (covered): 0.00%
+  Net prediction changes: +0
+  Total verification cost: $516.00
+
+COVERAGE_ORIENTED:
+  Coverage: 100.00%
+  Observed error rate (covered): 0.00%
+  Net prediction changes: +0
+  Total verification cost: $484.00
+
+ALWAYS_ACCEPT:
+  Coverage: 100.00%
+  Observed error rate (covered): 22.46%
+  Net prediction changes: +0
+Traceback (most recent call last):
+  File "/Users/sam/Desktop/Vimarsh/vimarsh/research/run_milestone32_standalone.py", line 23, in <module>
+    print(f"  Total verification cost: ${pm['total_verification_cost']:.2f}")
+                                         ~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyError: 'total_verification_cost'

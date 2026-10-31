@@ -149,3 +149,35 @@ jobs:
             research/results/magic_gamma/
           if-no-files-found: warn
           retention-days: 30
+
+  htru2-budgeted-verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    defaults:
+      run:
+        working-directory: research
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install experiment dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pandas numpy scipy scikit-learn joblib pyyaml matplotlib seaborn requests pytest
+      - name: Compile HTRU2 experiment
+        run: python -m compileall -q src experiments
+      - name: Run HTRU2 parser and budget-policy tests
+        run: python -m pytest -q tests/test_htru2_budgeted_verification.py
+      - name: Run grouped multi-seed HTRU2 constrained verification
+        run: python experiments/run_htru2_budgeted_verification.py --seeds 17 42 73
+      - name: Upload HTRU2 results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vimarsh-htru2-budgeted-verification
+          path: research/results/htru2_budgeted/
+          if-no-files-found: warn
+          retention-days: 30

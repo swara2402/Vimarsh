@@ -66,6 +66,20 @@ def test_run_verification_passes_estimated_error_probabilities(inputs):
     assert result.evaluations == ["evaluation"]
 
 
+def test_run_verification_uses_selected_primary_model_for_confidence(inputs):
+    samples, probabilities = inputs
+    engine = FakeVerificationEngine()
+    make_pipeline().run_verification(
+        engine=engine,
+        samples=samples,
+        predictions=[0, 1],
+        model_probabilities=probabilities,
+        harms=[2.0, 3.0],
+        primary_model_index=1,
+    )
+    assert engine.kwargs["confidences"] == pytest.approx([0.7, 0.6])
+
+
 def test_rejects_model_probability_row_mismatch(inputs):
     samples, probabilities = inputs
     probabilities[1] = probabilities[1][:1]

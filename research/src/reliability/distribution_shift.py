@@ -100,5 +100,24 @@ class DistributionShiftDetector:
         return shift_stats
     
     def analyze_batch(self, samples: pd.DataFrame) -> List[Dict[str, float]]:
-        """Analyze distribution shift for a batch of samples."""
-        return [self.analyze_single_sample(samples.iloc[i]) for i in range(len(samples))]
+        """Analyze a batch using vectorized Mahalanobis distances and percentiles."""
+        if list(samples.columns) != self.feature_names:
+            raise ValueError("Batch feature columns must match the fitted training schema")
+        values = samples.fillna(0).to_numpy(dtype=float)
+        values = np.nan_to_num(values, nan=0.0, posinf=0.0, neginf=0.0)
+        squared_distances = self.covariance.mahalanobis(values)
+        distances = np.sqrt(np.maximum(squared_distances, 0.0))
+        sorted_training_distances = np.sort(self.training_mahalanobis_dists)
+        percentiles = (
+            np.searchsorted(sorted_training_distances, distances, side="left")
+            / len(sorted_training_distances)
+        )
+        extreme = (percentiles > 0.95).astype(int)
+        return [
+            {
+                "mahalanobis_distance": float(distances[i]),
+                "mahalanobis_percentile": float(percentiles[i]),
+                "is_extreme_distance": int(extreme[i]),
+            }
+            for i in range(len(samples))
+        ]

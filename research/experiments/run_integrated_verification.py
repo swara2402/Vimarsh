@@ -78,7 +78,7 @@ def run_integrated_experiment(budget: float = 500.0, output_path: Path = None):
     config = VerificationEngineConfig(
         total_verification_budget=budget,
         decision_profile=DecisionProfile.BALANCED,
-        base_model_path=Path(bundle["base_model_dir"]),
+        base_model_path=base_dir / Path(bundle["base_model_dir"]),
         original_model_name=bundle["base_model_names"][primary_index],
         enable_evidence_provider=False,
         enable_human_reviewer=True,

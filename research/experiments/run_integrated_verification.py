@@ -16,7 +16,7 @@ RESEARCH_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RESEARCH_DIR))
 
 from src.data_loader import load_dataset, create_binary_target
-from src.preprocessing import stratified_data_splitting
+from src.preprocessing import grouped_stratified_data_splitting
 from src.verification.action_selector import VerificationEngine, VerificationEngineConfig
 from src.verification.cost_model import DecisionProfile
 from src.verification.outcome_validator import OutcomeValidator
@@ -52,7 +52,7 @@ def run_integrated_experiment(budget: float = 500.0, output_path: Path = None):
 
     data, dataset_stats = load_dataset(str(base_dir / "datasets" / "raw"))
     data = create_binary_target(data, threshold=bundle["target_threshold"])
-    _, _, X_test, _, _, y_test = stratified_data_splitting(
+    _, _, X_test, _, _, y_test = grouped_stratified_data_splitting(
         data,
         target_column="good_quality",
         test_size=0.15,
@@ -121,6 +121,8 @@ def run_integrated_experiment(budget: float = 500.0, output_path: Path = None):
         "milestone": "4.2 - Integrated Reliability-Driven Verification",
         "test_set_size": int(len(X_test)),
         "reliability_probability_source": "fitted reliability estimator from out-of-fold training features",
+        "split_strategy": bundle.get("split_strategy", "legacy_random_stratified"),
+        "duplicate_group_isolation": bundle.get("split_strategy") == "stratified_grouped_exact_feature_rows",
         "error_probability_summary": {
             "minimum": float(np.min(integrated.error_probabilities)),
             "mean": float(np.mean(integrated.error_probabilities)),

@@ -510,7 +510,8 @@ def main(seed_override=None):
 
     # Persist a complete inference bundle for the Milestone 4 verification bridge.
     # The bundle is fitted using training/OOF data only; test labels are not stored.
-    artifact_suffix = f'_seed_{int(config[\'random_seed\'])}' if seed_override is not None else ''
+    seed_value = int(config['random_seed'])
+    artifact_suffix = f'_seed_{seed_value}' if seed_override is not None else ''
     artifact_path = base_dir / 'models' / 'reliability' / f'wine_quality_reliability_bundle{artifact_suffix}.joblib'
     artifact_path.parent.mkdir(parents=True, exist_ok=True)
     inference_model_dir = base_dir / 'models' / 'reliability' / 'inference_models'

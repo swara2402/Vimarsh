@@ -1,6 +1,8 @@
 import importlib.util
 from pathlib import Path
 
+import pytest
+
 
 MODULE_PATH = Path(__file__).parents[1] / "experiments" / "run_multiseed_policy_comparison.py"
 SPEC = importlib.util.spec_from_file_location("multiseed_runner", MODULE_PATH)
@@ -28,8 +30,8 @@ def test_summary_reports_mean_population_std_and_per_seed_values():
         make_result(42, 0.4, 0.2, -1),
     ])
     reliability = summary["reliability_driven"]
-    assert reliability["coverage"]["mean"] == 0.3
-    assert reliability["coverage"]["population_std"] == 0.1
+    assert reliability["coverage"]["mean"] == pytest.approx(0.3)
+    assert reliability["coverage"]["population_std"] == pytest.approx(0.1)
     assert reliability["coverage"]["values_by_seed"] == {"17": 0.2, "42": 0.4}
     assert reliability["net_corrections"]["mean"] == 0.0
 

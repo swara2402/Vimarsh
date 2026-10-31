@@ -55,3 +55,43 @@ def test_validation_threshold_rejects_nonfinite_scores():
         validation_threshold_metrics(
             np.array([0.1, np.nan]), np.array([0.2]), np.array([0]), np.array([0])
         )
+
+
+
+def test_validation_feature_ablation_reports_only_validation_metrics():
+    from experiments.run_magic_gamma_policy_comparison import reliability_ablation_metrics
+
+    rng = np.random.default_rng(91)
+    columns = [
+        "max_probability", "predictive_entropy", "probability_margin",
+        "uncertainty_score", "count_class0", "count_class1",
+        "disagreement_fraction", "probability_variance", "probability_std",
+        "ensemble_entropy", "missing_feature_count", "missing_feature_ratio",
+        "invalid_value_count", "out_of_range_count", "z_score_anomaly_count",
+        "isolation_forest_anomaly", "isolation_forest_score",
+        "overall_input_quality_score", "mahalanobis_distance",
+        "mahalanobis_percentile", "is_extreme_distance",
+    ]
+    features = pd.DataFrame(rng.normal(size=(240, len(columns))), columns=columns)
+    labels = np.tile([0, 1], 120)
+    features["predictive_entropy"] += labels * 0.8
+    train_idx = np.arange(0, 140)
+    calibration_idx = np.arange(140, 180)
+    validation_features = features.iloc[180:].reset_index(drop=True)
+    validation_labels = labels[180:]
+
+    result = reliability_ablation_metrics(
+        features.iloc[:180].reset_index(drop=True), labels[:180],
+        train_idx, calibration_idx, validation_features, validation_labels, 17,
+    )
+
+    assert set(result) == {
+        "A_uncertainty_only", "B_uncertainty_disagreement",
+        "C_plus_input_quality", "D_full_features",
+    }
+    for metrics in result.values():
+        assert 0.0 <= metrics["validation_roc_auc"] <= 1.0
+        assert 0.0 <= metrics["validation_pr_auc"] <= 1.0
+        assert metrics["validation_brier_score"] >= 0.0
+        assert metrics["validation_log_loss"] >= 0.0
+        assert metrics["validation_ece"] >= 0.0

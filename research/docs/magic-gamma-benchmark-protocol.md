@@ -47,3 +47,26 @@ protocol. It would not establish broad cross-domain generalization, production
 suitability, real human-review effectiveness, or measured real-world harm
 reduction. Results must be read alongside the per-seed metrics and limitations.
 No thresholds are selected using final test outcomes.
+
+
+## Completed results (seeds 17, 42, 73)
+
+GitHub Actions run [41224170086](https://github.com/swara2402/Vimarsh/actions/runs/41224170086) completed the MAGIC three-seed evaluation successfully and uploaded artifact
+[vimarsh-magic-gamma-policy-results](https://github.com/swara2402/Vimarsh/actions/runs/41224170086/artifacts/13051567045).
+Each seed used 2,718 test observations (8,154 test observations total across the three independent runs). The grouped split retained all 19,020 observations, with train/validation/test sizes of approximately 13,584/2,718/2,718 and closely matched class prevalence (about 64.8%).
+
+| Policy | Mean coverage | Coverage SD | Mean observed error rate | Error-rate SD | Mean net corrections |
+|---|---:|---:|---:|---:|---:|
+| Reliability-driven | 78.27% | 0.54 pp | 7.76% | 0.32 pp | 0 |
+| Confidence-only | 75.50% | 0.00 pp | 14.91% | 0.59 pp | 0 |
+| Predictive entropy | 51.09% | 0.47 pp | 8.16% | 0.35 pp | 0 |
+| Ensemble disagreement | 82.62% | 0.32 pp | 9.97% | 0.41 pp | 0 |
+| Always accept | 100.00% | 0.00 pp | 14.02% | 0.48 pp | 0 |
+
+### Interpretation and limits
+
+On this benchmark, reliability-driven selection achieved a higher mean coverage than confidence-only (78.27% versus 75.50%) while also recording a lower mean observed error rate (7.76% versus 14.91%). This is a promising result across the three specified seeds, but it is not a matched-coverage comparison: the policies select different coverage levels, so the difference does not isolate ranking quality at a common operating point. A validation-only threshold-selection protocol and matched-coverage test comparison should be added before making a stronger comparative claim.
+
+Predictive entropy operated at substantially lower coverage (51.09%) with an 8.16% observed error rate. Ensemble disagreement had the highest nontrivial coverage (82.62%) and a 9.97% observed error rate. Always-accept coverage was 100% with a 14.02% observed error rate. No policy produced net corrections in any seed.
+
+These results are not directly comparable with Wine Quality results: the datasets, sample sizes, class distributions, and task difficulty differ. The MAGIC benchmark provides a second tabular evaluation, not broad cross-domain generalization. The constant harm score is a scenario assumption, not a learned harm estimate; human review is simulated; action-effectiveness settings are assumptions; and evidence-provider actions are disabled. Three seeds provide descriptive stability evidence, not confidence intervals. No final-test threshold tuning was performed.

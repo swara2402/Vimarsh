@@ -171,10 +171,15 @@ def test_simulated_human_review_labelling():
     validator = OutcomeValidator(mock_executor)
     results = validator.validate_simulated_human_review()
     
-    # Verify labelling
+    # Configured simulation probability is not an observed accuracy measurement.
     assert results["is_simulated_human_review"] is True
-    assert results["human_review_labelled_correctly"] is True
-    assert results["simulated_accuracy"] == 0.95
+    assert results["configured_accuracy_probability"] == 0.95
+    assert results["observed_review_accuracy"] is None
+    assert results["observed_correct_reviews"] == 0
+    assert results["observed_incorrect_reviews"] == 0
+    assert results["completed_successful_reviews"] == 0
+    assert "accuracy_interpretation" in results
+    assert "human_review_labelled_correctly" not in results
 
 
 def test_no_label_leakage_in_action_selection():

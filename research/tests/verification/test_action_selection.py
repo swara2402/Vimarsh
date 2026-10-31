@@ -239,3 +239,20 @@ def test_summary_statistics():
     assert "abstention_rate" in stats
     assert "total_risk_reduction" in stats
     assert stats["risk_reduction_per_unit_cost"] >= 0
+
+
+def test_process_batch_rejects_mismatched_input_lengths():
+    """Reject mismatched batch arrays even when adjacent lengths happen to match."""
+    engine = VerificationEngine(VerificationEngineConfig(total_verification_budget=100.0))
+    samples = pd.DataFrame([{"alcohol": 10.0}, {"alcohol": 11.0}])
+
+    # The old chained comparison missed this pattern because its first
+    # adjacent comparison was equal (2 != 2 evaluates to False).
+    with pytest.raises(ValueError, match="All batch inputs must have the same length"):
+        engine.process_batch(
+            samples=samples,
+            predictions=[0, 1],
+            confidences=[0.8, 0.7, 0.6],
+            error_probabilities=[0.1, 0.2, 0.3],
+            harms=[2.0, 3.0, 4.0],
+        )

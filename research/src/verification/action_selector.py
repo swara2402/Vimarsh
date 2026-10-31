@@ -178,6 +178,7 @@ class VerificationEngine:
         evaluation = self.action_evaluator.evaluate_sample(
             sample, sample_id, base_prediction, base_confidence, error_probability, harm
         )
+
         self.evaluations.append(evaluation)
         return evaluation
     
@@ -202,8 +203,20 @@ class VerificationEngine:
         Returns:
             List of action evaluations for all samples
         """
-        if len(samples) != len(predictions) != len(confidences) != len(error_probabilities) != len(harms):
-            raise ValueError("All input lists must have the same length")
+        input_lengths = {
+            len(samples),
+            len(predictions),
+            len(confidences),
+            len(error_probabilities),
+            len(harms),
+        }
+        if len(input_lengths) != 1:
+            raise ValueError(
+                "All batch inputs must have the same length; received "
+                f"samples={len(samples)}, predictions={len(predictions)}, "
+                f"confidences={len(confidences)}, "
+                f"error_probabilities={len(error_probabilities)}, harms={len(harms)}"
+            )
             
         evaluations = []
         for i in range(len(samples)):

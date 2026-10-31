@@ -482,16 +482,28 @@ class OutcomeValidator:
         if not self.action_executor.human_reviewer:
             return {"status": "human_reviewer_not_configured"}
             
-        # Verify it's a SimulatedHumanReviewer instance
         is_simulated = isinstance(self.action_executor.human_reviewer, SimulatedHumanReviewer)
-        
+        completed_reviews = [
+            outcome for outcome in self.sample_outcomes
+            if outcome.selected_action == ActionType.HUMAN_REVIEW.value
+            and outcome.action_result
+            and outcome.action_result.get("success") is True
+            and outcome.final_correct is not None
+        ]
+        observed_correct = sum(1 for outcome in completed_reviews if outcome.final_correct)
+        observed_accuracy = observed_correct / len(completed_reviews) if completed_reviews else None
+
         return {
             "is_simulated_human_review": is_simulated,
-            "simulated_accuracy": self.action_executor.human_reviewer.accuracy if is_simulated else None,
-            "human_review_labelled_correctly": is_simulated,
-            "reviews_completed": self.action_executor.human_reviewer.reviews_completed if is_simulated else 0
+            "configured_accuracy_probability": self.action_executor.human_reviewer.accuracy if is_simulated else None,
+            "observed_review_accuracy": observed_accuracy,
+            "observed_correct_reviews": observed_correct,
+            "observed_incorrect_reviews": len(completed_reviews) - observed_correct,
+            "completed_successful_reviews": len(completed_reviews),
+            "reviewer_total_reviews_completed": self.action_executor.human_reviewer.reviews_completed if is_simulated else 0,
+            "accuracy_interpretation": "Configured accuracy is a simulation probability, not a guarantee; observed accuracy is measured from completed outcomes and may differ in small samples."
         }
-    
+
     def save_validation_results(self, output_path: Path, policy_metrics: PolicyComparison, action_metrics: Dict[str, ActionMetrics], validations: Dict[str, Any]):
         """
         Save complete outcome validation results to JSON.

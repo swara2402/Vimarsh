@@ -55,7 +55,7 @@ sys.path.insert(0, research_dir)
 
 # Import VIMARSH modules
 from src.data_loader import load_dataset
-from src.preprocessing import grouped_stratified_data_splitting, create_preprocessing_pipeline
+from src.preprocessing import grouped_stratified_data_splitting, grouped_stratified_holdout_indices, grouped_stratified_kfold_indices, create_preprocessing_pipeline
 from src.calibration import calibrate_model
 from src.evaluate import evaluate_model
 from src.visualization import plot_roc_curves, plot_confusion_matrix
@@ -85,10 +85,7 @@ def generate_out_of_fold_predictions(
     Generate out-of-fold predictions from base models to train reliability estimator.
     This prevents leakage by using predictions that weren't trained on the same data.
     """
-    from sklearn.model_selection import StratifiedKFold
     from src.train import train_logistic_regression, train_random_forest, train_gradient_boosting
-    
-    kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=config['np_random_seed'])
     oof_predictions = []
     oof_true_labels = []
     
@@ -96,7 +93,7 @@ def generate_out_of_fold_predictions(
     full_models = []
     
     # First generate out-of-fold predictions for reliability training
-    for train_idx, val_idx in kf.split(X_train, y_train):
+    for train_idx, val_idx in grouped_stratified_kfold_indices(\n        X_train, y_train, n_splits=5, random_state=config['np_random_seed']\n    ):
         X_tr, X_val = X_train.iloc[train_idx], X_train.iloc[val_idx]
         y_tr, y_val = y_train.iloc[train_idx], y_train.iloc[val_idx]
         
@@ -145,18 +142,28 @@ def generate_out_of_fold_predictions(
     # is trained on out-of-fold probabilities from uncalibrated fold models.
     raw_full_models = [lr_full, rf_full, gb_full]
     
-    # Calibrate models using validation data (as in Milestone 1)
-    # Split training data into training and calibration subsets (only uses training data to avoid leakage)
-    from sklearn.model_selection import train_test_split
-    X_train_calib, X_val_calib, y_train_calib, y_val_calib = train_test_split(
-        X_train, y_train, test_size=0.2, random_state=config['random_seed'], stratify=y_train
+    # Fit separate calibration models on a grouped holdout. The calibration
+    # observations are never used to fit these base estimators.
+    calibration_train_idx, calibration_holdout_idx = grouped_stratified_holdout_indices(
+        X_train, y_train, test_size=0.2, random_state=config['random_seed']
     )
-    X_cal_processed = full_preprocessor.transform(X_val_calib)
-    
-    lr_calibrated = calibrate_model(lr_full, X_cal_processed, y_val_calib, method=config['calibration']['method'])
-    rf_calibrated = calibrate_model(rf_full, X_cal_processed, y_val_calib, method=config['calibration']['method'])
-    gb_calibrated = calibrate_model(gb_full, X_cal_processed, y_val_calib, method=config['calibration']['method'])
-    
+    X_train_calib = X_train.iloc[calibration_train_idx]
+    y_train_calib = y_train.iloc[calibration_train_idx]
+    X_val_calib = X_train.iloc[calibration_holdout_idx]
+    y_val_calib = y_train.iloc[calibration_holdout_idx]
+
+    calibration_preprocessor = create_preprocessing_pipeline(list(X_train.columns))
+    X_cal_train_processed = calibration_preprocessor.fit_transform(X_train_calib)
+    X_cal_holdout_processed = calibration_preprocessor.transform(X_val_calib)
+
+    lr_calibration_model = train_logistic_regression(X_cal_train_processed, y_train_calib, config)
+    rf_calibration_model = train_random_forest(X_cal_train_processed, y_train_calib, config)
+    gb_calibration_model = train_gradient_boosting(X_cal_train_processed, y_train_calib, config)
+
+    lr_calibrated = calibrate_model(lr_calibration_model, X_cal_holdout_processed, y_val_calib, method=config['calibration']['method'])
+    rf_calibrated = calibrate_model(rf_calibration_model, X_cal_holdout_processed, y_val_calib, method=config['calibration']['method'])
+    gb_calibrated = calibrate_model(gb_calibration_model, X_cal_holdout_processed, y_val_calib, method=config['calibration']['method'])
+
     full_models = [lr_calibrated, rf_calibrated, gb_calibrated]
     
     # Save models - DISABLED to preserve Milestone 1 artifacts and avoid pickling errors
@@ -314,11 +321,16 @@ def main():
     oof_nonfinite = check_for_nonfinite_values(oof_X, "OOF FEATURES")
     assert oof_nonfinite == 0, f"Found {oof_nonfinite} non-finite values in OOF features - cannot train reliability model"
     
-    # Split OOF data into reliability training and validation
-    from sklearn.model_selection import train_test_split
-    rel_X_train, rel_X_val, rel_y_train, rel_y_val = train_test_split(
-        oof_X, oof_error_labels, test_size=0.2, random_state=42, stratify=oof_error_labels
+    # Split OOF reliability examples by exact feature-row groups so duplicate
+    # observations cannot appear in both reliability training and calibration.
+    oof_error_series = pd.Series(oof_error_labels, index=oof_samples.index)
+    rel_train_idx, rel_val_idx = grouped_stratified_holdout_indices(
+        oof_samples, oof_error_series, test_size=0.2, random_state=42
     )
+    rel_X_train = oof_X.iloc[rel_train_idx]
+    rel_X_val = oof_X.iloc[rel_val_idx]
+    rel_y_train = oof_error_labels[rel_train_idx]
+    rel_y_val = oof_error_labels[rel_val_idx]
     
     # Process validation and test data for final evaluation
     print("\n[4/10] Extracting reliability features for validation and test sets...")

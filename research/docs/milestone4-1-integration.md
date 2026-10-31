@@ -80,3 +80,21 @@ Detailed protocol, results, and limitations: [MAGIC Gamma benchmark protocol](ma
 2. Diagnose reliability calibration and feature contributions using validation-only ablations across both benchmarks.
 3. Evaluate additional datasets or repeated temporal/domain splits before making broader generalization claims.
 4. Measure real action effectiveness before making claims about practical risk reduction.
+
+
+## Completed validation-selected matched-coverage diagnostic
+
+The updated three-seed workflow [41225143359](https://github.com/swara2402/Vimarsh/actions/runs/41225143359) passed all four jobs: research tests, MAGIC three-seed policy comparison, Wine multi-seed policy comparison, and Wine end-to-end training. The refreshed MAGIC artifact is [vimarsh-magic-gamma-policy-results](https://github.com/swara2402/Vimarsh/actions/runs/41225143359/artifacts/13051212563).
+
+A validation-only threshold was selected for each ranking policy at a nominal 75% coverage target, then applied unchanged to the test partition. Across seeds 17, 42, and 73:
+
+| Ranking policy | Mean actual test coverage | Coverage SD | Mean test observed error | Error SD |
+|---|---:|---:|---:|---:|
+| Reliability-driven | 75.67% | 1.06 pp | 7.24% | 0.43 pp |
+| Confidence-only | 74.53% | 0.99 pp | 7.04% | 0.36 pp |
+| Predictive entropy | 74.53% | 0.99 pp | 7.04% | 0.36 pp |
+| Ensemble disagreement | 82.62% | 0.32 pp | 9.97% | 0.41 pp |
+
+Reliability-driven coverage was 1.14 percentage points higher than confidence-only, but its observed error rate was 0.20 percentage points higher. This is a close result and does not show an error-rate advantage for the learned reliability score at this nominal operating point. Confidence-only and predictive entropy selected identical accepted sets in these runs. Ensemble disagreement exceeded the nominal target due to ties at its validation-selected threshold. Actual coverage is therefore reported rather than represented as exactly 75%.
+
+This validation-selected diagnostic is separate from the action-engine results and does not prove statistically significant or general superiority. No test-set threshold tuning was used. The action-engine simulation still produced zero net corrections for every policy. The earlier MAGIC caveats remain unchanged: human review is simulated, evidence provider disabled, action-effectiveness factors assumed, and the harm score constant rather than domain-derived.

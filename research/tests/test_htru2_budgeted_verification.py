@@ -33,7 +33,7 @@ def test_matched_capacity_ranking_selects_exact_common_budget():
     chosen = select_top_budget(scores, harms, budget_count=2)
     assert chosen.sum() == 2
     # Ranking is score multiplied by predicted-error-direction scenario harm.
-    assert chosen[1] and chosen[3]
+    assert chosen[1] and chosen[4]
 
 
 def test_matched_capacity_can_fill_budget_even_when_net_benefit_is_negative():

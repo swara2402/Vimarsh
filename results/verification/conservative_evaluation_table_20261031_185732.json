@@ -1,0 +1,9 @@
+[
+  {
+    "sample_id": 0,
+    "y_true": 1,
+    "original_prediction": 1,
+    "selected_action": "ABSTAIN",
+    "final_prediction": null,
+    "is_covered": false,
+    "original_correct": 

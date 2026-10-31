@@ -1,0 +1,442 @@
+{
+  "profile_validations": {
+    "conservative": {
+      "policy_metrics": {
+        "policy_name": "conservative",
+        "total_samples": 975,
+        "covered_samples": 67,
+        "abstained_samples": 908,
+        "coverage": 0.06871794871794872,
+        "abstention_rate": 0.9312820512820513,
+        "covered_errors": 0,
+        "observed_error_rate": 0.0,
+        "total_observed_errors": 908,
+        "total_corrected": 0,
+        "total_introduced": 2,
+        "net_corrections": -2,
+        "total_estimated_risk_reduction": 1867.5383192323152,
+        "total_verification_cost": 481.5,
+        "risk_reduction_per_unit_cost": 3.8785842559341956,
+        "action_distribution": {
+          "ABSTAIN": 908,
+          "ACCEPT": 56,
+          "HUMAN_REVIEW": 11
+        }
+      },
+      "action_metrics": {
+        "ACCEPT": {
+          "action_type": "ACCEPT",
+          "total_samples": 56,
+          "originally_correct": 47,
+          "originally_incorrect": 9,
+          "corrected_predictions": 0,
+          "introduced_errors": 0,
+          "unchanged_correct": 0,
+          "unchanged_incorrect": 0,
+          "correction_rate": 0.0,
+          "error_introduction_rate": 0.0,
+          "net_improvement": 0,
+          "total_cost": 0.0,
+          "total_estimated_risk_reduction": 0.0,
+          "risk_reduction_per_unit_cost": 0.0
+        },
+        "REQUEST_ADDITIONAL_EVIDENCE": {
+          "action_type": "REQUEST_ADDITIONAL_EVIDENCE",
+          "total_samples": 0,
+          "originally_correct": 0,
+          "originally_incorrect": 0,
+          "corrected_predictions": 0,
+          "introduced_errors": 0,
+          "unchanged_correct": 0,
+          "unchanged_incorrect": 0,
+          "correction_rate": 0.0,
+          "error_introduction_rate": 0.0,
+          "net_improvement": 0,
+          "total_cost": 0.0,
+          "total_estimated_risk_reduction": 0.0,
+          "risk_reduction_per_unit_cost": 0.0
+        },
+        "ALTERNATE_MODEL": {
+          "action_type": "ALTERNATE_MODEL",
+          "total_samples": 0,
+          "originally_correct": 0,
+          "originally_incorrect": 0,
+          "corrected_predictions": 0,
+          "introduced_errors": 0,
+          "unchanged_correct": 0,
+          "unchanged_incorrect": 0,
+          "correction_rate": 0.0,
+          "error_introduction_rate": 0.0,
+          "net_improvement": 0,
+          "total_cost": 0.0,
+          "total_estimated_risk_reduction": 0.0,
+          "risk_reduction_per_unit_cost": 0.0
+        },
+        "HUMAN_REVIEW": {
+          "action_type": "HUMAN_REVIEW",
+          "total_samples": 11,
+          "originally_correct": 11,
+          "originally_incorrect": 0,
+          "corrected_predictions": 0,
+          "introduced_errors": 2,
+          "unchanged_correct": 0,
+          "unchanged_incorrect": 0,
+          "correction_rate": 0.0,
+          "error_introduction_rate": 0.18181818181818182,
+          "net_improvement": -2,
+          "total_cost": 27.5,
+          "total_estimated_risk_reduction": 59.932565964875,
+          "risk_reduction_per_unit_cost": 2.179366035086364
+        },
+        "ABSTAIN": {
+          "action_type": "ABSTAIN",
+          "total_samples": 908,
+          "originally_correct": 698,
+          "originally_incorrect": 210,
+          "corrected_predictions": 0,
+          "introduced_errors": 0,
+          "unchanged_correct": 0,
+          "unchanged_incorrect": 0,
+          "correction_rate": 0.0,
+          "error_introduction_rate": 0.0,
+          "net_improvement": 0,
+          "total_cost": 454.0,
+          "total_estimated_risk_reduction": 1807.6057532674408,
+          "risk_reduction_per_unit_cost": 3.9815104697520725
+        }
+      },
+      "integrity_checks": {
+        "alternate_model_validations": {
+          "available_alternate_models": [
+            "logistic_regression",
+            "random_forest"
+          ],
+          "original_model_name": "gradient_boosting",
+          "model_differences": [
+            {
+              "model_name": "logistic_regression",
+              "prediction_disagreement_rate": 0.12410256410256411,
+              "is_different_model": true
+            },
+            {
+              "model_name": "random_forest",
+              "prediction_disagreement_rate": 0.12307692307692308,
+              "is_different_model": true
+            }
+          ]
+        },
+        "evidence_validations": {
+          "evidence_available": false,
+          "code_inspected": true,
+          "potential_label_leakage_detected": false,
+          "leakage_indicators_found": [],
+          "evidence_generations_is_valid": true
+        },
+        "human_review_validations": {
+          "is_simulated_human_review": true,
+          "simulated_accuracy": 0.9,
+          "human_review_labelled_correctly": true,
+          "reviews_completed": 11
+        }
+      },
+      "profile_config": "VerificationEngineConfig(total_verification_budget=500.0, lambda_cost_weight=0.5, decision_profile=<DecisionProfile.CONSERVATIVE: 'conservative'>, action_costs=ActionCosts(accept=0.0, request_additional_evidence=1.0, alternate_model=1.5, human_review=2.5, abstain=0.5), action_effectiveness=ActionEffectiveness(accept=0.0, request_additional_evidence=0.4, alternate_model=0.5, human_review=0.99, abstain=0.8), enable_evidence_provider=False, evidence_cost=2.0, enable_human_reviewer=True, human_reviewer_accuracy=0.9, human_review_cost=5.0, max_human_reviews=50, high_risk_threshold=8.0, medium_risk_threshold=4.0, base_model_path=PosixPath('/Users/sam/Desktop/Vimarsh/vimarsh/research/models'), original_model_name='gradient_boosting')"
+    },
+    "balanced": {
+      "policy_metrics": {
+        "policy_name": "balanced",
+        "total_samples": 975,
+        "covered_samples": 287,
+        "abstained_samples": 688,
+        "coverage": 0.29435897435897435,
+        "abstention_rate": 0.7056410256410256,
+        "covered_errors": 0,
+        "observed_error_rate": 0.0,
+        "total_observed_errors": 688,
+        "total_corrected": 0,
+        "total_introduced": 0,
+        "net_corrections": 0,
+        "total_estimated_risk_reduction": 1716.5383701857813,
+        "total_verification_cost": 516.0,
+        "risk_reduction_per_unit_cost": 3.326624748422057,
+        "action_distribution": {
+          "ABSTAIN": 688,
+          "ACCEPT": 287
+        }
+      },
+      "action_metrics": {
+        "ACCEPT": {
+          "action_type": "ACCEPT",
+          "total_samples": 287,
+          "originally_correct": 221,
+          "originally_incorrect": 66,
+          "corrected_predictions": 0,
+          "introduced_errors": 0,
+          "unchanged_correct": 0,
+          "unchanged_incorrect": 0,
+          "correction_rate": 0.0,
+          "error_introduction_rate": 0.0,
+          "net_improvement": 0,
+          "total_cost": 0.0,
+          "total_estimated_risk_reduction": 0.0,
+          "risk_reduction_per_unit_cost": 0.0
+        },
+        "REQUEST_ADDITIONAL_EVIDENCE": {
+          "action_type": "REQUEST_ADDITIONAL_EVIDENCE",
+          "total_samples": 0,
+          "originally_correct": 0,
+          "originally_incorrect": 0,
+          "corrected_predictions": 0,
+          "introduced_errors": 0,
+          "unchanged_correct": 0,
+          "unchanged_incorrect": 0,
+          "correction_rate": 0.0,
+          "error_introduction_rate": 0.0,
+          "net_improvement": 0,
+          "total_cost": 0.0,
+          "total_estimated_risk_reduction": 0.0,
+          "risk_reduction_per_unit_cost": 0.0
+        },
+        "ALTERNATE_MODEL": {
+          "action_type": "ALTERNATE_MODEL",
+          "total_samples": 0,
+          "originally_correct": 0,
+          "originally_incorrect": 0,
+          "corrected_predictions": 0,
+          "introduced_errors": 0,
+          "unchanged_correct": 0,
+          "unchanged_incorrect": 0,
+          "correction_rate": 0.0,
+          "error_introduction_rate": 0.0,
+          "net_improvement": 0,
+          "total_cost": 0.0,
+          "total_estimated_risk_reduction": 0.0,
+          "risk_reduction_per_unit_cost": 0.0
+        },
+        "HUMAN_REVIEW": {
+          "action_type": "HUMAN_REVIEW",
+          "total_samples": 0,
+          "originally_correct": 0,
+          "originally_incorrect": 0,
+          "corrected_predictions": 0,
+          "introduced_errors": 0,
+          "unchanged_correct": 0,
+          "unchanged_incorrect": 0,
+          "correction_rate": 0.0,
+          "error_introduction_rate": 0.0,
+          "net_improvement": 0,
+          "total_cost": 0.0,
+          "total_estimated_risk_reduction": 0.0,
+          "risk_reduction_per_unit_cost": 0.0
+        },
+        "ABSTAIN": {
+          "action_type": "ABSTAIN",
+          "total_samples": 688,
+          "originally_correct": 535,
+          "originally_incorrect": 153,
+          "corrected_predictions": 0,
+          "introduced_errors": 0,
+          "unchanged_correct": 0,
+          "unchanged_incorrect": 0,
+          "correction_rate": 0.0,
+          "error_introduction_rate": 0.0,
+          "net_improvement": 0,
+          "total_cost": 516.0,
+          "total_estimated_risk_reduction": 1716.5383701857813,
+          "risk_reduction_per_unit_cost": 3.326624748422057
+        }
+      },
+      "integrity_checks": {
+        "alternate_model_validations": {
+          "available_alternate_models": [
+            "logistic_regression",
+            "random_forest"
+          ],
+          "original_model_name": "gradient_boosting",
+          "model_differences": [
+            {
+              "model_name": "logistic_regression",
+              "prediction_disagreement_rate": 0.12410256410256411,
+              "is_different_model": true
+            },
+            {
+              "model_name": "random_forest",
+              "prediction_disagreement_rate": 0.12307692307692308,
+              "is_different_model": true
+            }
+          ]
+        },
+        "evidence_validations": {
+          "evidence_available": false,
+          "code_inspected": true,
+          "potential_label_leakage_detected": false,
+          "leakage_indicators_found": [],
+          "evidence_generations_is_valid": true
+        },
+        "human_review_validations": {
+          "is_simulated_human_review": true,
+          "simulated_accuracy": 0.9,
+          "human_review_labelled_correctly": true,
+          "reviews_completed": 0
+        }
+      },
+      "profile_config": "VerificationEngineConfig(total_verification_budget=500.0, lambda_cost_weight=1.0, decision_profile=<DecisionProfile.BALANCED: 'balanced'>, action_costs=ActionCosts(accept=0.0, request_additional_evidence=1.0, alternate_model=1.5, human_review=3.0, abstain=0.75), action_effectiveness=ActionEffectiveness(accept=0.0, request_additional_evidence=0.5, alternate_model=0.6, human_review=0.98, abstain=0.85), enable_evidence_provider=False, evidence_cost=2.0, enable_human_reviewer=True, human_reviewer_accuracy=0.9, human_review_cost=5.0, max_human_reviews=50, high_risk_threshold=8.0, medium_risk_threshold=4.0, base_model_path=PosixPath('/Users/sam/Desktop/Vimarsh/vimarsh/research/models'), original_model_name='gradient_boosting')"
+    },
+    "coverage_oriented": {
+      "policy_metrics": {
+        "policy_name": "coverage_oriented",
+        "total_samples": 975,
+        "covered_samples": 975,
+        "abstained_samples": 0,
+        "coverage": 1.0,
+        "abstention_rate": 0.0,
+        "covered_errors": 0,
+        "observed_error_rate": 0.0,
+        "total_observed_errors": 0,
+        "total_corrected": 12,
+        "total_introduced": 12,
+        "net_corrections": 0,
+        "total_estimated_risk_reduction": 1259.9083059884877,
+        "total_verification_cost": 484.0,
+        "risk_reduction_per_unit_cost": 2.603116334686958,
+        "action_distribution": {
+          "ACCEPT": 397,
+          "ALTERNATE_MODEL": 202,
+          "REQUEST_ADDITIONAL_EVIDENCE": 376
+        }
+      },
+      "action_metrics": {
+        "ACCEPT": {
+          "action_type": "ACCEPT",
+          "total_samples": 397,
+          "originally_correct": 314,
+          "originally_incorrect": 83,
+          "corrected_predictions": 0,
+          "introduced_errors": 0,
+          "unchanged_correct": 0,
+          "unchanged_incorrect": 0,
+          "correction_rate": 0.0,
+          "error_introduction_rate": 0.0,
+          "net_improvement": 0,
+          "total_cost": 0.0,
+          "total_estimated_risk_reduction": 0.0,
+          "risk_reduction_per_unit_cost": 0.0
+        },
+        "REQUEST_ADDITIONAL_EVIDENCE": {
+          "action_type": "REQUEST_ADDITIONAL_EVIDENCE",
+          "total_samples": 376,
+          "originally_correct": 278,
+          "originally_incorrect": 98,
+          "corrected_predictions": 0,
+          "introduced_errors": 0,
+          "unchanged_correct": 0,
+          "unchanged_incorrect": 0,
+          "correction_rate": 0.0,
+          "error_introduction_rate": 0.0,
+          "net_improvement": 0,
+          "total_cost": 282.0,
+          "total_estimated_risk_reduction": 639.6623587435386,
+          "risk_reduction_per_unit_cost": 2.268306236679215
+        },
+        "ALTERNATE_MODEL": {
+          "action_type": "ALTERNATE_MODEL",
+          "total_samples": 202,
+          "originally_correct": 164,
+          "originally_incorrect": 38,
+          "corrected_predictions": 12,
+          "introduced_errors": 12,
+          "unchanged_correct": 0,
+          "unchanged_incorrect": 0,
+          "correction_rate": 0.3157894736842105,
+          "error_introduction_rate": 0.07317073170731707,
+          "net_improvement": 0,
+          "total_cost": 202.0,
+          "total_estimated_risk_reduction": 620.2459472449493,
+          "risk_reduction_per_unit_cost": 3.0705244913116303
+        },
+        "HUMAN_REVIEW": {
+          "action_type": "HUMAN_REVIEW",
+          "total_samples": 0,
+          "originally_correct": 0,
+          "originally_incorrect": 0,
+          "corrected_predictions": 0,
+          "introduced_errors": 0,
+          "unchanged_correct": 0,
+          "unchanged_incorrect": 0,
+          "correction_rate": 0.0,
+          "error_introduction_rate": 0.0,
+          "net_improvement": 0,
+          "total_cost": 0.0,
+          "total_estimated_risk_reduction": 0.0,
+          "risk_reduction_per_unit_cost": 0.0
+        },
+        "ABSTAIN": {
+          "action_type": "ABSTAIN",
+          "total_samples": 0,
+          "originally_correct": 0,
+          "originally_incorrect": 0,
+          "corrected_predictions": 0,
+          "introduced_errors": 0,
+          "unchanged_correct": 0,
+          "unchanged_incorrect": 0,
+          "correction_rate": 0.0,
+          "error_introduction_rate": 0.0,
+          "net_improvement": 0,
+          "total_cost": 0.0,
+          "total_estimated_risk_reduction": 0.0,
+          "risk_reduction_per_unit_cost": 0.0
+        }
+      },
+      "integrity_checks": {
+        "alternate_model_validations": {
+          "available_alternate_models": [
+            "logistic_regression",
+            "random_forest"
+          ],
+          "original_model_name": "gradient_boosting",
+          "model_differences": [
+            {
+              "model_name": "logistic_regression",
+              "prediction_disagreement_rate": 0.12410256410256411,
+              "is_different_model": true
+            },
+            {
+              "model_name": "random_forest",
+              "prediction_disagreement_rate": 0.12307692307692308,
+              "is_different_model": true
+            }
+          ]
+        },
+        "evidence_validations": {
+          "evidence_available": true,
+          "code_inspected": true,
+          "potential_label_leakage_detected": false,
+          "leakage_indicators_found": [],
+          "evidence_generations_is_valid": true
+        },
+        "human_review_validations": {
+          "is_simulated_human_review": true,
+          "simulated_accuracy": 0.9,
+          "human_review_labelled_correctly": true,
+          "reviews_completed": 0
+        }
+      },
+      "profile_config": "VerificationEngineConfig(total_verification_budget=500.0, lambda_cost_weight=1.5, decision_profile=<DecisionProfile.COVERAGE_ORIENTED: 'coverage'>, action_costs=ActionCosts(accept=0.0, request_additional_evidence=0.75, alternate_model=1.0, human_review=3.0, abstain=1.25), action_effectiveness=ActionEffectiveness(accept=0.0, request_additional_evidence=0.6, alternate_model=0.7, human_review=0.98, abstain=0.75), enable_evidence_provider=True, evidence_cost=2.0, enable_human_reviewer=True, human_reviewer_accuracy=0.9, human_review_cost=5.0, max_human_reviews=50, high_risk_threshold=8.0, medium_risk_threshold=4.0, base_model_path=PosixPath('/Users/sam/Desktop/Vimarsh/vimarsh/research/models'), original_model_name='gradient_boosting')"
+    },
+    "always_accept": {
+      "policy_metrics": {
+        "policy_name": "always_accept",
+        "coverage": 1.0,
+        "abstention_rate": 0.0,
+        "observed_error_rate": 0.2246153846153846,
+        "total_observed_errors": 219,
+        "total_corrected": 0,
+        "total_introduced": 0,
+        "net_corrections": 0
+      }
+    }
+  },
+  "test_set_size": 975,
+  "baseline_error_rate": 0.2246153846153846,
+  "validation_timestamp": "2026-10-31 19:00:58.487440",
+  "milestone": "3.2 - Verification Outcome Validation"
+}

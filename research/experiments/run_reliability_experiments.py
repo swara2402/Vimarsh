@@ -184,11 +184,18 @@ def generate_out_of_fold_predictions(
     return oof_samples, oof_model_probs, oof_y, full_models, full_preprocessor, raw_full_models
 
 
-def main():
+def main(seed_override=None):
     # Load configuration
     base_dir = Path(__file__).parent.parent
     config_path = base_dir / 'configs' / 'baseline_config.yaml'
     config = load_config(config_path)
+    if seed_override is not None:
+        seed = int(seed_override)
+        config['random_seed'] = seed
+        config['np_random_seed'] = seed
+        config['torch_random_seed'] = seed
+        for model_config in config.get('models', {}).values():
+            model_config['random_state'] = seed
     
     # Create all necessary directories (preserve Milestone 1 results)
     for dir_path in [
@@ -503,7 +510,8 @@ def main():
 
     # Persist a complete inference bundle for the Milestone 4 verification bridge.
     # The bundle is fitted using training/OOF data only; test labels are not stored.
-    artifact_path = base_dir / 'models' / 'reliability' / 'wine_quality_reliability_bundle.joblib'
+    artifact_suffix = f'_seed_{int(config[\'random_seed\'])}' if seed_override is not None else ''
+    artifact_path = base_dir / 'models' / 'reliability' / f'wine_quality_reliability_bundle{artifact_suffix}.joblib'
     artifact_path.parent.mkdir(parents=True, exist_ok=True)
     inference_model_dir = base_dir / 'models' / 'reliability' / 'inference_models'
     inference_model_dir.mkdir(parents=True, exist_ok=True)
@@ -776,4 +784,8 @@ The reliability engine successfully demonstrates that combining multiple signals
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+    parser = argparse.ArgumentParser(description="Train and evaluate VIMARSH reliability models.")
+    parser.add_argument("--seed", type=int, default=None, help="Override all experiment and model random seeds.")
+    args = parser.parse_args()
+    main(seed_override=args.seed)

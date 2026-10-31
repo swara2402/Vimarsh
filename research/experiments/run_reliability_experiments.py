@@ -327,7 +327,7 @@ def main():
     for _, row in X_val.iterrows():
         sample_probs = []
         row_processed = full_preprocessor.transform(pd.DataFrame([row]))
-        for model in full_models:
+        for model in raw_full_models:
             probs = model.predict_proba(row_processed)[0]
             sample_probs.append(probs)
         val_model_probs.append(sample_probs)
@@ -342,12 +342,12 @@ def main():
     val_original_confidences = []
     for i, (_, row) in enumerate(X_val.iterrows()):
         row_processed = full_preprocessor.transform(pd.DataFrame([row]))
-        # Use Random Forest (index 1 in full_models) as main model for error calculation
-        main_pred = full_models[1].predict(row_processed)[0]
+        # Use Random Forest (index 1 in raw_full_models) as main model for error calculation
+        main_pred = raw_full_models[1].predict(row_processed)[0]
         true_label = y_val.iloc[i]
         is_correct = 1 if main_pred == true_label else 0
         val_original_correct.append(is_correct)
-        main_probs = full_models[1].predict_proba(row_processed)[0]
+        main_probs = raw_full_models[1].predict_proba(row_processed)[0]
         val_original_confidences.append(np.max(main_probs))
     
     # Calculate genuine error labels for validation set using Random Forest (main model)
@@ -359,7 +359,7 @@ def main():
     for _, row in X_test.iterrows():
         sample_probs = []
         row_processed = full_preprocessor.transform(pd.DataFrame([row]))
-        for model in full_models:
+        for model in raw_full_models:
             probs = model.predict_proba(row_processed)[0]
             sample_probs.append(probs)
         test_model_probs.append(sample_probs)
@@ -374,12 +374,12 @@ def main():
     test_original_confidences = []
     for i, (_, row) in enumerate(X_test.iterrows()):
         row_processed = full_preprocessor.transform(pd.DataFrame([row]))
-        # Use Random Forest (index 1 in full_models) as main model for error calculation
-        main_pred = full_models[1].predict(row_processed)[0]
+        # Use Random Forest (index 1 in raw_full_models) as main model for error calculation
+        main_pred = raw_full_models[1].predict(row_processed)[0]
         true_label = y_test.iloc[i]
         is_correct = 1 if main_pred == true_label else 0
         test_original_correct.append(is_correct)
-        main_probs = full_models[1].predict_proba(row_processed)[0]
+        main_probs = raw_full_models[1].predict_proba(row_processed)[0]
         test_original_confidences.append(np.max(main_probs))
     
     # Calculate GENUINE error labels for test set using Random Forest (main model)
@@ -388,7 +388,7 @@ def main():
     primary_test_predictions = []
     for i, (_, row) in enumerate(X_test.iterrows()):
         row_processed = full_preprocessor.transform(pd.DataFrame([row]))
-        main_pred = full_models[1].predict(row_processed)[0]
+        main_pred = raw_full_models[1].predict(row_processed)[0]
         primary_test_predictions.append(main_pred)
     print(f"Test set genuine error rate: {np.mean(rel_y_test):.2%} (all from real model predictions)")
     

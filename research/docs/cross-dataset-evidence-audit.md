@@ -128,7 +128,9 @@ The perturbation is an alternating signed feature-wise mean offset plus small
 Gaussian noise. Models and thresholds selected on the original validation
 partition remain fixed. Per-policy coverage, accepted-set error, overall
 accuracy, and paired candidate-versus-confidence-only bootstrap intervals are
-reported for each seed and severity.
+reported for each seed and severity. Bootstrap clusters are inherited from the
+original unshifted test features, preserving exact-duplicate membership despite
+independent row-wise perturbation noise.
 
 This is one synthetic perturbation family, not a model of natural deployment
 drift. Labels remain unchanged, and results are conditional on the selected

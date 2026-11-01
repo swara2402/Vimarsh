@@ -51,6 +51,23 @@ class VerificationEngineConfig:
     base_model_path: Path = Path(__file__).parent.parent.parent / "models"
     original_model_name: str = "gradient_boosting"  # Exclude this from alternatives
 
+    def __post_init__(self):
+        import math
+        if not math.isfinite(self.total_verification_budget) or self.total_verification_budget < 0:
+            raise ValueError("total_verification_budget must be finite and non-negative")
+        if not math.isfinite(self.lambda_cost_weight) or self.lambda_cost_weight < 0:
+            raise ValueError("lambda_cost_weight must be finite and non-negative")
+        if not (0 <= self.medium_risk_threshold < self.high_risk_threshold):
+            raise ValueError("Risk thresholds must satisfy 0 <= medium < high")
+        if not math.isfinite(self.human_reviewer_accuracy) or not 0 <= self.human_reviewer_accuracy <= 1:
+            raise ValueError("human_reviewer_accuracy must be finite and in [0, 1]")
+        if not math.isfinite(self.evidence_cost) or self.evidence_cost < 0:
+            raise ValueError("evidence_cost must be finite and non-negative")
+        if not math.isfinite(self.human_review_cost) or self.human_review_cost < 0:
+            raise ValueError("human_review_cost must be finite and non-negative")
+        if self.max_human_reviews is not None and self.max_human_reviews < 0:
+            raise ValueError("max_human_reviews must be non-negative or None")
+
 
 class VerificationEngine:
     """Main verification action engine that processes predictions and selects actions."""
@@ -138,7 +155,9 @@ class VerificationEngine:
         self.safety_engine = SafetyConstraintEngine(
             action_executor=self.action_executor,
             budget_manager=self.budget_manager,
-            action_costs=self.config.action_costs
+            action_costs=self.config.action_costs,
+            high_risk_threshold=self.config.high_risk_threshold,
+            medium_risk_threshold=self.config.medium_risk_threshold,
         )
         
         # Create action evaluator

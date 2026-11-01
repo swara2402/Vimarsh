@@ -91,6 +91,25 @@ def select_top_budget(scores, harm_weights, budget_count):
     return mask
 
 
+def validation_threshold_selection(validation_scores, test_scores, target_review_fraction=0.10):
+    """Choose a high-risk threshold from validation scores and apply it unchanged to test scores.
+
+    This is a nominal-rate ranking diagnostic, not a hard-cap operating policy.
+    Tied test scores at the threshold can make actual review coverage exceed the
+    target; test labels are deliberately not accepted by this selection helper.
+    """
+    validation_scores = np.asarray(validation_scores, dtype=float)
+    test_scores = np.asarray(test_scores, dtype=float)
+    if validation_scores.ndim != 1 or test_scores.ndim != 1 or not len(validation_scores):
+        raise ValueError("Validation and test scores must be non-empty one-dimensional arrays")
+    if not 0.0 < target_review_fraction < 1.0:
+        raise ValueError("target_review_fraction must be between 0 and 1")
+    if not np.isfinite(validation_scores).all() or not np.isfinite(test_scores).all():
+        raise ValueError("Validation and test scores must be finite")
+    threshold = float(np.quantile(validation_scores, 1.0 - target_review_fraction, method="higher"))
+    return test_scores >= threshold, threshold
+
+
 def evaluate_selection(name, selected, predictions, labels, harm_weights):
     """Use labels only after selection to calculate offline scenario outcomes."""
     selected = np.asarray(selected, dtype=bool)
@@ -201,6 +220,32 @@ def run_seed(seed, raw_dir, output_dir):
         for name, mask in selections.items()
     }
 
+    # Validation-threshold diagnostic: choose a nominal 10% review threshold
+    # from validation scores only, then apply it unchanged to test scores.
+    # Ties can move actual test utilization above/below the target; this is a
+    # ranking-transfer diagnostic, not the hard-cap operating policy.
+    validation_rankings = {
+        "validation_threshold_reliability": val_rel * val_harm,
+        "validation_threshold_confidence": val_conf * val_harm,
+        "validation_threshold_entropy": val_ent * val_harm,
+        "validation_threshold_disagreement": val_dis * val_harm,
+    }
+    test_rankings = {
+        "validation_threshold_reliability": rel * harms,
+        "validation_threshold_confidence": conf * harms,
+        "validation_threshold_entropy": ent * harms,
+        "validation_threshold_disagreement": dis * harms,
+    }
+    for name, validation_score in validation_rankings.items():
+        mask, threshold = validation_threshold_selection(
+            validation_score, test_rankings[name], target_review_fraction=REVIEW_BUDGET_FRACTION
+        )
+        metric = evaluate_selection(name, mask, test_pred, y_test.to_numpy(), harms)
+        metric["validation_selected_threshold"] = threshold
+        metric["nominal_review_fraction"] = REVIEW_BUDGET_FRACTION
+        metric["actual_review_fraction_may_differ_due_to_score_shift_or_ties"] = True
+        results[name] = metric
+
     # Matched-capacity diagnostic: all ranking signals review exactly the same
     # 10% test capacity. Selection uses scores and predicted-class scenario
     # weights only; test labels are read solely by evaluate_selection afterward.
@@ -228,6 +273,7 @@ def run_seed(seed, raw_dir, output_dir):
         "policy": "rank by P(error) proxy times predicted-error-direction scenario harm; select positive expected-net-benefit reviews under a hard 10% cap",
         "scenario_assumptions": {
             "review_budget_fraction": REVIEW_BUDGET_FRACTION,
+            "validation_threshold_diagnostic": "nominal 10% review threshold selected from validation risk scores only; actual test review fraction may differ due to score distribution shift and ties; diagnostic is separate from hard-cap and matched-capacity policies",
             "review_cost_units_per_case": REVIEW_COST_UNITS,
             "simulated_review_effectiveness": REVIEW_EFFECTIVENESS,
             "false_negative_harm_units": FALSE_NEGATIVE_HARM,

@@ -145,7 +145,7 @@ def run_integrated_experiment(budget: float = 500.0, output_path: Path = None, b
         y_test.to_numpy(),
         reference_policy="confidence_only",
         target_coverage=0.75,
-        groups=pd.MultiIndex.from_frame(X_test).factorize(sort=False)[0],
+        groups=X_test.groupby(list(X_test.columns), dropna=False, sort=False).ngroup().to_numpy(),
         n_bootstrap=1000,
         random_state=int(bundle.get("random_seed", 42)),
     )

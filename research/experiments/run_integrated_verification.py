@@ -22,6 +22,7 @@ from src.verification.cost_model import DecisionProfile
 from src.verification.outcome_validator import OutcomeValidator
 from src.verification.reliability_integration import ReliabilityVerificationPipeline
 from src.verification.simulation import generate_harm_estimates
+from src.evaluation.threshold_diagnostics import validation_threshold_metrics
 
 
 def run_integrated_experiment(budget: float = 500.0, output_path: Path = None, bundle_path: Path = None):
@@ -57,7 +58,7 @@ def run_integrated_experiment(budget: float = 500.0, output_path: Path = None, b
 
     data, dataset_stats = load_dataset(str(base_dir / "datasets" / "raw"))
     data = create_binary_target(data, threshold=bundle["target_threshold"])
-    _, _, X_test, _, _, y_test = grouped_stratified_data_splitting(
+    _, X_val, X_test, _, y_val, y_test = grouped_stratified_data_splitting(
         data,
         target_column="good_quality",
         test_size=0.15,
@@ -89,6 +90,31 @@ def run_integrated_experiment(budget: float = 500.0, output_path: Path = None, b
     primary_probabilities = model_probabilities[primary_index]
     primary_confidences = primary_probabilities.max(axis=1)
 
+    # Score validation rows separately. Their labels are not passed to threshold
+    # selection; they are retained only for split metadata and diagnostics.
+    processed_val = preprocessor.transform(X_val)
+    validation_model_probabilities = [
+        np.asarray(model.predict_proba(processed_val), dtype=float)
+        for model in base_models
+    ]
+    validation_features, validation_reliability_scores = pipeline.score(
+        X_val, validation_model_probabilities
+    )
+    validation_primary_probabilities = validation_model_probabilities[primary_index]
+    validation_entropy = (
+        -np.sum(
+            np.clip(validation_primary_probabilities, 1e-12, 1.0)
+            * np.log(np.clip(validation_primary_probabilities, 1e-12, 1.0)),
+            axis=1,
+        ) / np.log(validation_primary_probabilities.shape[1])
+    )
+    validation_policy_scores = {
+        "reliability_driven": validation_reliability_scores,
+        "confidence_only": 1.0 - validation_primary_probabilities.max(axis=1),
+        "predictive_entropy": validation_entropy,
+        "ensemble_disagreement": validation_features["disagreement_fraction"].to_numpy(),
+    }
+
     # Baselines use the same test samples, harm estimates, budget, and executor
     # configuration. Only the error-probability scoring signal changes.
     class_count = primary_probabilities.shape[1]
@@ -99,6 +125,16 @@ def run_integrated_experiment(budget: float = 500.0, output_path: Path = None, b
         "predictive_entropy": np.clip(entropy_baseline, 0.0, 1.0),
         "ensemble_disagreement": reliability_features["disagreement_fraction"].to_numpy(),
         "always_accept": np.zeros(len(X_test), dtype=float),
+    }
+    validation_selected_matched_coverage = {
+        name: validation_threshold_metrics(
+            validation_policy_scores[name],
+            policy_scores[name],
+            primary_predictions,
+            y_test.to_numpy(),
+            target_coverage=0.75,
+        )
+        for name in validation_policy_scores
     }
 
     policy_comparisons = {}
@@ -152,6 +188,9 @@ def run_integrated_experiment(budget: float = 500.0, output_path: Path = None, b
     result = {
         "milestone": "4.2 - Integrated Reliability-Driven Verification",
         "test_set_size": int(len(X_test)),
+        "validation_set_size": int(len(X_val)),
+        "validation_selected_matched_coverage": validation_selected_matched_coverage,
+        "matched_coverage_protocol": "For each risk-ranking policy, select a low-risk acceptance threshold from validation scores only at nominal 75% coverage, then apply it unchanged to test scores. Test labels are used only after the accepted mask is fixed; ties and distribution shift can change realized coverage.",
         "reliability_probability_source": "fitted reliability estimator from out-of-fold training features",
         "split_strategy": bundle.get("split_strategy", "legacy_random_stratified"),
         "duplicate_group_isolation": bundle.get("split_strategy") == "stratified_grouped_exact_feature_rows",

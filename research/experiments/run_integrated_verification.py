@@ -140,7 +140,7 @@ def run_integrated_experiment(budget: float = 500.0, output_path: Path = None, b
 
     paired_bootstrap_vs_confidence = paired_bootstrap_policy_comparisons(
         validation_policy_scores,
-        policy_scores,
+        {name: policy_scores[name] for name in validation_policy_scores},
         primary_predictions,
         y_test.to_numpy(),
         reference_policy="confidence_only",

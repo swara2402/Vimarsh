@@ -306,14 +306,47 @@ def run_seed(seed, output_dir):
         random_state=seed,
     )
 
-    # Controlled covariate-shift stress test: retain the fitted models and
-    # validation-selected thresholds, perturb only held-out test features.
+    # Multi-family stress test: fitted models and original validation thresholds
+    # remain frozen. All perturbation references come from training features only.
     shift_robustness = {}
     training_scale = X_train.std(axis=0, ddof=0)
+    training_medians = X_train.median(axis=0)
+    stress_scenarios = []
     for severity in (0.25, 0.5, 1.0):
-        shifted_X_test = make_mean_feature_shift(
-            X_test, training_scale, severity, random_state=seed + int(severity * 100)
-        )
+        stress_scenarios.append((
+            f"mean_offset_{severity:.2f}_training_std",
+            "alternating_signed_mean_offset",
+            float(severity),
+            "training_standard_deviations",
+            make_mean_feature_shift(
+                X_test, training_scale, severity,
+                random_state=seed + int(severity * 100),
+            ),
+        ))
+    for ratio in (0.1, 0.3, 0.5):
+        stress_scenarios.append((
+            f"gaussian_noise_{ratio:.2f}_training_std",
+            "independent_gaussian_feature_noise",
+            float(ratio),
+            "training_standard_deviations",
+            make_gaussian_feature_noise(
+                X_test, training_scale, ratio,
+                random_state=seed + int(ratio * 1000),
+            ),
+        ))
+    for fraction in (0.05, 0.15, 0.30):
+        stress_scenarios.append((
+            f"training_median_mask_{fraction:.2f}",
+            "random_cell_masking_to_training_median",
+            float(fraction),
+            "fraction_of_feature_cells",
+            make_training_median_mask(
+                X_test, training_medians, fraction,
+                random_state=seed + int(fraction * 1000),
+            ),
+        ))
+
+    for scenario_name, family, severity, severity_unit, shifted_X_test in stress_scenarios:
         shifted_processed = final_preprocessor.transform(shifted_X_test)
         shifted_probs = [
             np.asarray(model.predict_proba(shifted_processed), dtype=float)
@@ -336,9 +369,12 @@ def run_seed(seed, output_dir):
             "predictive_entropy": shifted_entropy,
             "ensemble_disagreement": shifted_features["disagreement_fraction"].to_numpy(),
         }
-        shift_robustness[f"{severity:.2f}_training_std"] = {
-            "severity": float(severity),
-            "perturbation": "Alternating signed per-feature mean offset plus Gaussian noise, scaled by training-set feature standard deviation",
+        shift_robustness[scenario_name] = {
+            "perturbation_family": family,
+            "severity": severity,
+            "severity_unit": severity_unit,
+            "thresholds_and_models_frozen": True,
+            "training_only_reference_statistics": True,
             **evaluate_frozen_policy_under_shift(
                 validation_policy_scores,
                 shifted_scores,
@@ -346,8 +382,8 @@ def run_seed(seed, output_dir):
                 y_test.to_numpy(),
                 groups=_groups(X_test),
                 target_coverage=0.75,
-                n_bootstrap=500,
-                random_state=seed + int(severity * 1000),
+                n_bootstrap=300,
+                random_state=seed + sum(ord(char) for char in scenario_name),
             ),
         }
 
@@ -408,7 +444,7 @@ def run_seed(seed, output_dir):
         "paired_bootstrap_vs_confidence": paired_bootstrap_vs_confidence,
         "paired_bootstrap_protocol": "Paired cluster bootstrap resamples exact-duplicate feature groups on the fixed test partition. Thresholds are selected on validation scores before labels are accessed. Percentile intervals are conditional on fitted models and this split; they do not include training-seed uncertainty.",
         "controlled_shift_robustness": shift_robustness,
-        "controlled_shift_scope": "Synthetic covariate-shift stress tests on the held-out test features; fitted models and original validation thresholds are frozen. This is not evidence about natural production drift.",
+        "controlled_shift_scope": "Three synthetic perturbation families (signed mean offsets, independent Gaussian feature noise, and random cell masking to training-only medians) on held-out test features; fitted models and original validation thresholds are frozen. This is not evidence about natural production drift.",
         "validation_feature_ablation": validation_ablation_results,
         "harm_assumption": "Constant 5.0/10 for every test observation; MAGIC provides no domain harm labels.",
         "limitations": [

@@ -47,6 +47,40 @@ def test_distribution_shift_batch_matches_single_sample_results(sample_data):
             assert batch_row[key] == pytest.approx(single_row[key], abs=1e-10)
 
 
+def test_nonfinite_values_preserve_single_batch_parity(sample_data):
+    training, samples = sample_data
+    samples = samples.iloc[:3].copy()
+    samples.iloc[0, 0] = np.nan
+    samples.iloc[1, 1] = np.inf
+    samples.iloc[2, 2] = -np.inf
+
+    quality = InputQualityAnalyzer(training)
+    quality_batch = quality.analyze_batch(samples)
+    quality_singles = [quality.analyze_single_sample(samples.iloc[i]) for i in range(len(samples))]
+    assert quality_batch[1]["invalid_value_count"] == 1
+    assert quality_batch[2]["invalid_value_count"] == 1
+    for batch_row, single_row in zip(quality_batch, quality_singles):
+        for key in batch_row:
+            assert batch_row[key] == pytest.approx(single_row[key])
+
+    shift = DistributionShiftDetector(training)
+    shift_batch = shift.analyze_batch(samples)
+    shift_singles = [shift.analyze_single_sample(samples.iloc[i]) for i in range(len(samples))]
+    for batch_row, single_row in zip(shift_batch, shift_singles):
+        for key in batch_row:
+            assert batch_row[key] == pytest.approx(single_row[key], abs=1e-10)
+
+
+def test_single_sample_analyzers_reject_reordered_feature_schema(sample_data):
+    training, samples = sample_data
+    reordered = samples.iloc[0][list(reversed(training.columns))]
+
+    with pytest.raises(ValueError, match="fitted training schema"):
+        InputQualityAnalyzer(training).analyze_single_sample(reordered)
+    with pytest.raises(ValueError, match="fitted training schema"):
+        DistributionShiftDetector(training).analyze_single_sample(reordered)
+
+
 def test_feature_extractor_batch_matches_single_sample_results(sample_data):
     training, samples = sample_data
     extractor = ReliabilityFeatureExtractor(training, primary_model_index=1)

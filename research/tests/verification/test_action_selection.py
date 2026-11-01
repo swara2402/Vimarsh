@@ -33,6 +33,25 @@ def test_utility_calculation():
     assert utility == 5.0 - 1.0 - (1.0 * 2.0) == 2.0
 
 
+def test_engine_config_passes_custom_thresholds_to_safety_engine():
+    engine = VerificationEngine(VerificationEngineConfig(
+        high_risk_threshold=6.0, medium_risk_threshold=2.0,
+        enable_evidence_provider=False, enable_human_reviewer=False,
+    ))
+    assert engine.safety_engine.high_risk_threshold == 6.0
+    assert engine.safety_engine.medium_risk_threshold == 2.0
+    assert engine.safety_engine.check_safety_constraints(ActionType.ACCEPT, 6.0)[0] is False
+
+
+def test_engine_rejects_invalid_risk_inputs():
+    engine = VerificationEngine(VerificationEngineConfig())
+    sample = pd.Series({"x": 1.0})
+    with pytest.raises(ValueError, match="error_probability"):
+        engine.process_sample(sample, "bad-p", 1, 0.9, 1.2, 2.0)
+    with pytest.raises(ValueError, match="harm"):
+        engine.process_sample(sample, "bad-h", 1, 0.9, 0.2, -1.0)
+
+
 def test_verification_engine_initialization():
     """Test that verification engine initializes correctly."""
     config = VerificationEngineConfig(

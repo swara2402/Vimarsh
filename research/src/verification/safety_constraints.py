@@ -1,6 +1,7 @@
 """Safety constraint engine to determine which actions are feasible."""
 from dataclasses import dataclass
 from typing import Dict, List, Set, Any
+import math
 from .actions import ActionType, VerificationActionExecutor, EvidenceProvider, AlternativeModelRunner, SimulatedHumanReviewer
 from .cost_model import BudgetManager, ActionCosts
 
@@ -23,11 +24,21 @@ class SafetyConstraintEngine:
         self,
         action_executor: VerificationActionExecutor,
         budget_manager: BudgetManager,
-        action_costs: ActionCosts
+        action_costs: ActionCosts,
+        high_risk_threshold: float = 8.0,
+        medium_risk_threshold: float = 4.0,
     ):
+        if (
+            not math.isfinite(medium_risk_threshold)
+            or not math.isfinite(high_risk_threshold)
+            or not (0 <= medium_risk_threshold < high_risk_threshold)
+        ):
+            raise ValueError("Risk thresholds must satisfy 0 <= medium < high")
         self.action_executor = action_executor
         self.budget_manager = budget_manager
-        self.action_costs = action_costs.costs_dict = action_costs.to_dict()
+        self.action_costs = action_costs.to_dict()
+        self.high_risk_threshold = float(high_risk_threshold)
+        self.medium_risk_threshold = float(medium_risk_threshold)
     
     def check_action_availability(self, action_type: ActionType) -> tuple[bool, str]:
         """
@@ -103,17 +114,13 @@ class SafetyConstraintEngine:
         if action_type == ActionType.ABSTAIN:
             return True, "ABSTAIN is always safe"
             
-        # Define risk thresholds first (moved from below to prevent undefined variable errors)
-        HIGH_RISK_THRESHOLD = 8.0  # Configurable
-        MEDIUM_RISK_THRESHOLD = 4.0
-            
-        # For extremely high risk samples, only HUMAN_REVIEW or ABSTAIN are allowed
-        if baseline_risk >= HIGH_RISK_THRESHOLD:
+        # For extremely high risk samples, only HUMAN_REVIEW or ABSTAIN are allowed.
+        if baseline_risk >= self.high_risk_threshold:
             if action_type not in [ActionType.HUMAN_REVIEW, ActionType.ABSTAIN]:
                 return False, f"High risk ({baseline_risk:.2f}) requires HUMAN_REVIEW or ABSTAIN"
             return True, "High risk action is allowed"
         # For medium-high risk, can't just accept - but allow automated verification actions
-        elif baseline_risk >= MEDIUM_RISK_THRESHOLD and action_type == ActionType.ACCEPT:
+        elif baseline_risk >= self.medium_risk_threshold and action_type == ActionType.ACCEPT:
             return False, f"Medium-high risk ({baseline_risk:.2f}) cannot be directly ACCEPTED"
             
         return True, "Action is safe for current risk level"

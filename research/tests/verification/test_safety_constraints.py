@@ -162,6 +162,25 @@ def test_budget_constraints_enforced():
     assert is_budget_feasible
 
 
+def test_custom_risk_thresholds_are_respected():
+    executor = VerificationActionExecutor()
+    engine = SafetyConstraintEngine(
+        executor, BudgetManager(100.0), ActionCosts(),
+        high_risk_threshold=6.0, medium_risk_threshold=2.0,
+    )
+    assert not engine.check_safety_constraints(ActionType.ACCEPT, 6.0)[0]
+    assert not engine.check_safety_constraints(ActionType.ACCEPT, 2.0)[0]
+    assert engine.check_safety_constraints(ActionType.ACCEPT, 1.99)[0]
+
+
+def test_invalid_risk_threshold_order_is_rejected():
+    with pytest.raises(ValueError, match="0 <= medium < high"):
+        SafetyConstraintEngine(
+            VerificationActionExecutor(), BudgetManager(100.0), ActionCosts(),
+            high_risk_threshold=4.0, medium_risk_threshold=4.0,
+        )
+
+
 def test_evaluate_all_actions_returns_feasibility():
     """Test that evaluate_all_actions returns feasibility for all actions."""
     executor = VerificationActionExecutor()

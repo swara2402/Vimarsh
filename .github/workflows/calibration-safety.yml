@@ -1,0 +1,56 @@
+name: Calibration and safety audit
+
+on:
+  pull_request:
+    paths:
+      - "research/**"
+      - ".github/workflows/calibration-safety.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "research/**"
+      - ".github/workflows/calibration-safety.yml"
+
+jobs:
+  calibration-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: research
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install test dependencies
+        run: python -m pip install --upgrade pip && python -m pip install pytest numpy pandas scipy scikit-learn
+      - name: Compile calibration audit
+        run: python -m compileall -q src/evaluation/calibration_audit.py experiments/run_calibration_safety_audit.py
+      - name: Run calibration audit tests
+        run: python -m pytest -q tests/test_calibration_audit.py
+      - name: Run existing calibration serialization tests
+        run: python -m pytest -q tests/test_calibration_serialization.py
+
+  calibration-experiment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: research
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install experiment dependencies
+        run: python -m pip install --upgrade pip && python -m pip install numpy pandas scipy scikit-learn
+      - name: Run held-out calibration and selective-risk audit
+        run: python experiments/run_calibration_safety_audit.py --seeds 17 42 73
+      - name: Upload calibration audit results
+        uses: actions/upload-artifact@v4
+        with:
+          name: vimarsh-calibration-safety-audit
+          path: research/results/calibration_safety/
+          if-no-files-found: error
+          retention-days: 30

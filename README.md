@@ -99,7 +99,7 @@ The integrated verification-engine workflow remains research-stage and runs on W
 3. From the `research/` directory, run `python experiments/run_reliability_experiments.py` to train the reliability estimator and write its inference bundle.
 4. Run `python experiments/run_integrated_verification.py` to use estimated error probabilities for verification action selection and offline outcome evaluation.
 
-See [Milestone 4 integration notes](research/docs/milestone4-1-integration.md), the [Cross-dataset evidence audit](research/docs/cross-dataset-evidence-audit.md), [Paired bootstrap uncertainty protocol](research/docs/paired-bootstrap-uncertainty.md), [Research Plan](docs/research-plan.md), and [Architecture](docs/architecture.md) for assumptions, limitations, and the proposed sequence of work.
+See [Controlled shift robustness protocol](research/docs/controlled-shift-robustness.md), [Milestone 4 integration notes](research/docs/milestone4-1-integration.md), the [Cross-dataset evidence audit](research/docs/cross-dataset-evidence-audit.md), [Paired bootstrap uncertainty protocol](research/docs/paired-bootstrap-uncertainty.md), [Research Plan](docs/research-plan.md), and [Architecture](docs/architecture.md) for assumptions, limitations, and the proposed sequence of work.
 
 ## License
 

@@ -24,7 +24,9 @@ For each existing seed (17, 42, 73):
 7. Apply the original validation thresholds unchanged. Evaluate shifted test
    coverage, accepted-set error, and overall accuracy.
 8. Report paired candidate-minus-confidence-only bootstrap intervals using
-   the same resampled exact-feature groups for both policies.
+   the same resampled groups for both policies, using exact-duplicate groups
+   defined on the original unshifted test features so row-wise noise does not
+   dissolve the dependence clusters.
 
 The perturbation generator is deterministic for a fixed seed and severity.
 Zero severity is an identity transform. The stress-test results are emitted

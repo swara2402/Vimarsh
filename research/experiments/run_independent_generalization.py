@@ -260,7 +260,7 @@ def main():
             result["dataset_key"] = dataset_name
             all_results.append(result)
             (args.output_dir / f"{dataset_name}_seed_{seed}.json").write_text(
-                json.dumps(result, indent=2, sort_keys=True) + "\\n"
+                json.dumps(result, indent=2, sort_keys=True) + "\n"
             )
     summary = {
         "seeds": args.seeds,
@@ -278,7 +278,7 @@ def main():
         ],
     }
     (args.output_dir / "independent_generalization_summary.json").write_text(
-        json.dumps(summary, indent=2, sort_keys=True) + "\\n"
+        json.dumps(summary, indent=2, sort_keys=True) + "\n"
     )
     print(json.dumps(summary, indent=2, sort_keys=True))
 

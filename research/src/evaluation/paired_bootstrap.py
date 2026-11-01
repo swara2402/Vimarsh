@@ -115,12 +115,12 @@ def paired_bootstrap_policy_comparisons(
     random_state=42,
 ):
     """Compare validation-thresholded policies against one reference policy."""
+    if set(validation_scores_by_policy) != set(test_scores_by_policy):
+        raise ValueError("Validation and test score policy names must match")
     if reference_policy not in validation_scores_by_policy:
         raise ValueError("reference_policy is missing validation scores")
     if reference_policy not in test_scores_by_policy:
         raise ValueError("reference_policy is missing test scores")
-    if set(validation_scores_by_policy) != set(test_scores_by_policy):
-        raise ValueError("Validation and test score policy names must match")
 
     accepted_masks = {}
     thresholds = {}

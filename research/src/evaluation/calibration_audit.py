@@ -62,7 +62,7 @@ def calibration_audit(y_true: np.ndarray, probabilities: np.ndarray, n_bins: int
     order = np.argsort(-confidence, kind="mergesort")
     cumulative_risk = np.cumsum(1.0 - correct[order]) / np.arange(1, len(y) + 1)
     coverage = np.arange(1, len(y) + 1, dtype=float) / len(y)
-    aurc = float(np.trapz(cumulative_risk, coverage)) if len(y) > 1 else float(cumulative_risk[0])
+    aurc = float(np.sum((cumulative_risk[1:] + cumulative_risk[:-1]) * np.diff(coverage) * 0.5)) if len(y) > 1 else float(cumulative_risk[0])
     high = confidence >= high_confidence_threshold
     return {
         "n_samples": int(len(y)), "ece": ece, "mce": mce, "adaptive_ece": adaptive_ece,

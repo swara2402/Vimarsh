@@ -33,6 +33,7 @@ from src.train import (
 from src.reliability.feature_extractor import ReliabilityFeatureExtractor
 from src.reliability.reliability_model import ReliabilityEstimator
 from src.evaluation.threshold_diagnostics import validation_threshold_metrics as shared_validation_threshold_metrics
+from src.evaluation.paired_bootstrap import paired_bootstrap_policy_comparisons
 from src.verification.action_selector import VerificationEngine, VerificationEngineConfig
 from src.verification.cost_model import DecisionProfile
 from src.verification.outcome_validator import OutcomeValidator
@@ -344,6 +345,8 @@ def run_seed(seed, output_dir):
         "matched_coverage_protocol": "For each ranking policy, select a 75% risk-score quantile threshold using validation scores only, then evaluate coverage and observed error on the untouched test partition. Test labels are used only for the final metric.",
         "policy_comparisons": comparisons,
         "validation_threshold_matched_coverage": validation_matched_coverage,
+        "paired_bootstrap_vs_confidence": paired_bootstrap_vs_confidence,
+        "paired_bootstrap_protocol": "Paired cluster bootstrap resamples exact-duplicate feature groups on the fixed test partition. Thresholds are selected on validation scores before labels are accessed. Percentile intervals are conditional on fitted models and this split; they do not include training-seed uncertainty.",
         "validation_feature_ablation": validation_ablation_results,
         "harm_assumption": "Constant 5.0/10 for every test observation; MAGIC provides no domain harm labels.",
         "limitations": [

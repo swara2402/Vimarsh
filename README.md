@@ -90,7 +90,7 @@ vimarsh/
 
 The repository contains implemented baseline classification, reliability-analysis, and verification-action research code. Milestone 3.2 adds outcome and execution-cost auditing. Milestone 4 adds a reliability-to-verification inference bridge, serializable model artifacts, duplicate-grouped train/validation/test and out-of-fold splitting, and an integrated policy-comparison runner.
 
-The integrated experiment is still research-stage: it relies on the Wine Quality benchmark, simulated human review, and assumed action-effectiveness factors. Its runner compares reliability-driven verification with confidence-only, predictive-entropy, ensemble-disagreement, and always-accept scoring under matched budgets and action settings. Grouped stratification keeps identical feature rows together across final partitions, out-of-fold folds, and reliability calibration splits while retaining duplicate observations. This does not establish cross-domain generalization or real-world action effectiveness. The API and React dashboard remain planned.
+The integrated verification-engine workflow remains research-stage and runs on Wine Quality, with separate grouped multi-seed policy-comparison tracks for MAGIC Gamma Telescope and HTRU2. These benchmarks use different scenario assumptions and evaluation designs, so their simulated net-benefit and weighted-loss values are reported separately rather than pooled. The experiments use simulated human review and assumed action-effectiveness factors; they do not establish causal real-world risk reduction or broad domain generalization. Wine and MAGIC now share a validation-selected nominal 75% acceptance diagnostic, while HTRU2 reports separate hard-cap, matched-capacity, and validation-selected review-rate diagnostics. The API and React dashboard remain planned.
 
 ## Getting started
 
@@ -99,7 +99,7 @@ The integrated experiment is still research-stage: it relies on the Wine Quality
 3. From the `research/` directory, run `python experiments/run_reliability_experiments.py` to train the reliability estimator and write its inference bundle.
 4. Run `python experiments/run_integrated_verification.py` to use estimated error probabilities for verification action selection and offline outcome evaluation.
 
-See [Milestone 4 integration notes](research/docs/milestone4-1-integration.md), [Research Plan](docs/research-plan.md), and [Architecture](docs/architecture.md) for assumptions, limitations, and the proposed sequence of work.
+See [Milestone 4 integration notes](research/docs/milestone4-1-integration.md), the [Cross-dataset evidence audit](research/docs/cross-dataset-evidence-audit.md), [Research Plan](docs/research-plan.md), and [Architecture](docs/architecture.md) for assumptions, limitations, and the proposed sequence of work.
 
 ## License
 

@@ -118,3 +118,20 @@ pre-specified per-dataset contrasts, broader independent datasets/model
 families, controlled shift tests, and measured review outcomes or randomized
 review evaluation. Any inferential analysis should preserve per-seed pairing
 and should not treat repeated rows or seeds as independent external datasets.
+
+
+## Milestone 49: controlled covariate-shift stress test
+
+The MAGIC experiment now evaluates frozen policies on synthetic feature-shifted
+test inputs at 0.25, 0.50, and 1.00 training-standard-deviation severities.
+The perturbation is an alternating signed feature-wise mean offset plus small
+Gaussian noise. Models and thresholds selected on the original validation
+partition remain fixed. Per-policy coverage, accepted-set error, overall
+accuracy, and paired candidate-versus-confidence-only bootstrap intervals are
+reported for each seed and severity.
+
+This is one synthetic perturbation family, not a model of natural deployment
+drift. Labels remain unchanged, and results are conditional on the selected
+perturbation, model, split, and fixed thresholds. The experiment does not
+establish broad robustness or real-world safety. See
+[controlled-shift-robustness.md](controlled-shift-robustness.md).

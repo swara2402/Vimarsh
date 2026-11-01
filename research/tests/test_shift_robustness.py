@@ -85,7 +85,6 @@ def test_training_median_mask_uses_only_supplied_reference_values():
     frame = pd.DataFrame({"a": [1.0, 2.0], "b": [10.0, 20.0]})
     medians = pd.Series({"a": -5.0, "b": 99.0})
     masked = make_training_median_mask(frame, medians, 0.5, random_state=3)
-    assert np.sum(masked.to_numpy() == np.array([-5.0, 99.0])) >= 0
     assert np.isin(masked.to_numpy(), [-5.0, 99.0, 1.0, 2.0, 10.0, 20.0]).all()
     assert np.sum(masked.to_numpy() != frame.to_numpy()) == 2
 

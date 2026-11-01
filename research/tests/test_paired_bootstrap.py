@@ -53,8 +53,8 @@ def test_policy_comparison_selects_thresholds_without_using_test_labels():
     }
     result = paired_bootstrap_policy_comparisons(
         validation, test,
-        test_predictions=np.array([0, 1, 0, 1, 0, 1]),
-        test_labels=np.array([0, 0, 0, 0, 1, 1]),
+        test_predictions=np.array([0, 1, 0, 1]),
+        test_labels=np.array([0, 0, 1, 1]),
         target_coverage=0.5, n_bootstrap=200, random_state=3,
     )
     assert set(result) == {"reliability_driven"}

@@ -1,6 +1,7 @@
 """Safety constraint engine to determine which actions are feasible."""
 from dataclasses import dataclass
 from typing import Dict, List, Set, Any
+import math
 from .actions import ActionType, VerificationActionExecutor, EvidenceProvider, AlternativeModelRunner, SimulatedHumanReviewer
 from .cost_model import BudgetManager, ActionCosts
 
@@ -27,7 +28,11 @@ class SafetyConstraintEngine:
         high_risk_threshold: float = 8.0,
         medium_risk_threshold: float = 4.0,
     ):
-        if not (0 <= medium_risk_threshold < high_risk_threshold):
+        if (
+            not math.isfinite(medium_risk_threshold)
+            or not math.isfinite(high_risk_threshold)
+            or not (0 <= medium_risk_threshold < high_risk_threshold)
+        ):
             raise ValueError("Risk thresholds must satisfy 0 <= medium < high")
         self.action_executor = action_executor
         self.budget_manager = budget_manager

@@ -217,3 +217,35 @@ jobs:
           path: research/results/primary_model_sensitivity/
           if-no-files-found: warn
           retention-days: 30
+
+  independent-dataset-generalization:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    defaults:
+      run:
+        working-directory: research
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install experiment dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pandas numpy scipy scikit-learn joblib pyyaml matplotlib seaborn requests pytest
+      - name: Compile independent-dataset experiment
+        run: python -m compileall -q src experiments
+      - name: Test independent benchmark adapters
+        run: python -m pytest -q tests/test_independent_benchmarks.py
+      - name: Run two independent UCI benchmarks across three seeds
+        run: python experiments/run_independent_generalization.py --seeds 17 42 73
+      - name: Upload independent generalization results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vimarsh-independent-generalization
+          path: research/results/independent_generalization/
+          if-no-files-found: warn
+          retention-days: 30

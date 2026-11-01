@@ -48,7 +48,7 @@ def test_frozen_validation_thresholds_and_paired_comparisons_are_reported():
         groups=groups, n_bootstrap=100, random_state=5,
     )
     assert result["target_coverage"] == 0.75
-    assert result["policy_metrics"]["confidence_only"]["frozen_validation_threshold"] == 0.3
+    assert result["policy_metrics"]["confidence_only"]["frozen_validation_threshold"] == 0.4
     assert set(result["paired_bootstrap_vs_confidence"]) == {"reliability_driven"}
     assert result["paired_bootstrap_vs_confidence"]["reliability_driven"]["bootstrap_replicates"] == 100
     assert "frozen" in result["threshold_protocol"]

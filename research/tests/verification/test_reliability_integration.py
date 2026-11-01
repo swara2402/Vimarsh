@@ -137,3 +137,21 @@ def test_rejects_nonfinite_estimator_scores(inputs):
     pipeline = ReliabilityVerificationPipeline(FakeFeatureExtractor(), bad_estimator)
     with pytest.raises(ValueError, match="non-finite"):
         pipeline.score(samples, probabilities)
+
+
+def test_rejects_primary_model_index_mismatch_with_feature_extractor(inputs):
+    samples, probabilities = inputs
+    extractor = FakeFeatureExtractor()
+    extractor.primary_model_index = 0
+    engine = FakeVerificationEngine()
+    with pytest.raises(ValueError, match="must match the feature extractor"):
+        ReliabilityVerificationPipeline(
+            extractor, FakeReliabilityEstimator()
+        ).run_verification(
+            engine=engine,
+            samples=samples,
+            predictions=[0, 1],
+            model_probabilities=probabilities,
+            harms=[2.0, 3.0],
+            primary_model_index=1,
+        )

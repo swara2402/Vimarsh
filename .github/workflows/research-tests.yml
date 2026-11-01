@@ -32,7 +32,7 @@ jobs:
       - name: Install test dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pytest pandas numpy scipy scikit-learn joblib pyyaml matplotlib
+          python -m pip install pytest pandas numpy scipy scikit-learn joblib pyyaml matplotlib requests
       - name: Compile research source and experiment scripts
         run: python -m compileall -q src experiments
       - name: Run outcome validation tests
@@ -41,3 +41,143 @@ jobs:
         run: python -m pytest -q tests/verification/test_reliability_integration.py
       - name: Run calibration serialization tests
         run: python -m pytest -q tests/test_calibration_serialization.py
+      - name: Run primary-model feature alignment tests
+        run: python -m pytest -q tests/test_primary_model_feature_alignment.py
+      - name: Run grouped-splitting tests
+        run: python -m pytest -q tests/test_grouped_splitting.py
+      - name: Run reliability batch feature tests
+        run: python -m pytest -q tests/test_reliability_batch_features.py
+      - name: Run multi-seed aggregation tests
+        run: python -m pytest -q tests/test_multiseed_policy_comparison.py
+      - name: Run MAGIC dataset adapter tests
+        run: python -m pytest -q tests/test_magic_gamma_dataset.py
+      - name: Run MAGIC grouped experiment tests
+        run: python -m pytest -q tests/test_magic_gamma_experiment.py
+
+  wine-end-to-end:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: research
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install experiment dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pandas numpy scipy scikit-learn joblib pyyaml matplotlib seaborn requests
+      - name: Train reliability models and save inference bundle
+        run: python experiments/run_reliability_experiments.py
+      - name: Run integrated reliability-driven verification
+        run: python experiments/run_integrated_verification.py
+      - name: Upload experiment results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vimarsh-milestone4-experiment-results
+          path: |
+            research/results/integrated_verification/
+            research/results/reliability/metrics/
+            research/docs/reliability-engine-report.md
+            research/models/reliability/wine_quality_reliability_bundle.joblib
+          if-no-files-found: warn
+          retention-days: 14
+
+  multi-seed-policy-comparison:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    defaults:
+      run:
+        working-directory: research
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install experiment dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pandas numpy scipy scikit-learn joblib pyyaml matplotlib seaborn requests pytest
+      - name: Compile multi-seed experiment
+        run: python -m compileall -q src experiments
+      - name: Run independent seed experiments and aggregate policies
+        run: python experiments/run_multiseed_policy_comparison.py --seeds 17 42 73
+      - name: Upload multi-seed results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vimarsh-multiseed-policy-results
+          path: |
+            research/results/multiseed/
+            research/models/reliability/wine_quality_reliability_bundle_seed_*.joblib
+          if-no-files-found: warn
+          retention-days: 30
+  magic-gamma-policy-comparison:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    defaults:
+      run:
+        working-directory: research
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install experiment dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pandas numpy scipy scikit-learn joblib pyyaml matplotlib seaborn requests pytest
+      - name: Compile MAGIC benchmark experiment
+        run: python -m compileall -q src experiments
+      - name: Run grouped MAGIC multi-seed policy comparison
+        run: python experiments/run_magic_gamma_policy_comparison.py --seeds 17 42 73
+      - name: Upload MAGIC benchmark results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vimarsh-magic-gamma-policy-results
+          path: |
+            research/results/magic_gamma/
+          if-no-files-found: warn
+          retention-days: 30
+
+  htru2-budgeted-verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    defaults:
+      run:
+        working-directory: research
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install experiment dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pandas numpy scipy scikit-learn joblib pyyaml matplotlib seaborn requests pytest
+      - name: Compile HTRU2 experiment
+        run: python -m compileall -q src experiments
+      - name: Run HTRU2 parser and budget-policy tests
+        run: python -m pytest -q tests/test_htru2_budgeted_verification.py
+      - name: Run grouped multi-seed HTRU2 constrained verification
+        run: python experiments/run_htru2_budgeted_verification.py --seeds 17 42 73
+      - name: Upload HTRU2 results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vimarsh-htru2-budgeted-verification
+          path: research/results/htru2_budgeted/
+          if-no-files-found: warn
+          retention-days: 30

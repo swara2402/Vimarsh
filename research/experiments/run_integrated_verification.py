@@ -16,7 +16,7 @@ RESEARCH_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RESEARCH_DIR))
 
 from src.data_loader import load_dataset, create_binary_target
-from src.preprocessing import stratified_data_splitting
+from src.preprocessing import grouped_stratified_data_splitting
 from src.verification.action_selector import VerificationEngine, VerificationEngineConfig
 from src.verification.cost_model import DecisionProfile
 from src.verification.outcome_validator import OutcomeValidator
@@ -24,12 +24,17 @@ from src.verification.reliability_integration import ReliabilityVerificationPipe
 from src.verification.simulation import generate_harm_estimates
 
 
-def run_integrated_experiment(budget: float = 500.0, output_path: Path = None):
+def run_integrated_experiment(budget: float = 500.0, output_path: Path = None, bundle_path: Path = None):
     """Run action selection with estimated error probabilities, then evaluate outcomes."""
     base_dir = RESEARCH_DIR
-    bundle_path = (
-        base_dir / "models" / "reliability" / "wine_quality_reliability_bundle.joblib"
-    )
+    if bundle_path is None:
+        bundle_path = (
+            base_dir / "models" / "reliability" / "wine_quality_reliability_bundle.joblib"
+        )
+    else:
+        bundle_path = Path(bundle_path)
+        if not bundle_path.is_absolute():
+            bundle_path = base_dir / bundle_path
     if not bundle_path.exists():
         raise FileNotFoundError(
             f"Reliability bundle not found at {bundle_path}. "
@@ -52,7 +57,7 @@ def run_integrated_experiment(budget: float = 500.0, output_path: Path = None):
 
     data, dataset_stats = load_dataset(str(base_dir / "datasets" / "raw"))
     data = create_binary_target(data, threshold=bundle["target_threshold"])
-    _, _, X_test, _, _, y_test = stratified_data_splitting(
+    _, _, X_test, _, _, y_test = grouped_stratified_data_splitting(
         data,
         target_column="good_quality",
         test_size=0.15,
@@ -75,58 +80,91 @@ def run_integrated_experiment(budget: float = 500.0, output_path: Path = None):
     primary_predictions = primary_model.predict(processed_test).tolist()
     harms = generate_harm_estimates(X_test)
 
-    config = VerificationEngineConfig(
-        total_verification_budget=budget,
-        decision_profile=DecisionProfile.BALANCED,
-        base_model_path=base_dir / Path(bundle["base_model_dir"]),
-        original_model_name=bundle["base_model_names"][primary_index],
-        enable_evidence_provider=False,
-        enable_human_reviewer=True,
-        max_human_reviews=50,
-    )
-    engine = VerificationEngine(config)
     pipeline = ReliabilityVerificationPipeline(
         bundle["feature_extractor"], bundle["reliability_estimator"]
     )
-    integrated = pipeline.run_verification(
-        engine=engine,
-        samples=X_test,
-        predictions=primary_predictions,
-        model_probabilities=model_probabilities,
-        harms=harms,
-        primary_model_index=primary_index,
+    reliability_features, reliability_error_probabilities = pipeline.score(
+        X_test, model_probabilities
     )
+    primary_probabilities = model_probabilities[primary_index]
+    primary_confidences = primary_probabilities.max(axis=1)
 
-    # Ground truth is introduced only after action selection, for offline evaluation.
-    validator = OutcomeValidator(engine.action_executor)
-    primary_confidences = model_probabilities[primary_index].max(axis=1)
-    for index, evaluation in enumerate(integrated.evaluations):
-        validator.execute_and_evaluate_action(
-            sample=X_test.iloc[index],
-            base_prediction=primary_predictions[index],
-            base_confidence=float(primary_confidences[index]),
-            action_type=evaluation.selected_action,
-            true_label=y_test.iloc[index],
-            evaluation=evaluation,
+    # Baselines use the same test samples, harm estimates, budget, and executor
+    # configuration. Only the error-probability scoring signal changes.
+    class_count = primary_probabilities.shape[1]
+    entropy_baseline = reliability_features["predictive_entropy"].to_numpy() / np.log(class_count)
+    policy_scores = {
+        "reliability_driven": reliability_error_probabilities,
+        "confidence_only": 1.0 - primary_confidences,
+        "predictive_entropy": np.clip(entropy_baseline, 0.0, 1.0),
+        "ensemble_disagreement": reliability_features["disagreement_fraction"].to_numpy(),
+        "always_accept": np.zeros(len(X_test), dtype=float),
+    }
+
+    policy_comparisons = {}
+    reliability_validator = None
+    reliability_engine = None
+    for policy_name, error_scores in policy_scores.items():
+        policy_config = VerificationEngineConfig(
+            total_verification_budget=budget,
+            decision_profile=DecisionProfile.BALANCED,
+            base_model_path=base_dir / Path(bundle["base_model_dir"]),
+            original_model_name=bundle["base_model_names"][primary_index],
+            enable_evidence_provider=False,
+            enable_human_reviewer=True,
+            max_human_reviews=50,
+        )
+        policy_engine = VerificationEngine(policy_config)
+        policy_evaluations = policy_engine.process_batch(
+            samples=X_test,
+            predictions=primary_predictions,
+            confidences=primary_confidences.tolist(),
+            error_probabilities=np.asarray(error_scores, dtype=float).tolist(),
+            harms=harms,
         )
 
-    policy_metrics = validator.calculate_policy_metrics("milestone4_integrated")
-    alternate_checks = validator.validate_alternate_model_independence(
+        # Ground truth is introduced only after action selection, for offline
+        # simulation of outcomes. Each policy gets a fresh executor and budget.
+        np.random.seed(42)
+        validator = OutcomeValidator(policy_engine.action_executor)
+        for index, evaluation in enumerate(policy_evaluations):
+            validator.execute_and_evaluate_action(
+                sample=X_test.iloc[index],
+                base_prediction=primary_predictions[index],
+                base_confidence=float(primary_confidences[index]),
+                action_type=evaluation.selected_action,
+                true_label=y_test.iloc[index],
+                evaluation=evaluation,
+            )
+        policy_metrics = validator.calculate_policy_metrics(policy_name)
+        policy_comparisons[policy_name] = policy_metrics.__dict__
+        if policy_name == "reliability_driven":
+            reliability_validator = validator
+            reliability_engine = policy_engine
+
+    policy_metrics = policy_comparisons["reliability_driven"]
+    alternate_checks = reliability_validator.validate_alternate_model_independence(
         X_test, primary_model, preprocessor
     )
-    evidence_checks = validator.validate_evidence_no_label_leakage()
-    human_checks = validator.validate_simulated_human_review()
+    evidence_checks = reliability_validator.validate_evidence_no_label_leakage()
+    human_checks = reliability_validator.validate_simulated_human_review()
 
     result = {
         "milestone": "4.2 - Integrated Reliability-Driven Verification",
         "test_set_size": int(len(X_test)),
         "reliability_probability_source": "fitted reliability estimator from out-of-fold training features",
+        "split_strategy": bundle.get("split_strategy", "legacy_random_stratified"),
+        "duplicate_group_isolation": bundle.get("split_strategy") == "stratified_grouped_exact_feature_rows",
+        "oof_split_strategy": "stratified_grouped_exact_feature_rows",
+        "reliability_calibration_split_strategy": "stratified_grouped_exact_feature_rows",
         "error_probability_summary": {
-            "minimum": float(np.min(integrated.error_probabilities)),
-            "mean": float(np.mean(integrated.error_probabilities)),
-            "maximum": float(np.max(integrated.error_probabilities)),
+            "minimum": float(np.min(reliability_error_probabilities)),
+            "mean": float(np.mean(reliability_error_probabilities)),
+            "maximum": float(np.max(reliability_error_probabilities)),
         },
-        "policy_metrics": policy_metrics.__dict__,
+        "policy_metrics": policy_metrics,
+        "policy_comparisons": policy_comparisons,
+        "policy_comparison_protocol": "Same grouped test set, harm estimates, budget, action costs, and executor settings; only error-probability scoring signal differs.",
         "integrity_checks": {
             "alternate_model": alternate_checks,
             "evidence_provider": evidence_checks,
@@ -135,7 +173,7 @@ def run_integrated_experiment(budget: float = 500.0, output_path: Path = None):
         "limitations": [
             "Human review remains simulated and uses ground truth only to simulate post-selection review outcomes.",
             "Additional evidence remains disabled because no real evidence provider is configured.",
-            "The Wine Quality random split contains cross-partition duplicate rows; this run is not evidence of cross-domain generalization.",
+            "Grouped splitting isolates exact duplicate feature rows, but this single Wine Quality benchmark is not evidence of cross-domain generalization.",
             "The action engine's configured risk-reduction factors remain assumptions and are not replaced by observed causal action effects.",
         ],
     }
@@ -150,9 +188,13 @@ def run_integrated_experiment(budget: float = 500.0, output_path: Path = None):
     print("Integrated reliability-driven verification complete.")
     print(f"Samples: {len(X_test)}")
     print(f"Mean estimated error probability: {result['error_probability_summary']['mean']:.4f}")
-    print(f"Coverage: {policy_metrics.coverage:.2%}")
-    print(f"Observed covered-sample error rate: {policy_metrics.observed_error_rate:.2%}")
-    print(f"Net corrections: {policy_metrics.net_corrections}")
+    for name, metrics in policy_comparisons.items():
+        error_rate = metrics["observed_error_rate"]
+        error_text = "n/a" if error_rate is None else f"{error_rate:.2%}"
+        print(
+            f"{name}: coverage={metrics['coverage']:.2%}, "
+            f"covered_error={error_text}, net_corrections={metrics['net_corrections']}"
+        )
     print(f"Results: {results_file}")
     return result
 
@@ -161,5 +203,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--budget", type=float, default=500.0)
     parser.add_argument("--output", type=Path, default=None)
+    parser.add_argument("--bundle", type=Path, default=None, help="Optional seed-specific inference bundle.")
     arguments = parser.parse_args()
-    run_integrated_experiment(budget=arguments.budget, output_path=arguments.output)
+    run_integrated_experiment(
+        budget=arguments.budget,
+        output_path=arguments.output,
+        bundle_path=arguments.bundle,
+    )

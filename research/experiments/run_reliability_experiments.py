@@ -55,7 +55,7 @@ sys.path.insert(0, research_dir)
 
 # Import VIMARSH modules
 from src.data_loader import load_dataset
-from src.preprocessing import stratified_data_splitting, create_preprocessing_pipeline
+from src.preprocessing import grouped_stratified_data_splitting, grouped_stratified_holdout_indices, grouped_stratified_kfold_indices, create_preprocessing_pipeline
 from src.calibration import calibrate_model
 from src.evaluate import evaluate_model
 from src.visualization import plot_roc_curves, plot_confusion_matrix
@@ -85,10 +85,7 @@ def generate_out_of_fold_predictions(
     Generate out-of-fold predictions from base models to train reliability estimator.
     This prevents leakage by using predictions that weren't trained on the same data.
     """
-    from sklearn.model_selection import StratifiedKFold
     from src.train import train_logistic_regression, train_random_forest, train_gradient_boosting
-    
-    kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=config['np_random_seed'])
     oof_predictions = []
     oof_true_labels = []
     
@@ -96,7 +93,9 @@ def generate_out_of_fold_predictions(
     full_models = []
     
     # First generate out-of-fold predictions for reliability training
-    for train_idx, val_idx in kf.split(X_train, y_train):
+    for train_idx, val_idx in grouped_stratified_kfold_indices(
+        X_train, y_train, n_splits=5, random_state=config['np_random_seed']
+    ):
         X_tr, X_val = X_train.iloc[train_idx], X_train.iloc[val_idx]
         y_tr, y_val = y_train.iloc[train_idx], y_train.iloc[val_idx]
         
@@ -145,18 +144,28 @@ def generate_out_of_fold_predictions(
     # is trained on out-of-fold probabilities from uncalibrated fold models.
     raw_full_models = [lr_full, rf_full, gb_full]
     
-    # Calibrate models using validation data (as in Milestone 1)
-    # Split training data into training and calibration subsets (only uses training data to avoid leakage)
-    from sklearn.model_selection import train_test_split
-    X_train_calib, X_val_calib, y_train_calib, y_val_calib = train_test_split(
-        X_train, y_train, test_size=0.2, random_state=config['random_seed'], stratify=y_train
+    # Fit separate calibration models on a grouped holdout. The calibration
+    # observations are never used to fit these base estimators.
+    calibration_train_idx, calibration_holdout_idx = grouped_stratified_holdout_indices(
+        X_train, y_train, test_size=0.2, random_state=config['random_seed']
     )
-    X_cal_processed = full_preprocessor.transform(X_val_calib)
-    
-    lr_calibrated = calibrate_model(lr_full, X_cal_processed, y_val_calib, method=config['calibration']['method'])
-    rf_calibrated = calibrate_model(rf_full, X_cal_processed, y_val_calib, method=config['calibration']['method'])
-    gb_calibrated = calibrate_model(gb_full, X_cal_processed, y_val_calib, method=config['calibration']['method'])
-    
+    X_train_calib = X_train.iloc[calibration_train_idx]
+    y_train_calib = y_train.iloc[calibration_train_idx]
+    X_val_calib = X_train.iloc[calibration_holdout_idx]
+    y_val_calib = y_train.iloc[calibration_holdout_idx]
+
+    calibration_preprocessor = create_preprocessing_pipeline(list(X_train.columns))
+    X_cal_train_processed = calibration_preprocessor.fit_transform(X_train_calib)
+    X_cal_holdout_processed = calibration_preprocessor.transform(X_val_calib)
+
+    lr_calibration_model = train_logistic_regression(X_cal_train_processed, y_train_calib, config)
+    rf_calibration_model = train_random_forest(X_cal_train_processed, y_train_calib, config)
+    gb_calibration_model = train_gradient_boosting(X_cal_train_processed, y_train_calib, config)
+
+    lr_calibrated = calibrate_model(lr_calibration_model, X_cal_holdout_processed, y_val_calib, method=config['calibration']['method'])
+    rf_calibrated = calibrate_model(rf_calibration_model, X_cal_holdout_processed, y_val_calib, method=config['calibration']['method'])
+    gb_calibrated = calibrate_model(gb_calibration_model, X_cal_holdout_processed, y_val_calib, method=config['calibration']['method'])
+
     full_models = [lr_calibrated, rf_calibrated, gb_calibrated]
     
     # Save models - DISABLED to preserve Milestone 1 artifacts and avoid pickling errors
@@ -175,11 +184,18 @@ def generate_out_of_fold_predictions(
     return oof_samples, oof_model_probs, oof_y, full_models, full_preprocessor, raw_full_models
 
 
-def main():
+def main(seed_override=None):
     # Load configuration
     base_dir = Path(__file__).parent.parent
     config_path = base_dir / 'configs' / 'baseline_config.yaml'
     config = load_config(config_path)
+    if seed_override is not None:
+        seed = int(seed_override)
+        config['random_seed'] = seed
+        config['np_random_seed'] = seed
+        config['torch_random_seed'] = seed
+        for model_config in config.get('models', {}).values():
+            model_config['random_state'] = seed
     
     # Create all necessary directories (preserve Milestone 1 results)
     for dir_path in [
@@ -204,8 +220,7 @@ def main():
     data = create_binary_target(data, threshold=config['quality_threshold'])
     
       # Split data exactly as in Milestone 1 to ensure consistency
-    from src.preprocessing import stratified_data_splitting
-    X_train, X_val, X_test, y_train, y_val, y_test = stratified_data_splitting(
+    X_train, X_val, X_test, y_train, y_val, y_test = grouped_stratified_data_splitting(
         data, 'good_quality',
         train_size=config['train_size'],
         val_size=config['val_size'], 
@@ -226,20 +241,20 @@ def main():
     
     # Step 3: Initialize reliability feature extractor
     print("\n[3/10] Initializing reliability feature extractor...")
-    feature_extractor = ReliabilityFeatureExtractor(X_train)
+    feature_extractor = ReliabilityFeatureExtractor(X_train, primary_model_index=1)
     print(f"Initialized feature extractor with {len(feature_extractor.feature_names)} reliability features")
     
     # Extract reliability features for OOF training data
     oof_X = feature_extractor.extract_features_batch(oof_samples, oof_model_probs)
     
-    # Create error labels for reliability training: 1 = ANY model's prediction was incorrect
-    # Since base models have 0% errors, we manually inject errors to create a balanced dataset
+    # Create reliability labels from the primary Random Forest model only:
+    # 1 = its prediction is incorrect, 0 = its prediction is correct.
     # This simulates real-world scenario where models make mistakes
     oof_error_labels = []
     oof_original_confidences = []
     print(f"DEBUG: Number of OOF samples: {len(oof_samples)}, number of OOF model probs: {len(oof_model_probs)}, number of OOF y labels: {len(oof_y)}")
     
-    # Calculate GENUINE error labels from actual model predictions only
+    # Calculate genuine error labels from held-out fold predictions only
     debug_error_count = 0
     for i in range(len(oof_y)):
         model_probs_list = oof_model_probs[i]
@@ -315,11 +330,16 @@ def main():
     oof_nonfinite = check_for_nonfinite_values(oof_X, "OOF FEATURES")
     assert oof_nonfinite == 0, f"Found {oof_nonfinite} non-finite values in OOF features - cannot train reliability model"
     
-    # Split OOF data into reliability training and validation
-    from sklearn.model_selection import train_test_split
-    rel_X_train, rel_X_val, rel_y_train, rel_y_val = train_test_split(
-        oof_X, oof_error_labels, test_size=0.2, random_state=42, stratify=oof_error_labels
+    # Split OOF reliability examples by exact feature-row groups so duplicate
+    # observations cannot appear in both reliability training and calibration.
+    oof_error_series = pd.Series(oof_error_labels, index=oof_samples.index)
+    rel_train_idx, rel_val_idx = grouped_stratified_holdout_indices(
+        oof_samples, oof_error_series, test_size=0.2, random_state=42
     )
+    rel_X_train = oof_X.iloc[rel_train_idx]
+    rel_X_val = oof_X.iloc[rel_val_idx]
+    rel_y_train = oof_error_labels[rel_train_idx]
+    rel_y_val = oof_error_labels[rel_val_idx]
     
     # Process validation and test data for final evaluation
     print("\n[4/10] Extracting reliability features for validation and test sets...")
@@ -328,7 +348,7 @@ def main():
     for _, row in X_val.iterrows():
         sample_probs = []
         row_processed = full_preprocessor.transform(pd.DataFrame([row]))
-        for model in full_models:
+        for model in raw_full_models:
             probs = model.predict_proba(row_processed)[0]
             sample_probs.append(probs)
         val_model_probs.append(sample_probs)
@@ -343,12 +363,12 @@ def main():
     val_original_confidences = []
     for i, (_, row) in enumerate(X_val.iterrows()):
         row_processed = full_preprocessor.transform(pd.DataFrame([row]))
-        # Use Random Forest (index 1 in full_models) as main model for error calculation
-        main_pred = full_models[1].predict(row_processed)[0]
+        # Use Random Forest (index 1 in raw_full_models) as main model for error calculation
+        main_pred = raw_full_models[1].predict(row_processed)[0]
         true_label = y_val.iloc[i]
         is_correct = 1 if main_pred == true_label else 0
         val_original_correct.append(is_correct)
-        main_probs = full_models[1].predict_proba(row_processed)[0]
+        main_probs = raw_full_models[1].predict_proba(row_processed)[0]
         val_original_confidences.append(np.max(main_probs))
     
     # Calculate genuine error labels for validation set using Random Forest (main model)
@@ -360,7 +380,7 @@ def main():
     for _, row in X_test.iterrows():
         sample_probs = []
         row_processed = full_preprocessor.transform(pd.DataFrame([row]))
-        for model in full_models:
+        for model in raw_full_models:
             probs = model.predict_proba(row_processed)[0]
             sample_probs.append(probs)
         test_model_probs.append(sample_probs)
@@ -375,21 +395,21 @@ def main():
     test_original_confidences = []
     for i, (_, row) in enumerate(X_test.iterrows()):
         row_processed = full_preprocessor.transform(pd.DataFrame([row]))
-        # Use Random Forest (index 1 in full_models) as main model for error calculation
-        main_pred = full_models[1].predict(row_processed)[0]
+        # Use Random Forest (index 1 in raw_full_models) as main model for error calculation
+        main_pred = raw_full_models[1].predict(row_processed)[0]
         true_label = y_test.iloc[i]
         is_correct = 1 if main_pred == true_label else 0
         test_original_correct.append(is_correct)
-        main_probs = full_models[1].predict_proba(row_processed)[0]
+        main_probs = raw_full_models[1].predict_proba(row_processed)[0]
         test_original_confidences.append(np.max(main_probs))
     
-    # Calculate GENUINE error labels for test set using Random Forest (main model)
+    # Calculate genuine error labels for the untouched grouped test set using Random Forest
     rel_y_test = 1 - np.array(test_original_correct)
     # Save primary test predictions to pass to perturbation experiments for alignment check
     primary_test_predictions = []
     for i, (_, row) in enumerate(X_test.iterrows()):
         row_processed = full_preprocessor.transform(pd.DataFrame([row]))
-        main_pred = full_models[1].predict(row_processed)[0]
+        main_pred = raw_full_models[1].predict(row_processed)[0]
         primary_test_predictions.append(main_pred)
     print(f"Test set genuine error rate: {np.mean(rel_y_test):.2%} (all from real model predictions)")
     
@@ -490,7 +510,9 @@ def main():
 
     # Persist a complete inference bundle for the Milestone 4 verification bridge.
     # The bundle is fitted using training/OOF data only; test labels are not stored.
-    artifact_path = base_dir / 'models' / 'reliability' / 'wine_quality_reliability_bundle.joblib'
+    seed_value = int(config['random_seed'])
+    artifact_suffix = f'_seed_{seed_value}' if seed_override is not None else ''
+    artifact_path = base_dir / 'models' / 'reliability' / f'wine_quality_reliability_bundle{artifact_suffix}.joblib'
     artifact_path.parent.mkdir(parents=True, exist_ok=True)
     inference_model_dir = base_dir / 'models' / 'reliability' / 'inference_models'
     inference_model_dir.mkdir(parents=True, exist_ok=True)
@@ -511,7 +533,8 @@ def main():
             'target_threshold': int(config['quality_threshold']),
             'random_seed': int(config['random_seed']),
             'training_split_size': int(len(X_train)),
-            'artifact_version': 1,
+            'artifact_version': 2,
+            'split_strategy': 'stratified_grouped_exact_feature_rows',
         },
         artifact_path,
     )
@@ -522,7 +545,7 @@ def main():
         X_test,
         y_test,
         feature_extractor,
-        full_models,
+        raw_full_models,
         reliability_model=best_model,
         save_dir=base_dir / 'results' / 'reliability' / 'metrics',
         preprocessor=full_preprocessor,  # Pass exact same preprocessor used in main test evaluation
@@ -762,4 +785,8 @@ The reliability engine successfully demonstrates that combining multiple signals
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+    parser = argparse.ArgumentParser(description="Train and evaluate VIMARSH reliability models.")
+    parser.add_argument("--seed", type=int, default=None, help="Override all experiment and model random seeds.")
+    args = parser.parse_args()
+    main(seed_override=args.seed)

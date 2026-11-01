@@ -57,7 +57,11 @@ class VerificationEngineConfig:
             raise ValueError("total_verification_budget must be finite and non-negative")
         if not math.isfinite(self.lambda_cost_weight) or self.lambda_cost_weight < 0:
             raise ValueError("lambda_cost_weight must be finite and non-negative")
-        if not (0 <= self.medium_risk_threshold < self.high_risk_threshold):
+        if (
+            not math.isfinite(self.medium_risk_threshold)
+            or not math.isfinite(self.high_risk_threshold)
+            or not (0 <= self.medium_risk_threshold < self.high_risk_threshold)
+        ):
             raise ValueError("Risk thresholds must satisfy 0 <= medium < high")
         if not math.isfinite(self.human_reviewer_accuracy) or not 0 <= self.human_reviewer_accuracy <= 1:
             raise ValueError("human_reviewer_accuracy must be finite and in [0, 1]")

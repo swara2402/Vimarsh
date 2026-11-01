@@ -240,11 +240,11 @@ def summarize_seed_results(seed_results):
             }
         for policy in ("reliability_driven", "confidence_only", "predictive_entropy", "ensemble_disagreement"):
             values_coverage = np.asarray([
-                row["validation_selected_nominal_75pct_coverage"][policy]["coverage"]
+                row["validation_selected_nominal_75pct_coverage"][policy]["test_coverage"]
                 for row in rows
             ], dtype=float)
             values_error = np.asarray([
-                row["validation_selected_nominal_75pct_coverage"][policy]["accepted_error_rate"]
+                row["validation_selected_nominal_75pct_coverage"][policy]["observed_error_rate"]
                 for row in rows
             ], dtype=float)
             summary[model_name].setdefault("matched_coverage_policies", {})[policy] = {

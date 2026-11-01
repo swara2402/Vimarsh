@@ -54,3 +54,25 @@ def test_reliability_endpoint_rejects_unknown_fields(monkeypatch):
         "true_label": 1,
     })
     assert response.status_code == 422
+
+
+def test_reliability_schema_returns_bundle_feature_contract(monkeypatch):
+    class SchemaRuntime:
+        feature_names = ["feature_a", "feature_b"]
+        primary_model_index = 1
+        base_models = [object(), object(), object()]
+
+    monkeypatch.setattr(main, "get_reliability_runtime", lambda: SchemaRuntime())
+    response = client.get("/v1/reliability/schema")
+    assert response.status_code == 200
+    assert response.json() == {
+        "feature_names": ["feature_a", "feature_b"],
+        "primary_model_index": 1,
+        "base_model_count": 3,
+        "artifact_version": 2,
+    }
+
+
+def test_dashboard_origin_is_allowed_by_default():
+    response = client.get("/health", headers={"Origin": "http://localhost:5173"})
+    assert response.headers["access-control-allow-origin"] == "http://localhost:5173"

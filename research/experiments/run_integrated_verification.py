@@ -23,6 +23,7 @@ from src.verification.outcome_validator import OutcomeValidator
 from src.verification.reliability_integration import ReliabilityVerificationPipeline
 from src.verification.simulation import generate_harm_estimates
 from src.evaluation.threshold_diagnostics import validation_threshold_metrics
+from src.evaluation.paired_bootstrap import paired_bootstrap_policy_comparisons
 
 
 def run_integrated_experiment(budget: float = 500.0, output_path: Path = None, bundle_path: Path = None):
@@ -137,6 +138,18 @@ def run_integrated_experiment(budget: float = 500.0, output_path: Path = None, b
         for name in validation_policy_scores
     }
 
+    paired_bootstrap_vs_confidence = paired_bootstrap_policy_comparisons(
+        validation_policy_scores,
+        {name: policy_scores[name] for name in validation_policy_scores},
+        primary_predictions,
+        y_test.to_numpy(),
+        reference_policy="confidence_only",
+        target_coverage=0.75,
+        groups=X_test.groupby(list(X_test.columns), dropna=False, sort=False).ngroup().to_numpy(),
+        n_bootstrap=1000,
+        random_state=int(bundle.get("random_seed", 42)),
+    )
+
     policy_comparisons = {}
     reliability_validator = None
     reliability_engine = None
@@ -190,6 +203,8 @@ def run_integrated_experiment(budget: float = 500.0, output_path: Path = None, b
         "test_set_size": int(len(X_test)),
         "validation_set_size": int(len(X_val)),
         "validation_selected_matched_coverage": validation_selected_matched_coverage,
+        "paired_bootstrap_vs_confidence": paired_bootstrap_vs_confidence,
+        "paired_bootstrap_protocol": "Paired cluster bootstrap resamples exact-duplicate feature groups on the fixed test partition. Thresholds are selected on validation scores before labels are accessed. Percentile intervals are conditional on fitted models and this split; they do not include training-seed uncertainty.",
         "matched_coverage_protocol": "For each risk-ranking policy, select a low-risk acceptance threshold from validation scores only at nominal 75% coverage, then apply it unchanged to test scores. Test labels are used only after the accepted mask is fixed; ties and distribution shift can change realized coverage.",
         "reliability_probability_source": "fitted reliability estimator from out-of-fold training features",
         "split_strategy": bundle.get("split_strategy", "legacy_random_stratified"),

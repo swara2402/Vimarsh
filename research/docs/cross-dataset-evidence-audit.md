@@ -88,6 +88,23 @@ diagnostic in the Wine end-to-end artifact. The MAGIC experiment calls the same
 shared utility. HTRU2 retains its separately tested high-risk review threshold
 and hard-cap selection helpers.
 
+## Milestone 48: paired uncertainty intervals
+
+Wine and MAGIC now report paired bootstrap comparisons of each ranking policy
+against confidence-only at the validation-selected nominal 75% acceptance
+operating point. The bootstrap resamples exact-duplicate feature groups and
+uses the same resampled groups for both policies. It reports candidate-minus-
+reference differences in coverage and accepted-set error rate with percentile
+95% intervals from 1,000 replicates per seed. Thresholds are fixed using
+validation scores before test labels are used for scoring.
+
+These intervals are conditional on the fitted model, threshold, and test split.
+They quantify test-sample uncertainty, not variation from retraining. The
+three-seed summaries remain descriptive. Do not pool interval estimates across
+Wine and MAGIC or interpret an interval spanning zero as proof of equivalence.
+See the [paired bootstrap protocol](paired-bootstrap-uncertainty.md) for
+implementation and interpretation details.
+
 ## Interpretation boundary and next evidence
 
 The current evidence supports a careful, benchmark-specific account of

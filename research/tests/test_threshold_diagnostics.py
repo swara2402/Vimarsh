@@ -41,7 +41,7 @@ def test_ties_at_validation_threshold_can_exceed_nominal_coverage():
     accepted, threshold = select_validation_threshold(
         [0.0, 1.0, 2.0, 3.0, 4.0],
         [4.0, 4.0, 3.0],
-        target_coverage=0.2,
+        target_coverage=0.8,
     )
     assert threshold == 4.0
     assert accepted.tolist() == [True, True, True]

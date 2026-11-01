@@ -92,6 +92,10 @@ The repository contains implemented baseline classification, reliability-analysi
 
 The integrated verification-engine workflow remains research-stage and runs on Wine Quality, with separate grouped multi-seed policy-comparison tracks for MAGIC Gamma Telescope and HTRU2. These benchmarks use different scenario assumptions and evaluation designs, so their simulated net-benefit and weighted-loss values are reported separately rather than pooled. The experiments use simulated human review and assumed action-effectiveness factors; they do not establish causal real-world risk reduction or broad domain generalization. Wine and MAGIC now share a validation-selected nominal 75% acceptance diagnostic, while HTRU2 reports separate hard-cap, matched-capacity, and validation-selected review-rate diagnostics. Milestone 48 adds paired cluster-bootstrap 95% intervals for validation-selected coverage and accepted-error differences against confidence-only on Wine and MAGIC; these intervals are conditional on each fitted model and split. The API and React dashboard remain planned.
 
+## API implementation status
+
+Milestone 55 begins the FastAPI implementation in `backend/`. The current API is recommendation-only and uses a transparent rule-based baseline; it does not execute verification actions. See [Backend API](backend/README.md) for endpoints, local setup, tests, and limitations. This implementation is under review in PR #17.
+
 ## Getting started
 
 1. Install the dependencies listed in [research/requirements.txt](research/requirements.txt).

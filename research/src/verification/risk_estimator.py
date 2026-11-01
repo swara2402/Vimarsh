@@ -1,6 +1,7 @@
 """Risk estimation utilities for verification actions."""
 from dataclasses import dataclass
 from typing import Dict, Any, Optional
+import math
 import numpy as np
 from .actions import ActionType, ActionResult
 
@@ -25,7 +26,9 @@ class RiskCalculator:
         Args:
             lambda_cost: Weighting factor for costs in utility calculation
         """
-        self.lambda_cost = lambda_cost
+        if not math.isfinite(lambda_cost) or lambda_cost < 0:
+            raise ValueError("lambda_cost must be finite and non-negative")
+        self.lambda_cost = float(lambda_cost)
     
     def calculate_baseline_risk(self, error_probability: float, harm: float) -> float:
         """
@@ -38,6 +41,10 @@ class RiskCalculator:
         Returns:
             Baseline risk value
         """
+        if not math.isfinite(error_probability) or not 0 <= error_probability <= 1:
+            raise ValueError("error_probability must be finite and in [0, 1]")
+        if not math.isfinite(harm) or harm < 0:
+            raise ValueError("harm must be finite and non-negative")
         return error_probability * harm
     
     def estimate_residual_risk(
@@ -63,6 +70,8 @@ class RiskCalculator:
             return baseline_risk  # If action failed, residual risk remains baseline
             
         effectiveness = action_effectiveness.get(action_type, 0.0)
+        if not math.isfinite(effectiveness) or not 0 <= effectiveness <= 1:
+            raise ValueError("Action effectiveness must be finite and in [0, 1]")
         
         if action_type == ActionType.ACCEPT:
             # Accepting keeps the original risk
@@ -132,6 +141,8 @@ class RiskCalculator:
         Returns:
             Complete RiskEstimate with all metrics
         """
+        if not math.isfinite(action_result.cost_incurred) or action_result.cost_incurred < 0:
+            raise ValueError("Action cost must be finite and non-negative")
         baseline_risk = self.calculate_baseline_risk(error_probability, harm)
         residual_risk = self.estimate_residual_risk(
             action_type, baseline_risk, action_result, action_effectiveness

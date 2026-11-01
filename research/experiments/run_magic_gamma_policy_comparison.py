@@ -344,7 +344,7 @@ def run_seed(seed, output_dir):
                 shifted_scores,
                 shifted_predictions,
                 y_test.to_numpy(),
-                groups=_groups(shifted_X_test),
+                groups=_groups(X_test),
                 target_coverage=0.75,
                 n_bootstrap=500,
                 random_state=seed + int(severity * 1000),

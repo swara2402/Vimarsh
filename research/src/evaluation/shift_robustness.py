@@ -100,3 +100,64 @@ def evaluate_frozen_policy_under_shift(
         "policy_metrics": metrics,
         "paired_bootstrap_vs_confidence": paired,
     }
+
+
+
+def _validate_training_reference(features, reference, name):
+    if not isinstance(reference, pd.Series):
+        reference = pd.Series(reference, index=features.columns)
+    if list(reference.index) != list(features.columns):
+        raise ValueError(f"{name} columns must exactly match features")
+    values = reference.to_numpy(dtype=float)
+    if not np.isfinite(values).all():
+        raise ValueError(f"{name} must contain only finite values")
+    return values
+
+
+def make_gaussian_feature_noise(features, training_scale, noise_ratio, random_state=42):
+    """Add independent zero-mean Gaussian noise scaled by training feature SD.
+
+    The noise ratio is relative to each feature's training-set standard
+    deviation. It is a stress-test parameter, not an estimate of natural noise.
+    """
+    if not isinstance(features, pd.DataFrame) or features.empty:
+        raise ValueError("features must be a non-empty pandas DataFrame")
+    if not features.columns.is_unique:
+        raise ValueError("feature columns must be unique")
+    values = features.to_numpy(dtype=float)
+    if not np.isfinite(values).all():
+        raise ValueError("features must contain only finite numeric values")
+    if not np.isfinite(noise_ratio) or noise_ratio < 0:
+        raise ValueError("noise_ratio must be finite and non-negative")
+    scale = _validate_training_reference(features, training_scale, "training_scale")
+    rng = np.random.default_rng(random_state)
+    noisy = values + rng.normal(size=values.shape) * (noise_ratio * scale)
+    return pd.DataFrame(noisy, index=features.index, columns=features.columns)
+
+
+def make_training_median_mask(features, training_medians, mask_fraction, random_state=42):
+    """Replace a random fraction of test cells with training-only feature medians.
+
+    This models feature masking without introducing NaNs into estimators whose
+    fitted preprocessing pipeline does not support missing values. The
+    replacement values are computed from training data, never test data.
+    """
+    if not isinstance(features, pd.DataFrame) or features.empty:
+        raise ValueError("features must be a non-empty pandas DataFrame")
+    if not features.columns.is_unique:
+        raise ValueError("feature columns must be unique")
+    values = features.to_numpy(dtype=float)
+    if not np.isfinite(values).all():
+        raise ValueError("features must contain only finite numeric values")
+    if not np.isfinite(mask_fraction) or not 0 <= mask_fraction <= 1:
+        raise ValueError("mask_fraction must be finite and between 0 and 1")
+    medians = _validate_training_reference(features, training_medians, "training_medians")
+    result = values.copy()
+    cell_count = result.size
+    masked_count = int(np.floor(cell_count * mask_fraction))
+    if masked_count:
+        rng = np.random.default_rng(random_state)
+        selected = rng.choice(cell_count, size=masked_count, replace=False)
+        rows, cols = np.unravel_index(selected, result.shape)
+        result[rows, cols] = medians[cols]
+    return pd.DataFrame(result, index=features.index, columns=features.columns)

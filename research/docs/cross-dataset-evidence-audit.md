@@ -137,3 +137,17 @@ drift. Labels remain unchanged, and results are conditional on the selected
 perturbation, model, split, and fixed thresholds. The experiment does not
 establish broad robustness or real-world safety. See
 [controlled-shift-robustness.md](controlled-shift-robustness.md).
+
+
+## Milestone 50: three-family MAGIC stress test
+
+The MAGIC robustness experiment is extended from one synthetic mean-offset
+family to three separate families: signed mean offsets (0.25, 0.50, 1.00
+training SD), independent Gaussian feature noise (0.10, 0.30, 0.50 training
+SD), and random feature-cell masking by training-only medians (5%, 15%, 30%).
+The same fitted models and original validation-selected thresholds are frozen
+for every scenario. The experiment reports scenario-specific metrics and
+paired bootstrap intervals; it does not pool results across perturbation
+families. These remain synthetic stress tests on one benchmark, not evidence
+of natural deployment drift or broad robustness. See
+[controlled-shift-robustness.md](controlled-shift-robustness.md) for details.

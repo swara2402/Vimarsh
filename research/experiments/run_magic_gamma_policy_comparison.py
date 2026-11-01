@@ -34,6 +34,10 @@ from src.reliability.feature_extractor import ReliabilityFeatureExtractor
 from src.reliability.reliability_model import ReliabilityEstimator
 from src.evaluation.threshold_diagnostics import validation_threshold_metrics as shared_validation_threshold_metrics
 from src.evaluation.paired_bootstrap import paired_bootstrap_policy_comparisons
+from src.evaluation.shift_robustness import (
+    make_mean_feature_shift,
+    evaluate_frozen_policy_under_shift,
+)
 from src.verification.action_selector import VerificationEngine, VerificationEngineConfig
 from src.verification.cost_model import DecisionProfile
 from src.verification.outcome_validator import OutcomeValidator
@@ -302,6 +306,51 @@ def run_seed(seed, output_dir):
         random_state=seed,
     )
 
+    # Controlled covariate-shift stress test: retain the fitted models and
+    # validation-selected thresholds, perturb only held-out test features.
+    shift_robustness = {}
+    training_scale = X_train.std(axis=0, ddof=0)
+    for severity in (0.25, 0.5, 1.0):
+        shifted_X_test = make_mean_feature_shift(
+            X_test, training_scale, severity, random_state=seed + int(severity * 100)
+        )
+        shifted_processed = final_preprocessor.transform(shifted_X_test)
+        shifted_probs = [
+            np.asarray(model.predict_proba(shifted_processed), dtype=float)
+            for model in final_models
+        ]
+        shifted_features = extractor.extract_features_batch(
+            shifted_X_test,
+            [[shifted_probs[m][i] for m in range(len(final_models))]
+             for i in range(len(shifted_X_test))],
+        )
+        shifted_primary = shifted_probs[1]
+        shifted_predictions = np.asarray(final_models[1].predict(shifted_processed))
+        shifted_entropy = -np.sum(
+            np.clip(shifted_primary, 1e-12, 1.0)
+            * np.log(np.clip(shifted_primary, 1e-12, 1.0)), axis=1,
+        ) / np.log(shifted_primary.shape[1])
+        shifted_scores = {
+            "reliability_driven": estimator.predict_error_probability(shifted_features),
+            "confidence_only": 1.0 - shifted_primary.max(axis=1),
+            "predictive_entropy": shifted_entropy,
+            "ensemble_disagreement": shifted_features["disagreement_fraction"].to_numpy(),
+        }
+        shift_robustness[f"{severity:.2f}_training_std"] = {
+            "severity": float(severity),
+            "perturbation": "Alternating signed per-feature mean offset plus Gaussian noise, scaled by training-set feature standard deviation",
+            **evaluate_frozen_policy_under_shift(
+                validation_policy_scores,
+                shifted_scores,
+                shifted_predictions,
+                y_test.to_numpy(),
+                groups=_groups(shifted_X_test),
+                target_coverage=0.75,
+                n_bootstrap=500,
+                random_state=seed + int(severity * 1000),
+            ),
+        }
+
     comparisons = {}
     with tempfile.TemporaryDirectory(prefix=f"vimarsh-magic-{seed}-") as temp:
         model_dir = Path(temp)
@@ -358,6 +407,8 @@ def run_seed(seed, output_dir):
         "validation_threshold_matched_coverage": validation_matched_coverage,
         "paired_bootstrap_vs_confidence": paired_bootstrap_vs_confidence,
         "paired_bootstrap_protocol": "Paired cluster bootstrap resamples exact-duplicate feature groups on the fixed test partition. Thresholds are selected on validation scores before labels are accessed. Percentile intervals are conditional on fitted models and this split; they do not include training-seed uncertainty.",
+        "controlled_shift_robustness": shift_robustness,
+        "controlled_shift_scope": "Synthetic covariate-shift stress tests on the held-out test features; fitted models and original validation thresholds are frozen. This is not evidence about natural production drift.",
         "validation_feature_ablation": validation_ablation_results,
         "harm_assumption": "Constant 5.0/10 for every test observation; MAGIC provides no domain harm labels.",
         "limitations": [

@@ -85,6 +85,49 @@ def summarize(results: list[dict]) -> dict:
     return summary
 
 
+
+def summarize_validation_diagnostics(results: list[dict]) -> dict:
+    """Aggregate validation-selected coverage diagnostics across paired seeds."""
+    diagnostic_policies = POLICIES[:-1]
+    diagnostic_metrics = (
+        "test_coverage",
+        "observed_error_rate",
+        "validation_selected_threshold",
+        "accepted_test_observations",
+    )
+    summary = {}
+    for policy in diagnostic_policies:
+        summary[policy] = {}
+        for metric in diagnostic_metrics:
+            values_by_seed = {
+                str(item["seed"]): (
+                    item.get("validation_selected_matched_coverage", {})
+                    .get(policy, {})
+                    .get(metric)
+                )
+                for item in results
+            }
+            numeric_values = [
+                float(value) for value in values_by_seed.values()
+                if value is not None
+            ]
+            mean = sum(numeric_values) / len(numeric_values) if numeric_values else None
+            population_std = (
+                (
+                    sum((value - mean) ** 2 for value in numeric_values)
+                    / len(numeric_values)
+                ) ** 0.5
+                if numeric_values else None
+            )
+            summary[policy][metric] = {
+                "n": len(numeric_values),
+                "mean": mean,
+                "population_std": population_std,
+                "values_by_seed": values_by_seed,
+            }
+    return summary
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--seeds", type=int, nargs="+", default=[17, 42, 73])
@@ -107,6 +150,7 @@ def main() -> None:
         "seed_count": len(all_results),
         "aggregation": "arithmetic mean and population standard deviation across seeds",
         "policy_summary": summarize(all_results),
+        "validation_selected_matched_coverage_summary": summarize_validation_diagnostics(all_results),
         "per_seed_results": all_results,
         "limitations": [
             "All seeds use the same Wine Quality benchmark; this is not cross-domain validation.",

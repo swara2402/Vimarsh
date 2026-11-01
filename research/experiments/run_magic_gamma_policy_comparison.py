@@ -290,6 +290,17 @@ def run_seed(seed, output_dir):
         )
         for name in validation_policy_scores
     }
+    paired_bootstrap_vs_confidence = paired_bootstrap_policy_comparisons(
+        validation_policy_scores,
+        {name: policy_scores[name] for name in validation_policy_scores},
+        predictions,
+        y_test.to_numpy(),
+        reference_policy="confidence_only",
+        target_coverage=0.75,
+        groups=_groups(X_test),
+        n_bootstrap=1000,
+        random_state=seed,
+    )
 
     comparisons = {}
     with tempfile.TemporaryDirectory(prefix=f"vimarsh-magic-{seed}-") as temp:

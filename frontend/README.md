@@ -1,23 +1,18 @@
-# Frontend
+# VIMARSH dashboard
 
-The planned frontend is a React-based research and experiment dashboard.
+React + TypeScript + Vite dashboard for the research-stage reliability decision API.
 
-## Proposed views
+## Run
 
-1. **Overview:** project status and experiment summaries.
-2. **Model Playground:** select a benchmark model and inspect predictions.
-3. **Reliability Analysis:** confidence, calibration, disagreement, input quality, and shift signals.
-4. **Verification Center:** show feasible actions, constraints, selected action, and rationale.
-5. **Experiments:** compare baselines, perturbation levels, risk, coverage, and verification cost.
-6. **Run Details:** inspect configuration, model version, random seed, and results.
+```bash
+npm install
+npm run dev
+```
 
-## UX principles
+By default, the UI calls `http://localhost:8000`. Set `VITE_API_BASE_URL` to override the API origin.
 
-- Clean, accessible, research-oriented visual design.
-- Show uncertainty and limitations rather than hiding them.
-- Distinguish simulated verification from real human review.
-- Present risk and coverage together.
-- Avoid implying that a confidence score is a guarantee.
-- Make experiment configuration and provenance inspectable.
+## API prerequisites
 
-The frontend is planned; no application code has been implemented yet.
+Start the FastAPI service and set `VIMARSH_RELIABILITY_BUNDLE` to a trusted version-2 Wine Quality reliability bundle. The UI retrieves the feature schema from `GET /v1/reliability/schema`, renders one numeric field per trained input feature, and submits raw feature values to `POST /v1/reliability/decisions`.
+
+The dashboard does not accept ground-truth labels or precomputed reliability scores. It displays recommendations only; no verification action is executed. This is a research preview, not a validated decision-support product.

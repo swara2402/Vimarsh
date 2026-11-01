@@ -44,3 +44,52 @@ def test_summary_preserves_missing_metric_values():
     assert metric["n"] == 1
     assert metric["mean"] == 0.2
     assert metric["values_by_seed"] == {"17": None, "42": 0.2}
+
+
+
+def test_validation_selected_coverage_diagnostics_are_aggregated_by_seed():
+    results = [
+        {
+            "seed": 17,
+            "validation_selected_matched_coverage": {
+                "reliability_driven": {
+                    "test_coverage": 0.70,
+                    "observed_error_rate": 0.10,
+                    "validation_selected_threshold": 0.25,
+                    "accepted_test_observations": 70,
+                }
+            },
+        },
+        {
+            "seed": 42,
+            "validation_selected_matched_coverage": {
+                "reliability_driven": {
+                    "test_coverage": 0.80,
+                    "observed_error_rate": 0.20,
+                    "validation_selected_threshold": 0.35,
+                    "accepted_test_observations": 80,
+                }
+            },
+        },
+    ]
+    summary = MODULE.summarize_validation_diagnostics(results)
+    metric = summary["reliability_driven"]["test_coverage"]
+    assert metric["n"] == 2
+    assert metric["mean"] == pytest.approx(0.75)
+    assert metric["population_std"] == pytest.approx(0.05)
+    assert metric["values_by_seed"] == {"17": 0.70, "42": 0.80}
+
+
+def test_validation_diagnostic_aggregation_preserves_missing_seed_values():
+    results = [
+        {"seed": 17, "validation_selected_matched_coverage": {
+            "reliability_driven": {"observed_error_rate": None}
+        }},
+        {"seed": 42, "validation_selected_matched_coverage": {
+            "reliability_driven": {"observed_error_rate": 0.2}
+        }},
+    ]
+    metric = MODULE.summarize_validation_diagnostics(results)["reliability_driven"]["observed_error_rate"]
+    assert metric["n"] == 1
+    assert metric["mean"] == pytest.approx(0.2)
+    assert metric["values_by_seed"] == {"17": None, "42": 0.2}

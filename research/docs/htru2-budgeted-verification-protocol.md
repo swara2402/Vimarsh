@@ -43,7 +43,19 @@ A second, explicitly separate diagnostic now evaluates ranking quality when ever
 
 Unlike the positive-net-benefit policy above, this diagnostic intentionally fills the budget even when the selected cases have negative estimated net benefit. It therefore isolates ranking performance at common utilization and must not be interpreted as the recommended cost-sensitive operating policy. Selection uses model scores and predicted classes only; test labels are accessed afterward for offline outcome scoring. The diagnostic is reported separately from the positive-net-benefit results, preserving the distinction between ranking quality and budget-utilization/eligibility behavior.
 
-The updated CI run will provide the first measured results for this diagnostic. No matched-capacity outcome is claimed until its artifact has been inspected.
+The matched-capacity CI benchmark completed successfully for all three seeds. Each policy reviewed exactly 255 of 2,557 test rows (9.97%). Aggregate values are means across seeds; SD is population standard deviation.
+
+| Matched-capacity ranking | Mean reviewed fraction | Mean simulated net benefit | Mean post-review weighted error loss |
+|---|---:|---:|---:|
+| Reliability | 9.97% | 22.92 (SD 11.69) | 113.33 (SD 14.00) |
+| Confidence | 9.97% | 49.85 (SD 5.99) | 86.40 (SD 6.37) |
+| Predictive entropy | 9.97% | 47.98 (SD 4.25) | 88.27 (SD 4.43) |
+| Ensemble disagreement | 9.97% | -19.75 (SD 9.26) | 156.00 (SD 6.52) |
+| Random | 9.97% | -47.75 (SD 6.23) | 184.00 (SD 10.68) |
+
+At equal review counts, confidence achieved the highest mean simulated net benefit and lowest mean post-review weighted error loss. Entropy was close behind. Reliability did not outperform either confidence or entropy, and disagreement performed worse than random under this scenario. The ordering was consistent across all three seeds: confidence/entropy exceeded reliability in simulated net benefit for every seed. This strengthens the negative comparative finding for learned reliability on HTRU2; it does not establish that confidence is universally superior.
+
+This diagnostic fills the full capacity regardless of whether individual cases have positive estimated net benefit. Its simulated net benefit therefore includes the consequences of reviewing lower-value cases and must be kept distinct from the positive-net-benefit operating policy above. The ranking calculation uses scores and predicted classes only; test labels are used only for subsequent offline outcome scoring.
 
 ## Interpretation boundary
 

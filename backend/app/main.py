@@ -4,6 +4,7 @@ from functools import lru_cache
 from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 
 from .policy import PolicyConfig, select_decision
 from .runtime import ReliabilityBundleRuntime
@@ -23,6 +24,21 @@ app = FastAPI(
 
 policy_config = PolicyConfig(
     max_acceptable_risk=float(os.getenv("VIMARSH_MAX_ACCEPTABLE_RISK", "0.5"))
+)
+
+cors_origins = [
+    origin.strip()
+    for origin in os.getenv("VIMARSH_CORS_ORIGINS", "http://localhost:5173").split(",")
+    if origin.strip()
+]
+if "*" in cors_origins:
+    raise RuntimeError("Wildcard CORS origins are not permitted")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
 )
 
 
@@ -49,6 +65,20 @@ def get_reliability_runtime():
     if not bundle_path:
         raise FileNotFoundError("VIMARSH_RELIABILITY_BUNDLE is not configured")
     return ReliabilityBundleRuntime(bundle_path)
+
+
+@app.get("/v1/reliability/schema")
+def reliability_schema():
+    try:
+        runtime = get_reliability_runtime()
+    except (FileNotFoundError, ValueError, OSError) as exc:
+        raise HTTPException(status_code=503, detail="Reliability bundle is not configured") from exc
+    return {
+        "feature_names": runtime.feature_names,
+        "primary_model_index": runtime.primary_model_index,
+        "base_model_count": len(runtime.base_models),
+        "artifact_version": 2,
+    }
 
 
 @app.post("/v1/reliability/decisions", response_model=ReliabilityDecisionResponse)

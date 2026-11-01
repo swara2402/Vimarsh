@@ -73,7 +73,7 @@ def load_banknote_dataset(raw_dir: str | Path):
         "license": "CC BY 4.0",
         "rows": int(len(X)),
         "feature_count": int(X.shape[1]),
-        "target": "authentic (1) versus forged (0)",
+        "target": "forged (1) versus authentic (0)",
         "class_counts": {str(k): int(v) for k, v in y.value_counts().sort_index().items()},
     }
 

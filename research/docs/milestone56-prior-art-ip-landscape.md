@@ -43,6 +43,7 @@ The following are high-relevance documents identified in this preliminary search
 | [WO2020247943A1](https://patents.google.com/patent/WO2020247943A1/en) | Priority 6 Jun 2019; published 10 Dec 2020 | Multi-criteria predictive-model desirability, including model accuracy, quality, deployment cost, scoring cost, false-positive/false-negative cost, data-acquisition cost, risks and hard/soft constraints. | High overlap with broad cost-, risk- and constraint-aware model selection. |
 | [US20250322216A1](https://patents.google.com/patent/US20250322216A1/en) | Priority 11 Apr 2024; published 16 Oct 2025 | System-sensitive model routing for output generation, including dynamic system-resource monitoring, routing models, model selection, and cost/resource budget checks before alternate-model execution. | Relevant to runtime routing, alternate-model selection and resource-aware switching. Its claims are directed to an LLM/output-generation environment and particular routing architecture. |
 | [CN122347229B](https://patents.google.com/patent/CN122347229B/en) | Priority 8 Jun 2026; published/granted 31 Jul 2026 | Evidence-driven closed-loop reasoning control; selects actions to maximize uncertainty reduction under a unified budget, executes actions, updates an evidence pool and arbitrates evidence, with further verification loops. | Very high conceptual overlap with broad budgeted verification/action selection. Its stated context is generative-model reasoning and evidence/claim arbitration, rather than VIMARSH's current tabular prediction-error estimation pipeline. |
+| [US12688479B2](https://patents.justia.com/patent/12688479) | Published as US20260311100A1 in 2026; patent granted 21 Jul 2026 | AI-based electronic-data verification routing: estimates verification-success likelihood, selects a verification service provider using request/provider attributes, impact/cost and latency, and learns from prior verification outcomes. | Very relevant to action-conditioned success prediction and routing among verification providers. It is framed around document/data verification providers and routing, but makes generic claims to selecting verification providers using predicted success, cost and latency difficult to distinguish. |
 
 ### Important claim-level distinctions
 
@@ -53,7 +54,18 @@ The following are high-relevance documents identified in this preliminary search
 - **US20250322216A1:** The independent claim includes user identifiers, user profiles, system-resource measurements, routing models and LLM output generation. It is not a blanket claim over every system that switches models based on cost.
 - **CN122347229B:** The disclosed action router, uncertainty-reduction-per-budget objective, action execution, evidence-pool update and evidence-gating loop is a close conceptual warning for broad claims around budgeted verification. Its grant and jurisdiction-specific scope require professional review; do not infer global enforceability from a Google Patents status label.
 
-## 3. Relevant research literature
+## 3. India-specific computer-related invention considerations
+
+The official Indian Patent Office's **Guidelines for Examination of Computer Related Inventions (CRIs), 2025** are particularly relevant because VIMARSH is being developed in India:
+
+- Section 3(k) lists mathematical or business methods, computer programmes per se, and algorithms among excluded subject matter. The guidelines discuss the need to assess the claimed invention as a whole and whether it produces a technical effect or technical contribution. [Official IP India CRI Guidelines 2025 (PDF)](https://ipindia.gov.in/frontend/pdf/patents/guidelines/GUIDELINES%20FOR%20EXAMINATION%20OF%20COMPUTER%20RELATED%20INVENTIONS%20%28CRIs%29%20-%202025.pdf)
+- The AI/ML section says the key question is whether an abstract theoretical construct is transformed into an implementable technical solution, with sufficient detail for a skilled person to reproduce it. It also emphasizes disclosure of the model, training data, training methodology, and validation/real-world results where relevant.
+- The guidelines describe technical effect as more than a user-facing presentation or administrative convenience. They discuss measurable effects such as improved computation, memory use, throughput, latency, system robustness, or technical operation.
+- The guidelines distinguish a computer-programme exclusion from a business-method exclusion. A business-method claim may face an absolute exclusion under section 3(k), so framing a commercial verification-cost or workflow-allocation problem as a business method is a significant risk.
+
+**Implication for VIMARSH:** a mathematical action-scoring rule or a dashboard that recommends actions is not enough. Any Indian CRI strategy would need to identify a concrete technical problem and demonstrate a credible technical effect from a specific implementation, such as measured reductions in inference latency/resource consumption or improved reliability of a technical computing/network process, without relying on generic business savings or user-interface presentation. The current API and dashboard do not establish that technical effect. This is a research planning observation, not a legal conclusion.
+
+## 4. Relevant research literature
 
 Patent documents are not the only relevant prior art. Published academic methods can affect novelty and inventive-step analysis even when they are not patents.
 
@@ -64,7 +76,7 @@ Patent documents are not the only relevant prior art. Published academic methods
 - **“Learning Selective Deferral Policies for Reliable Medical Text Classification” (2026).** Describes a learned deferral framework combining uncertainty features, calibration, a deferral policy and fixed review budgets. Its discussion explicitly distinguishes simulated review from actual expert outcomes. [Article](https://www.mdpi.com/2227-7080/14/6/359)
 - **“Selective prediction-set models with coverage rate guarantees” (Biometrics, 2023).** Studies abstention with coverage-rate guarantees to balance reliability and expert workload. [PubMed record](https://pubmed.ncbi.nlm.nih.gov/34854476/)
 
-## 4. Mapping against the current VIMARSH implementation
+## 5. Mapping against the current VIMARSH implementation
 
 | VIMARSH capability | Current status | Prior-art pressure | What remains unproven |
 |---|---|---|---|
@@ -78,7 +90,7 @@ Patent documents are not the only relevant prior art. Published academic methods
 | Paired outcome audit | Implemented for offline alternate-model substitution | Potentially useful differentiator, but not automatically novel | Replication, external datasets, confidence intervals, causal limitations and operational outcomes |
 | React dashboard | Implemented; research preview | Low patent relevance by itself | No independent technical contribution established by presentation/UI |
 
-## 5. Preliminary novelty assessment
+## 6. Preliminary novelty assessment
 
 ### What is not a defensible novelty claim
 
@@ -112,7 +124,7 @@ A possible technical architecture would require all of the following, not just a
 
 This is only a **hypothesis**, not a finding of novelty. Budgeted uncertainty reduction, evidence acquisition, model routing and human deferral already have close prior art. The proposed contribution would need a precise mathematical formulation and an experimental advantage over those methods.
 
-## 6. Critical experiments before considering a patent draft
+## 7. Critical experiments before considering a patent draft
 
 1. **Real action outcome dataset:** Collect paired outcomes for at least one genuinely operational action. For human review, record actual reviewer decisions and reviewer identity/qualification at an appropriate privacy level. For alternate models, record actual predictions, latency, resource cost and subsequent ground truth.
 2. **Action benefit estimation:** Compare fixed-effectiveness assumptions, simple empirical action success rates, and a context-conditioned action-outcome estimator. Evaluate calibration of both error probability and action benefit.
@@ -123,7 +135,7 @@ This is only a **hypothesis**, not a finding of novelty. Budgeted uncertainty re
 7. **Statistical evidence:** Report paired confidence intervals, bootstrap uncertainty, per-seed results, and subgroup/shift analyses. Include negative results.
 8. **Systems evaluation:** Measure real inference latency, action latency, memory, throughput, and cost. The current caller-supplied abstract cost units are not operational cost evidence.
 
-## 7. IP hygiene and next actions
+## 8. IP hygiene and next actions
 
 - Preserve dated, version-controlled design notes, experiment configurations, results, and authorship/contribution records.
 - Do not publicly disclose a potentially novel implementation before discussing filing strategy with the institution's IP cell or a patent professional.
@@ -132,7 +144,7 @@ This is only a **hypothesis**, not a finding of novelty. Budgeted uncertainty re
 - Have counsel evaluate novelty, inventive step/non-obviousness, enablement, claim scope and freedom to operate separately. A patent being granted or pending is not the same question as whether VIMARSH infringes it.
 - Keep the proposed novelty hypothesis private until it has been technically specified and reviewed.
 
-## 8. Preliminary conclusion
+## 9. Preliminary conclusion
 
 VIMARSH has a credible research platform and a growing empirical record, but the current broad concept is not sufficiently differentiated to support a confident patentability claim. The strongest next step is **not drafting broad patent claims**. It is implementing and validating a specific action-conditioned outcome model with real paired verification data, conservative benefit estimation and a constrained allocator, then comparing it against established selective prediction and learning-to-defer baselines.
 

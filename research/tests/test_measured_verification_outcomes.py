@@ -8,7 +8,7 @@ def test_audit_counts_corrections_regressions_and_cost():
     result = audit_prediction_changes(
         y_true=[1, 0, 1, 0],
         baseline_predictions=[0, 0, 1, 1],
-        candidate_predictions=[1, 1, 0, 0],
+        candidate_predictions=[1, 1, 1, 0],
         action_mask=[True, True, True, False],
         action_costs=[1.5, 1.5, 1.5, 1.5],
     )

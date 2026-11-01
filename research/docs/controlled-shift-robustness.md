@@ -60,3 +60,39 @@ perturbation families, severity calibration from domain evidence, additional
 independent datasets, and at least one distinct model family. Any such
 extension must preserve a frozen validation protocol and report negative
 results.
+
+
+## Milestone 50: multiple perturbation families
+
+The MAGIC held-out test evaluation now includes three explicitly distinct
+synthetic perturbation families. In every scenario, fitted models and
+validation-selected thresholds remain frozen. Feature scales and replacement
+medians are computed from the training partition only.
+
+| Family | Severity levels | Construction |
+|---|---|---|
+| Signed mean offset | 0.25, 0.50, 1.00 training SD | Existing alternating signed per-feature offset with small Gaussian noise |
+| Independent Gaussian noise | 0.10, 0.30, 0.50 training SD | Zero-mean independent feature noise scaled by each training feature SD |
+| Feature-cell masking | 5%, 15%, 30% of cells | Randomly replace selected test cells with the corresponding training-feature median |
+
+The masking stressor uses training medians rather than NaNs because the fitted
+MAGIC preprocessing pipeline is a standardization pipeline without a missing
+value imputer. This is an explicit median-replacement corruption experiment,
+not a claim to simulate every missing-data mechanism. The selected cells are
+sampled without replacement within each scenario. Noise and masking are
+deterministic for fixed seed and severity.
+
+Each scenario reports frozen-threshold coverage, accepted-set error,
+overall accuracy, and paired candidate-versus-confidence-only bootstrap
+intervals. Bootstrap intervals use 300 replicates per scenario and are
+conditional on the fitted models, split, thresholds, and perturbation family.
+The duplicate-feature groups are inherited from the original unperturbed test
+set so that row-level noise does not redefine the bootstrap clusters.
+
+The additional scenarios are run for the existing MAGIC seeds 17, 42, and 73.
+They do not add independent datasets or training seeds. The three families
+remain synthetic and should not be interpreted as calibrated estimates of
+natural input corruption, production drift, or model safety. Results from
+different perturbation families must be shown separately rather than pooled
+into a single robustness score. The result JSON records the family, severity,
+unit, frozen-model/threshold status, and metrics for each scenario.

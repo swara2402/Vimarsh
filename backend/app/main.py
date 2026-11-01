@@ -1,11 +1,16 @@
 """VIMARSH FastAPI decision recommendation service."""
 import os
+from functools import lru_cache
 from uuid import uuid4
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 
 from .policy import PolicyConfig, select_decision
-from .schemas import DecisionRequest, DecisionResponse
+from .runtime import ReliabilityBundleRuntime
+from .schemas import (
+    DecisionRequest, DecisionResponse, ReliabilityDecisionRequest,
+    ReliabilityDecisionResponse, DecisionAction,
+)
 
 app = FastAPI(
     title="VIMARSH Decision API",
@@ -35,4 +40,49 @@ def create_decision(request: DecisionRequest):
         baseline_risk=round(baseline_risk, 8),
         rationale=rationale,
         eligible_actions=eligible,
+    )
+
+
+@lru_cache(maxsize=1)
+def get_reliability_runtime():
+    bundle_path = os.getenv("VIMARSH_RELIABILITY_BUNDLE")
+    if not bundle_path:
+        raise FileNotFoundError("VIMARSH_RELIABILITY_BUNDLE is not configured")
+    return ReliabilityBundleRuntime(bundle_path)
+
+
+@app.post("/v1/reliability/decisions", response_model=ReliabilityDecisionResponse)
+def create_reliability_decision(request: ReliabilityDecisionRequest):
+    try:
+        runtime = get_reliability_runtime()
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except (ValueError, OSError) as exc:
+        raise HTTPException(status_code=503, detail="Configured reliability bundle is unavailable or invalid") from exc
+
+    try:
+        scored = runtime.score_one(request.sample)
+    except (ValueError, TypeError, KeyError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    decision_request = DecisionRequest(
+        prediction=scored["prediction"],
+        confidence=scored["confidence"],
+        estimated_error_probability=scored["estimated_error_probability"],
+        harm=request.harm,
+        available_actions=request.available_actions,
+        estimated_action_costs=request.estimated_action_costs,
+        remaining_budget=request.remaining_budget,
+    )
+    action, baseline_risk, rationale, eligible = select_decision(decision_request, policy_config)
+    return ReliabilityDecisionResponse(
+        decision_id=uuid4(),
+        prediction=scored["prediction"],
+        confidence=scored["confidence"],
+        estimated_error_probability=scored["estimated_error_probability"],
+        baseline_risk=round(baseline_risk, 8),
+        action=action,
+        rationale=rationale,
+        eligible_actions=eligible,
+        base_model_count=scored["base_model_count"],
     )

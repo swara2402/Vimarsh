@@ -60,3 +60,21 @@ This diagnostic fills the full capacity regardless of whether individual cases h
 ## Interpretation boundary
 
 A positive simulated net benefit is conditional on the assumed consequence weights, review cost, and reviewer effectiveness. It does not establish real review efficacy, real-world harm reduction, broad domain generalization, or patent novelty. Three seeds provide descriptive stability evidence only. The present HTRU2 result is a negative comparative finding for the learned reliability score versus confidence, and should be reported as such rather than hidden.
+
+
+## Validation-selected nominal review-rate diagnostic
+
+A separate diagnostic selects each policy's review-risk threshold from the
+validation partition only, targeting a nominal 10% review fraction. The score
+is the model's error-risk proxy multiplied by the predicted-class scenario
+consequence weight. The resulting threshold is applied unchanged to test
+scores, and test labels are accessed only after the selected mask is fixed.
+
+This diagnostic complements, but does not replace, (1) the positive-net-benefit
+hard-cap policy and (2) the exact matched-capacity ranking diagnostic. It
+measures how a validation-selected operating threshold transfers to test data.
+Because score distributions can shift and ties can occur, actual test review
+coverage may differ from 10%; this diagnostic is not a hard-cap guarantee.
+The random policy is omitted because it has no learned validation risk-score
+threshold. All consequence and review-effectiveness values remain hypothetical
+scenario assumptions.

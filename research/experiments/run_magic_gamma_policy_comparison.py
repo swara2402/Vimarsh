@@ -32,6 +32,7 @@ from src.train import (
 )
 from src.reliability.feature_extractor import ReliabilityFeatureExtractor
 from src.reliability.reliability_model import ReliabilityEstimator
+from src.evaluation.threshold_diagnostics import validation_threshold_metrics as shared_validation_threshold_metrics
 from src.verification.action_selector import VerificationEngine, VerificationEngineConfig
 from src.verification.cost_model import DecisionProfile
 from src.verification.outcome_validator import OutcomeValidator
@@ -75,34 +76,11 @@ def grouped_magic_split(X, y, seed):
 
 
 def validation_threshold_metrics(validation_scores, test_scores, test_predictions, test_labels, target_coverage=0.75):
-    """Select a risk-score threshold on validation data, then evaluate untouched test rows."""
-    validation_scores = np.asarray(validation_scores, dtype=float)
-    test_scores = np.asarray(test_scores, dtype=float)
-    test_predictions = np.asarray(test_predictions)
-    test_labels = np.asarray(test_labels)
-    if validation_scores.ndim != 1 or test_scores.ndim != 1:
-        raise ValueError("Risk scores must be one-dimensional")
-    if not 0.0 < target_coverage < 1.0:
-        raise ValueError("target_coverage must be between zero and one")
-    if len(test_scores) != len(test_predictions) or len(test_scores) != len(test_labels):
-        raise ValueError("Test scores, predictions, and labels must have equal lengths")
-    if not np.isfinite(validation_scores).all() or not np.isfinite(test_scores).all():
-        raise ValueError("Risk scores must be finite")
-    threshold = float(np.quantile(validation_scores, target_coverage, method="higher"))
-    accepted = test_scores <= threshold
-    accepted_count = int(accepted.sum())
-    observed_error = (
-        float(np.mean(test_predictions[accepted] != test_labels[accepted]))
-        if accepted_count else None
+    """Backward-compatible wrapper around the shared leakage-safe diagnostic."""
+    return shared_validation_threshold_metrics(
+        validation_scores, test_scores, test_predictions, test_labels,
+        target_coverage=target_coverage,
     )
-    return {
-        "validation_selected_threshold": threshold,
-        "target_coverage": float(target_coverage),
-        "test_coverage": float(accepted.mean()),
-        "accepted_test_observations": accepted_count,
-        "observed_error_rate": observed_error,
-    }
-
 
 
 def reliability_ablation_metrics(

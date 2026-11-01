@@ -158,7 +158,7 @@ function App() {
                 <div className="feature-grid">
                   {schema.feature_names.map((name) => (
                     <label className="field" key={name}>
-                      <span>{name.replaceAll("_", " ")}</span>
+                      <span>{name.replace(/_/g, " ")}</span>
                       <input
                         type="number"
                         step="any"
@@ -228,7 +228,7 @@ function App() {
                 </div>
                 <div className="recommendation">
                   <span className="result-label">RECOMMENDED ACTION</span>
-                  <strong>{decision.action.replaceAll("_", " ")}</strong>
+                  <strong>{decision.action.replace(/_/g, " ")}</strong>
                   <p>Recommendation only · not executed</p>
                 </div>
                 <div className="rationale">

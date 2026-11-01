@@ -24,7 +24,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install test dependencies
-        run: python -m pip install --upgrade pip && python -m pip install pytest numpy pandas scipy scikit-learn
+        run: python -m pip install --upgrade pip && python -m pip install pytest numpy pandas scipy scikit-learn matplotlib
       - name: Compile calibration audit
         run: python -m compileall -q src/evaluation/calibration_audit.py experiments/run_calibration_safety_audit.py
       - name: Run calibration audit tests

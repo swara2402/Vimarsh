@@ -36,6 +36,8 @@ from src.evaluation.threshold_diagnostics import validation_threshold_metrics as
 from src.evaluation.paired_bootstrap import paired_bootstrap_policy_comparisons
 from src.evaluation.shift_robustness import (
     make_mean_feature_shift,
+    make_gaussian_feature_noise,
+    make_training_median_mask,
     evaluate_frozen_policy_under_shift,
 )
 from src.verification.action_selector import VerificationEngine, VerificationEngineConfig

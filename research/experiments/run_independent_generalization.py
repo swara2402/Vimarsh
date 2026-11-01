@@ -115,9 +115,6 @@ def run_dataset_seed(dataset_name, loader, seed, raw_dir):
     test_probs = _batch_probabilities(models, preprocessor.transform(X_test))
 
     # One grouped calibration holdout for the reliability estimator.
-    rel_fit_idx, rel_cal_idx = grouped_stratified_holdout_indices(
-        X_train, y_train, test_size=0.25, random_state=seed + 20, n_splits=4,
-    )
     per_model = {}
     for primary_index, model_name in enumerate(MODEL_NAMES):
         extractor = ReliabilityFeatureExtractor(
@@ -128,6 +125,12 @@ def run_dataset_seed(dataset_name, loader, seed, raw_dir):
             int(np.argmax(prob_set[primary_index]) != int(label))
             for prob_set, label in zip(oof, y_train.to_numpy())
         ], dtype=int)
+        # Stratify the reliability fit/calibration split on OOF error labels,
+        # not the original task labels, so rare error cases are represented.
+        rel_fit_idx, rel_cal_idx = grouped_stratified_holdout_indices(
+            X_train, pd.Series(oof_errors, index=X_train.index),
+            test_size=0.25, random_state=seed + 20 + primary_index, n_splits=4,
+        )
         if len(np.unique(oof_errors[rel_fit_idx])) != 2:
             raise ValueError(f"{dataset_name}/{seed}/{model_name}: reliability fit split has one error class")
         if len(np.unique(oof_errors[rel_cal_idx])) != 2:

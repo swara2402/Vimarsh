@@ -5,6 +5,7 @@ import pytest
 
 from experiments.run_htru2_budgeted_verification import (
     class_harm_weights, select_under_budget, select_top_budget, evaluate_selection,
+    validation_threshold_selection,
 )
 from src.datasets.htru2 import parse_htru2_csv
 
@@ -75,3 +76,27 @@ def test_htru2_parser_validates_schema_and_target(tmp_path):
     pd.DataFrame([[1,2,3,4,5,6,7,8,2]]).to_csv(bad, header=False, index=False)
     with pytest.raises(ValueError):
         parse_htru2_csv(bad)
+
+
+
+def test_validation_threshold_uses_validation_scores_only_and_applies_to_test():
+    validation = np.arange(1.0, 101.0)
+    test = np.array([95.0, 90.0, 89.0, 10.0])
+    selected, threshold = validation_threshold_selection(validation, test, 0.10)
+    assert threshold == 91.0
+    np.testing.assert_array_equal(selected, [True, False, False, False])
+
+
+def test_validation_threshold_rejects_nonfinite_scores_and_invalid_fraction():
+    with pytest.raises(ValueError, match="finite"):
+        validation_threshold_selection([0.1, np.nan], [0.2], 0.1)
+    with pytest.raises(ValueError, match="between 0 and 1"):
+        validation_threshold_selection([0.1, 0.2], [0.3], 1.0)
+
+
+def test_validation_threshold_reports_tie_inclusive_selection_without_test_labels():
+    selected, threshold = validation_threshold_selection(
+        [0.0, 1.0, 2.0, 3.0, 4.0], [3.0, 3.0, 2.0], 0.2
+    )
+    assert threshold == 4.0
+    assert selected.sum() == 0

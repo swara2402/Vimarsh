@@ -96,7 +96,8 @@ def test_validation_threshold_rejects_nonfinite_scores_and_invalid_fraction():
 
 def test_validation_threshold_reports_tie_inclusive_selection_without_test_labels():
     selected, threshold = validation_threshold_selection(
-        [0.0, 1.0, 2.0, 3.0, 4.0], [3.0, 3.0, 2.0], 0.2
+        [0.0, 1.0, 2.0, 3.0, 4.0], [4.0, 4.0, 3.0], 0.2
     )
     assert threshold == 4.0
-    assert selected.sum() == 0
+    # Ties at the validation-selected cutoff can push test utilization above target.
+    np.testing.assert_array_equal(selected, [True, True, False])

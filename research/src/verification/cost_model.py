@@ -1,6 +1,7 @@
 """Cost model configuration for verification actions."""
 from dataclasses import dataclass
 from typing import Dict, Optional
+import math
 from .actions import ActionType
 from enum import Enum
 
@@ -22,6 +23,11 @@ class ActionCosts:
     alternate_model: float = 1.50              # Reduced to make automated actions viable
     human_review: float = 3.00                 # Reduced to make human review feasible for high-risk samples
     abstain: float = 0.75                      # Still penalize abstention appropriately
+
+    def __post_init__(self):
+        for name, value in self.__dict__.items():
+            if not math.isfinite(value) or value < 0:
+                raise ValueError(f"{name} cost must be finite and non-negative")
     
     @classmethod
     def from_profile(cls, profile: DecisionProfile) -> "ActionCosts":
@@ -59,6 +65,11 @@ class ActionEffectiveness:
     alternate_model: float = 0.6  # 60% risk reduction if successful (simulated - depends on model disagreement)
     human_review: float = 0.98  # 98% risk reduction if successful - human review is most effective
     abstain: float = 0.85  # 85% risk reduction through abstention, less thorough than human review
+
+    def __post_init__(self):
+        for name, value in self.__dict__.items():
+            if not math.isfinite(value) or not 0 <= value <= 1:
+                raise ValueError(f"{name} effectiveness must be finite and in [0, 1]")
     
     @classmethod
     def from_profile(cls, profile: DecisionProfile) -> "ActionEffectiveness":
@@ -96,8 +107,12 @@ class BudgetManager:
     remaining_budget: float = None
     
     def __post_init__(self):
+        if not math.isfinite(self.total_budget) or self.total_budget < 0:
+            raise ValueError("total_budget must be finite and non-negative")
         if self.remaining_budget is None:
             self.remaining_budget = self.total_budget
+        if not math.isfinite(self.remaining_budget) or not 0 <= self.remaining_budget <= self.total_budget:
+            raise ValueError("remaining_budget must be finite and between zero and total_budget")
     
     def can_afford(self, action_cost: float) -> bool:
         """Check if the remaining budget can afford an action."""

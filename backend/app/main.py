@@ -322,7 +322,7 @@ def action_capabilities():
                 "available": bool(os.getenv("VIMARSH_EVIDENCE_API_TOKEN")),
                 "mode": "operator_submitted_evidence" if os.getenv("VIMARSH_EVIDENCE_API_TOKEN") else "not_configured",
                 "endpoint": "/v1/evidence",
-                "reason": None if os.getenv("VIMARSH_EVIDENCE_API_TOKEN") else "Set VIMARSH_EVIDENCE_API_TOKEN to enable manual evidence intake; no external source is fetched or verified.",
+                "reason": None if os.getenv("VIMARSH_EVIDENCE_API_TOKEN") else "Set VIMARSH_EVIDENCE_API_TOKEN to enable manual intake and Crossref DOI metadata lookup; bibliographic retrieval does not verify scientific claims.",
             },
             "abstain": {"available": True, "mode": "decision_only"},
         },

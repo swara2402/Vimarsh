@@ -36,8 +36,9 @@ app = FastAPI(
     version="0.2.0",
     description=(
         "Research-stage API: decision endpoints return recommendations, an explicit endpoint "
-        "runs trusted local alternate models, and protected research endpoints support "
-        "outcome logging and offline allocation. Human review and evidence actions are not executed."
+        "runs trusted local alternate models, protected research endpoints support outcome logging "
+        "and offline allocation, and separately token-protected operator endpoints support manual "
+        "review and evidence intake. Decision requests do not automatically trigger operator actions."
     ),
 )
 

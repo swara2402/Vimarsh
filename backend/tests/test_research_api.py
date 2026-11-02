@@ -117,7 +117,10 @@ def test_policy_context_rejects_ground_truth_leakage(monkeypatch, tmp_path):
     configure(monkeypatch, tmp_path)
     payload = completed_payload(3)
     payload["context"] = {"uncertainty": 0.4, "harm": 1.0, "ground_truth": 1.0}
-    response = client.post("/v1/research/outcomes", headers=HEADERS, json=payload)
+    response = client.post(
+        "/v1/research/outcomes", headers={**HEADERS, "Content-Type": "application/json"},
+        content=json.dumps(payload, allow_nan=True),
+    )
     assert response.status_code == 422
 
 

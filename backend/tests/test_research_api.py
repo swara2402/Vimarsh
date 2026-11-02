@@ -288,5 +288,8 @@ def test_outcome_api_rejects_non_finite_context(monkeypatch, tmp_path):
     configure(monkeypatch, tmp_path)
     payload = completed_payload(44)
     payload["context"] = {"uncertainty": float("nan")}
-    response = client.post("/v1/research/outcomes", headers=HEADERS, json=payload)
+    response = client.post(
+        "/v1/research/outcomes", headers={**HEADERS, "Content-Type": "application/json"},
+        content=json.dumps(payload, allow_nan=True),
+    )
     assert response.status_code == 422

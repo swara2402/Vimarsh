@@ -5,4 +5,5 @@ httpx>=0.27,<1.0
 numpy>=1.24,<3
 pandas>=2.0,<4
 scikit-learn>=1.2,<2
-joblib>=1.2,<2\nscipy>=1.11,<2\n
+joblib>=1.2,<2
+scipy>=1.11,<2

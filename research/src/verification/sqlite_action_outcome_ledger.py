@@ -153,6 +153,9 @@ class SQLiteActionOutcomeLedger:
         connection = self._connect()
         try:
             connection.execute("BEGIN IMMEDIATE")
+            # Never extend a corrupted chain: verify all committed rows while this
+            # writer reservation prevents another process from appending concurrently.
+            self.read_verified()
             parent_event_id = row.get("parent_event_id")
             if parent_event_id is not None:
                 parent_row = connection.execute(

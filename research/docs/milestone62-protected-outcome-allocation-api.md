@@ -2,7 +2,7 @@
 
 ## Delivered implementation
 
-- Added strict request contracts for action outcomes, contextual benefit estimation, and batch allocation.
+- Added strict request contracts for action outcomes, contextual benefit estimation, batch allocation, and alternate-model inference.\n- Added a dashboard action that runs non-primary models from the trusted local bundle and displays their predictions/confidence and measured latency without silently switching the final prediction.\n- Added capability discovery that explicitly reports human review and evidence acquisition as unavailable until real providers exist.
 - Exposed protected research endpoints for explicit alternate-model inference, append-only outcome capture, aggregate ledger status, context-conditioned action-benefit estimation, and constrained allocation.
 - Reused the existing tested research estimator, hash-chained outcome ledger, and SciPy MILP allocator rather than duplicating their algorithms.
 - Required a server-side research token; endpoints are disabled by default.

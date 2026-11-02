@@ -183,7 +183,8 @@ def test_crossref_doi_metadata_provider_is_token_protected_and_logged(monkeypatc
     assert evidence.json()["evidence"][0]["integrity_valid"] is True
 
 
-def test_crossref_doi_provider_rejects_invalid_doi_without_network():
+def test_crossref_doi_provider_rejects_invalid_doi_without_network(monkeypatch, tmp_path):
+    configure_operator_workflows(monkeypatch, tmp_path)
     response = client.post(
         "/v1/evidence/resolve-doi",
         headers=evidence_headers(),

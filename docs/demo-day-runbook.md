@@ -10,7 +10,7 @@ This is a reproducible local research demonstration using the Wine Quality bench
 4. Explain the primary prediction, confidence, estimated error probability, baseline risk, recommended action, and rationale.
 5. If the capability panel confirms an alternate model is available, click **Run alternate models** to show its explicit local predictions and measured inference latency. Explain that the primary prediction is not automatically replaced.
 6. Change the budget to demonstrate how feasibility constraints affect the recommendation.
-7. Point out that the capability panel marks human review and additional evidence as unavailable. Alternate-model inference requires a separate explicit action.
+7. Explain that the main decision panel still separates recommendations from execution. If demonstrating the optional operator workspace, configure the separate reviewer/evidence tokens in the API environment first. Show a review case moving through pending, claimed, and completed or cancelled states, inspect its hash-chained event history, then attach manual evidence or resolve a DOI through Crossref. Crossref lookup records bibliographic metadata only and does not verify scientific claims. Alternate-model inference still requires a separate explicit action.
 8. State clearly that the serving policy is a transparent baseline. The contextual estimator and constrained allocator are offline research components, not the live serving policy.
 9. Use the [research evidence summary](research-evidence-summary-2026-11-02.md) for the multi-dataset findings, including mixed and negative results.
 
@@ -124,3 +124,8 @@ Open the local URL printed by Vite, normally http://localhost:5173. The default 
 The dashboard includes a protected local review queue and manual evidence intake panel. To enable them, copy `deploy/.env.example` to `.env`, then set distinct strong random values for `VIMARSH_REVIEWER_API_TOKEN` and `VIMARSH_EVIDENCE_API_TOKEN`. Restart Compose after changing environment values. Tokens are entered into the dashboard when an operator uses the corresponding panel and are held only in page memory.
 
 The review queue supports enqueue, claim, and completion. Manual evidence intake stores the submitted source name, reference, text, metadata, and SHA-256 digest. It does not fetch or validate the external source. Reviewer IDs are operator-provided labels, not individual authenticated identities. Keep the services bound to loopback and do not use these local workflows for consequential decisions without a security and operational review.
+
+
+## Optional operator-workflow demonstration
+
+Set `VIMARSH_REVIEWER_API_TOKEN` and `VIMARSH_EVIDENCE_API_TOKEN` in the API environment before starting the demo. Keep both API and dashboard bound to loopback. In the operator workspace, create a sample review case, claim it using a reviewer label, and complete or cancel it. Open its history and show the audit-chain verification result. Add a short manual evidence record, or resolve a known DOI using the Crossref lookup, then inspect the stored record and digest status. Do not use real personal or confidential data. Reviewer labels are not authenticated identities, and DOI metadata retrieval is not source-claim validation.

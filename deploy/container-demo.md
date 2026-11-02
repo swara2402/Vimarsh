@@ -2,6 +2,8 @@
 
 This deployment runs the FastAPI service and production-built React dashboard locally. It is a reproducible demo stack, not a public production deployment.
 
+For the quickest macOS/Linux setup, run `bash scripts/start_demo.sh` from the repository root. It prepares the model bundle and starts this Compose stack. Use `bash scripts/start_demo.sh --prepare-only` if you want to generate the bundle first and launch Docker separately.
+
 ## 1. Generate the trusted model bundle
 
 Follow [the demo-day runbook](../docs/demo-day-runbook.md) to install research dependencies and run:

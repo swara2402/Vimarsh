@@ -5,7 +5,7 @@ type Row = Record<string, Cell>;
 type NumericSummary = { name: string; count: number; missing: number; mean: number; median: number; min: number; max: number; std: number };
 
 function parseCSV(source: string): { headers: string[]; rows: Row[] } {
-  source = source.replace(/^\\uFEFF/, "");
+  source = source.replace(/^\uFEFF/, "");
   const records: string[][] = [];
   let row: string[] = [], cell = "", quoted = false, afterQuote = false;
   const finishCell = () => { row.push(cell.trim()); cell = ""; afterQuote = false; };
@@ -27,10 +27,10 @@ function parseCSV(source: string): { headers: string[]; rows: Row[] } {
 
     if (afterQuote) {
       if (ch === ",") finishCell();
-      else if (ch === "\\n" || ch === "\\r") {
-        if (ch === "\\r" && source[i + 1] === "\\n") i += 1;
+      else if (ch === "\n" || ch === "\r") {
+        if (ch === "\r" && source[i + 1] === "\n") i += 1;
         finishRecord();
-      } else if (ch !== " " && ch !== "\\t") {
+      } else if (ch !== " " && ch !== "\t") {
         throw new Error("The CSV has unexpected characters after a closing quote.");
       }
       continue;
@@ -40,8 +40,8 @@ function parseCSV(source: string): { headers: string[]; rows: Row[] } {
       if (cell.length > 0) throw new Error("A quoted CSV field must begin with a quote at the start of the field.");
       quoted = true;
     } else if (ch === ",") finishCell();
-    else if (ch === "\\n" || ch === "\\r") {
-      if (ch === "\\r" && source[i + 1] === "\\n") i += 1;
+    else if (ch === "\n" || ch === "\r") {
+      if (ch === "\r" && source[i + 1] === "\n") i += 1;
       finishRecord();
     } else cell += ch;
   }
@@ -51,11 +51,11 @@ function parseCSV(source: string): { headers: string[]; rows: Row[] } {
   if (row.some((value) => value !== "")) records.push(row);
   if (records.length < 2) throw new Error("The CSV needs a header row and at least one data row.");
 
-  const headers = records[0].map((header, index) => header || `column_${index + 1}`);
+  const headers = records[0].map((header, index) => header || ("column_" + (index + 1)));
   if (new Set(headers).size !== headers.length) throw new Error("Column names must be unique.");
   const dataRecords = records.slice(1).filter((record) => record.some((value) => value !== ""));
   const extraWidth = dataRecords.findIndex((record) => record.length > headers.length);
-  if (extraWidth >= 0) throw new Error(`Row ${extraWidth + 2} has more fields than the header.`);
+  if (extraWidth >= 0) throw new Error("Row " + (extraWidth + 2) + " has more fields than the header.");
   const rows = dataRecords.map((record) =>
     Object.fromEntries(headers.map((header, index) => [header, record[index] ?? ""])) as Row
   );

@@ -28,7 +28,8 @@ from .review_queue import (
 )
 from .review_schemas import ReviewEnqueueRequest, ReviewClaimRequest, ReviewCompletionRequest
 from .evidence_register import require_evidence_token, add_evidence, list_evidence
-from .evidence_schemas import EvidenceCreateRequest
+from .evidence_schemas import EvidenceCreateRequest, EvidenceResolveDOIRequest
+from .evidence_providers import resolve_crossref_doi
 
 app = FastAPI(
     title="VIMARSH Decision API",
@@ -380,6 +381,35 @@ def submit_evidence(request: EvidenceCreateRequest):
         return add_evidence(request.model_dump())
     except (ValueError, TypeError) as exc:
         raise HTTPException(status_code=422, detail="Evidence record is invalid") from exc
+
+@app.post("/v1/evidence/resolve-doi", dependencies=[Depends(require_evidence_token)])
+def resolve_doi_evidence(request: EvidenceResolveDOIRequest):
+    """Retrieve public bibliographic metadata from Crossref and append it to the evidence register."""
+    import json
+
+    try:
+        source = resolve_crossref_doi(request.doi)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    record = add_evidence({
+        "case_id": request.case_id,
+        "source_name": "Crossref DOI metadata",
+        "source_reference": source["url"],
+        "evidence_text": json.dumps(source, sort_keys=True, ensure_ascii=False),
+        "metadata": {
+            "provider": "crossref",
+            "doi": source["doi"],
+            "work_type": source["work_type"],
+            "metadata_only": True,
+        },
+    })
+    return {**record, "provider": "crossref", "claim_verification": "not_performed"}
+
 
 @app.get("/v1/evidence/{case_id}", dependencies=[Depends(require_evidence_token)])
 def get_case_evidence(case_id: str, limit: int = 50):

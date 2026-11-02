@@ -105,7 +105,7 @@ export default function DataAnalysis() {
     });
     const missing = headers.map((name) => ({ name, count: rows.filter((r) => r[name] === "").length })).sort((a, b) => b.count - a.count);
     const selected = numeric.find((n) => n === focus) || numeric[0] || "";
-    const values = selected ? rows.map((r) => Number(r[selected])).filter(Number.isFinite) : [];
+    const values = selected ? rows.map((r) => r[selected]).filter((v) => v !== "" && Number.isFinite(Number(v))).map(Number) : [];
     const min = values.reduce((current, value) => Math.min(current, value), Number.POSITIVE_INFINITY);
     const max = values.reduce((current, value) => Math.max(current, value), Number.NEGATIVE_INFINITY);
     const bins = Array.from({ length: 10 }, (_, i) => ({ label: i + 1, count: 0 }));

@@ -377,3 +377,17 @@ def test_pending_outcome_completion_rejects_missing_non_pending_and_duplicate_ev
         json=completion,
     )
     assert not_pending.status_code == 409
+
+
+
+def test_outcome_completion_rejects_non_scalar_retrospective_values(monkeypatch, tmp_path):
+    configure(monkeypatch, tmp_path)
+    pending = completed_payload(73)
+    pending.update({"status": "pending", "final_prediction": None, "ground_truth": None})
+    client.post("/v1/research/outcomes", headers=HEADERS, json=pending)
+    response = client.post(
+        f"/v1/research/outcomes/{pending['event_id']}/complete",
+        headers=HEADERS,
+        json={"final_prediction": {"class": 1}, "ground_truth": 1},
+    )
+    assert response.status_code == 422

@@ -22,6 +22,13 @@ from .research_services import (
     require_research_token, append_outcome, outcome_summary,
     estimate_benefit, allocate_cases, complete_pending_outcome,
 )
+from .review_queue import (
+    require_reviewer_token, enqueue as enqueue_review, list_cases as list_review_cases,
+    claim_case as claim_review_case, complete_case as complete_review_case,
+)
+from .review_schemas import ReviewEnqueueRequest, ReviewClaimRequest, ReviewCompletionRequest
+from .evidence_register import require_evidence_token, add_evidence, list_evidence
+from .evidence_schemas import EvidenceCreateRequest
 
 app = FastAPI(
     title="VIMARSH Decision API",
@@ -292,14 +299,16 @@ def action_capabilities():
                 "research_logging_requires_token": True,
             },
             "human_review": {
-                "available": False,
-                "mode": "not_configured",
-                "reason": "No operational reviewer queue or provider is configured.",
+                "available": bool(os.getenv("VIMARSH_REVIEWER_API_TOKEN")),
+                "mode": "operator_managed_queue" if os.getenv("VIMARSH_REVIEWER_API_TOKEN") else "not_configured",
+                "endpoint": "/v1/reviews",
+                "reason": None if os.getenv("VIMARSH_REVIEWER_API_TOKEN") else "Set VIMARSH_REVIEWER_API_TOKEN to enable the local operator queue.",
             },
             "additional_evidence": {
-                "available": False,
-                "mode": "not_configured",
-                "reason": "No operational evidence source or acquisition provider is configured.",
+                "available": bool(os.getenv("VIMARSH_EVIDENCE_API_TOKEN")),
+                "mode": "operator_submitted_evidence" if os.getenv("VIMARSH_EVIDENCE_API_TOKEN") else "not_configured",
+                "endpoint": "/v1/evidence",
+                "reason": None if os.getenv("VIMARSH_EVIDENCE_API_TOKEN") else "Set VIMARSH_EVIDENCE_API_TOKEN to enable manual evidence intake; no external source is fetched or verified.",
             },
             "abstain": {"available": True, "mode": "decision_only"},
         },
@@ -307,7 +316,56 @@ def action_capabilities():
     }
 
 
-\n@app.post("/v1/reviews", dependencies=[Depends(require_reviewer_token)])\ndef create_review_case(request: ReviewEnqueueRequest):\n    """Queue a case for a human operator; this does not imply a reviewer is online."""\n    try:\n        return enqueue_review(request.model_dump())\n    except ValueError as exc:\n        raise HTTPException(status_code=409, detail=str(exc)) from exc\n\n@app.get("/v1/reviews", dependencies=[Depends(require_reviewer_token)])\ndef get_review_cases(status: str = "pending", limit: int = 50):\n    """List queued cases without exposing the outcome research ledger."""\n    if status not in {"pending", "claimed", "completed", "cancelled"}:\n        raise HTTPException(status_code=422, detail="Unsupported review status")\n    if not 1 <= limit <= 200:\n        raise HTTPException(status_code=422, detail="limit must be between 1 and 200")\n    return {"cases": list_review_cases(status=status, limit=limit)}\n\n@app.post("/v1/reviews/{review_id}/claim", dependencies=[Depends(require_reviewer_token)])\ndef claim_review(review_id: str, request: ReviewClaimRequest):\n    """Atomically claim one pending case for a reviewer."""\n    try:\n        return claim_review_case(review_id, request.reviewer_id)\n    except ValueError as exc:\n        raise HTTPException(status_code=409, detail=str(exc)) from exc\n\n@app.post("/v1/reviews/{review_id}/complete", dependencies=[Depends(require_reviewer_token)])\ndef complete_review(review_id: str, request: ReviewCompletionRequest):\n    """Record a reviewer adjudication after the case has been claimed."""\n    try:\n        return complete_review_case(review_id, request.reviewer_id, request.reviewer_note, request.final_prediction, request.ground_truth)\n    except ValueError as exc:\n        raise HTTPException(status_code=409, detail=str(exc)) from exc\n\n\n@app.post("/v1/evidence", dependencies=[Depends(require_evidence_token)])\ndef submit_evidence(request: EvidenceCreateRequest):\n    """Append operator-submitted evidence with source metadata and a content digest."""\n    try:\n        return add_evidence(request.model_dump())\n    except (ValueError, TypeError) as exc:\n        raise HTTPException(status_code=422, detail="Evidence record is invalid") from exc\n\n@app.get("/v1/evidence/{case_id}", dependencies=[Depends(require_evidence_token)])\ndef get_case_evidence(case_id: str, limit: int = 50):\n    if not 1 <= limit <= 200:\n        raise HTTPException(status_code=422, detail="limit must be between 1 and 200")\n    return {"case_id": case_id, "evidence": list_evidence(case_id, limit)}\n\n@app.post("/v1/actions/alternate-model/execute")
+
+@app.post("/v1/reviews", dependencies=[Depends(require_reviewer_token)])
+def create_review_case(request: ReviewEnqueueRequest):
+    """Queue a case for a human operator; this does not imply a reviewer is online."""
+    try:
+        return enqueue_review(request.model_dump())
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+@app.get("/v1/reviews", dependencies=[Depends(require_reviewer_token)])
+def get_review_cases(status: str = "pending", limit: int = 50):
+    """List queued cases without exposing the outcome research ledger."""
+    if status not in {"pending", "claimed", "completed", "cancelled"}:
+        raise HTTPException(status_code=422, detail="Unsupported review status")
+    if not 1 <= limit <= 200:
+        raise HTTPException(status_code=422, detail="limit must be between 1 and 200")
+    return {"cases": list_review_cases(status=status, limit=limit)}
+
+@app.post("/v1/reviews/{review_id}/claim", dependencies=[Depends(require_reviewer_token)])
+def claim_review(review_id: str, request: ReviewClaimRequest):
+    """Atomically claim one pending case for a reviewer."""
+    try:
+        return claim_review_case(review_id, request.reviewer_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+@app.post("/v1/reviews/{review_id}/complete", dependencies=[Depends(require_reviewer_token)])
+def complete_review(review_id: str, request: ReviewCompletionRequest):
+    """Record a reviewer adjudication after the case has been claimed."""
+    try:
+        return complete_review_case(review_id, request.reviewer_id, request.reviewer_note, request.final_prediction, request.ground_truth)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@app.post("/v1/evidence", dependencies=[Depends(require_evidence_token)])
+def submit_evidence(request: EvidenceCreateRequest):
+    """Append operator-submitted evidence with source metadata and a content digest."""
+    try:
+        return add_evidence(request.model_dump())
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(status_code=422, detail="Evidence record is invalid") from exc
+
+@app.get("/v1/evidence/{case_id}", dependencies=[Depends(require_evidence_token)])
+def get_case_evidence(case_id: str, limit: int = 50):
+    if not 1 <= limit <= 200:
+        raise HTTPException(status_code=422, detail="limit must be between 1 and 200")
+    return {"case_id": case_id, "evidence": list_evidence(case_id, limit)}
+
+@app.post("/v1/actions/alternate-model/execute")
 def run_alternate_model_action(request: AlternateModelRunRequest):
     """Run non-primary models on an explicitly submitted sample; no labels are accepted or logged."""
     try:

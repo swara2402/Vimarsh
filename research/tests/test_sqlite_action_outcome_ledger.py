@@ -3,8 +3,8 @@ import sqlite3
 
 import pytest
 
-from research.src.verification.action_outcome_ledger import ActionOutcomeRecord
-from research.src.verification.sqlite_action_outcome_ledger import SQLiteActionOutcomeLedger
+from src.verification.action_outcome_ledger import ActionOutcomeRecord
+from src.verification.sqlite_action_outcome_ledger import SQLiteActionOutcomeLedger
 
 
 def record(index):

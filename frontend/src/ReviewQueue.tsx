@@ -60,7 +60,7 @@ export default function ReviewQueue() {
     try {
       const data = await request(`/v1/reviews?status=${queueStatus}&limit=100`);
       setCases(data.cases);
-      setStatus(`Connected · ${data.cases.length} pending case(s)`);
+      setStatus(`Connected · ${data.cases.length} ${queueStatus} case(s)`);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Unable to load review queue.");
     } finally {
@@ -109,8 +109,7 @@ export default function ReviewQueue() {
       await request("/v1/reviews", "POST", {
         case_id: caseId,
         prediction,
-        rationale: rationale.split("
-").map((item) => item.trim()).filter(Boolean),
+        rationale: rationale.split(String.fromCharCode(10)).map((item) => item.trim()).filter(Boolean),
         context: {},
         priority: Number(priority),
       });

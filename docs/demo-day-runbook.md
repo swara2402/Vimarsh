@@ -91,7 +91,11 @@ npm run dev
 
 Open the local URL printed by Vite, normally http://localhost:5173. The default API origin is http://localhost:8000; override it with `VITE_API_BASE_URL` if required.
 
-## Data analysis and visualisation walkthrough\n\nAfter the decision workspace is ready, scroll to **Data Analysis & Visualisation** and upload a CSV export of a benchmark dataset. The file needs a header row with unique column names and must be 15 MB or smaller. Change the selected numeric feature to update the ten-bin histogram, select the target/category column to inspect class balance, and show missing-cell counts, the correlation matrix, and descriptive-statistics table. This explorer runs locally in the browser; the uploaded CSV is not sent to the API. See [Milestone 74](milestone74-data-analysis-visualisation.md) for its supported inputs and interpretation limits.\n\n## Demo checks
+## Data analysis and visualisation walkthrough
+
+After the decision workspace is ready, scroll to **Data Analysis & Visualisation** and upload a CSV export of a benchmark dataset. The file needs a header row with unique column names and must be 15 MB or smaller. Change the selected numeric feature to update the ten-bin histogram, select the target/category column to inspect class balance, and show missing-cell counts, the correlation matrix, and descriptive-statistics table. This explorer runs locally in the browser; the uploaded CSV is not sent to the API. See [Milestone 74](milestone74-data-analysis-visualisation.md) for its supported inputs and interpretation limits.
+
+## Demo checks
 
 - `GET /health` returns `status: ok`.
 - `GET /v1/reliability/schema` returns fitted feature names and base-model count.

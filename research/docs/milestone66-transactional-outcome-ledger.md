@@ -31,7 +31,7 @@ The database file should be kept outside version control and included in an oper
 
 ## Integrity and safety
 
-- Records remain append-only; there is no endpoint to edit or delete historical events.
+- Records remain append-only; SQLite triggers reject ordinary UPDATE and DELETE statements, and there is no API endpoint to edit or delete historical events.
 - Each record is validated before insertion and linked to the prior record hash.
 - Duplicate event IDs are rejected by a database uniqueness constraint.
 - A writer obtains a SQLite write reservation before reading the chain head, preventing concurrent local API workers from forking the hash chain.

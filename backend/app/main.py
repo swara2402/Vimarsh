@@ -208,3 +208,37 @@ def execute_alternate_model(request: AlternateModelExecutionRequest):
         "ground_truth_status": "pending_retrospective_evaluation",
         "note": "Complete a separate outcome record after ground truth is genuinely observed; this execution alone is not eligible for benefit estimation.",
     }
+
+
+@app.get("/v1/actions/capabilities")
+def action_capabilities():
+    """Describe which action paths are actually configured, without claiming placeholders are live."""
+    alternate_available = False
+    try:
+        runtime = get_reliability_runtime()
+        alternate_available = len(runtime.base_models) > 1
+    except (FileNotFoundError, ValueError, OSError):
+        alternate_available = False
+    return {
+        "actions": {
+            "accept": {"available": True, "mode": "decision_only"},
+            "alternate_model": {
+                "available": alternate_available,
+                "mode": "explicit_local_inference" if alternate_available else "unavailable",
+                "execution_endpoint": "/v1/research/execute/alternate-model" if alternate_available else None,
+                "requires_research_token": True,
+            },
+            "human_review": {
+                "available": False,
+                "mode": "not_configured",
+                "reason": "No operational reviewer queue or provider is configured.",
+            },
+            "additional_evidence": {
+                "available": False,
+                "mode": "not_configured",
+                "reason": "No operational evidence source or acquisition provider is configured.",
+            },
+            "abstain": {"available": True, "mode": "decision_only"},
+        },
+        "execution_boundary": "Only the protected alternate-model endpoint executes an action; allocation recommendations never execute actions.",
+    }

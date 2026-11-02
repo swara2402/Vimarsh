@@ -40,6 +40,9 @@ class SQLiteActionOutcomeLedger:
         self.timeout = timeout
         connection = self._connect()
         try:
+            # Serialize first-time schema creation and legacy-column upgrades so
+            # concurrent API workers cannot race on ALTER TABLE.
+            connection.execute("BEGIN IMMEDIATE")
             connection.execute(
                 """
                 CREATE TABLE IF NOT EXISTS action_outcomes (
@@ -83,6 +86,10 @@ class SQLiteActionOutcomeLedger:
                 END
                 """
             )
+            connection.commit()
+        except Exception:
+            connection.rollback()
+            raise
         finally:
             connection.close()
 

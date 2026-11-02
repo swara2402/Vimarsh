@@ -78,8 +78,9 @@ export default function ReviewQueue() {
         actor: reviewer || "operator",
         reason: reason.trim(),
       });
-      setStatus(`Cancelled ${item.case_id}`);
+      if (selected?.review_id === item.review_id) setSelected(null);
       await refresh();
+      setStatus(`Cancelled ${item.case_id}`);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Unable to cancel review.");
     } finally {
@@ -88,6 +89,7 @@ export default function ReviewQueue() {
   }
 
   async function inspectHistory(item: ReviewCase) {
+    setAuditEvents([]);
     setBusy(true);
     try {
       const data = await request(`/v1/reviews/${item.review_id}/events`);
@@ -101,6 +103,7 @@ export default function ReviewQueue() {
   }
 
   async function inspectEvidence(item: ReviewCase) {
+    setEvidenceItems([]);
     if (!evidenceToken) {
       setStatus("Enter the evidence intake token before viewing evidence.");
       return;
@@ -150,8 +153,8 @@ export default function ReviewQueue() {
       const data = await request(`/v1/reviews/${item.review_id}/claim`, "POST", { reviewer_id: reviewer });
       setSelected(data);
       setFinalPrediction(data.prediction);
-      setStatus("Case claimed. Record the adjudication below.");
       await refresh();
+      setStatus("Case claimed. Record the adjudication below.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Unable to claim case.");
     } finally {

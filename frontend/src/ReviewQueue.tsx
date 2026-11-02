@@ -39,6 +39,8 @@ export default function ReviewQueue() {
   const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
   const [evidenceItems, setEvidenceItems] = useState<EvidenceItem[]>([]);
   const [selected, setSelected] = useState<ReviewCase | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<ReviewCase | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
   const [status, setStatus] = useState("Enter the reviewer token to connect.");
   const [busy, setBusy] = useState(false);
 
@@ -69,9 +71,8 @@ export default function ReviewQueue() {
     }
   }
 
-  async function cancel(item: ReviewCase) {
-    const reason = window.prompt("Why is this review being cancelled?");
-    if (!reason?.trim()) return;
+  async function cancel(item: ReviewCase, reason: string) {
+    if (!reason.trim()) return;
     setBusy(true);
     try {
       await request(`/v1/reviews/${item.review_id}/cancel`, "POST", {
@@ -79,6 +80,8 @@ export default function ReviewQueue() {
         reason: reason.trim(),
       });
       if (selected?.review_id === item.review_id) setSelected(null);
+      setCancelTarget(null);
+      setCancelReason("");
       await refresh();
       setStatus(`Cancelled ${item.case_id}`);
     } catch (error) {
@@ -270,7 +273,7 @@ export default function ReviewQueue() {
           {cases.length === 0 ? <p className="review-empty">No {queueStatus} cases loaded.</p> : cases.map((item) => (
             <div className="review-case" key={item.review_id}>
               <div><strong>{item.case_id}</strong><span>Priority {item.priority} · {item.prediction}</span></div>
-              <div className="review-case-actions">{item.status === "pending" && <button type="button" disabled={!reviewer || busy} onClick={() => claim(item)}>Claim</button>}{["pending", "claimed"].includes(item.status) && <button type="button" disabled={busy} onClick={() => cancel(item)}>Cancel</button>}<button type="button" disabled={busy} onClick={() => inspectHistory(item)}>History</button><button type="button" disabled={busy} onClick={() => inspectEvidence(item)}>Evidence</button></div>
+              <div className="review-case-actions">{item.status === "pending" && <button type="button" disabled={!reviewer || busy} onClick={() => claim(item)}>Claim</button>}{["pending", "claimed"].includes(item.status) && <button type="button" disabled={busy} onClick={() => { setCancelTarget(item); setCancelReason(""); }}>Cancel</button>}<button type="button" disabled={busy} onClick={() => inspectHistory(item)}>History</button><button type="button" disabled={busy} onClick={() => inspectEvidence(item)}>Evidence</button></div>
             </div>
           ))}
         </div>
@@ -305,6 +308,16 @@ export default function ReviewQueue() {
           <h3>Evidence records</h3>
           {evidenceItems.map((item) => <div className="review-case" key={item.evidence_id}><div><strong>{item.source_name}</strong><span>{item.source_reference} · {item.integrity_valid ? "Digest verified" : "Digest mismatch"}</span><p>{item.evidence_text}</p></div><code>{item.content_sha256.slice(0, 18)}…</code></div>)}
         </div>
+      )}
+      {cancelTarget && (
+        <form className="review-card review-completion" onSubmit={(event) => { event.preventDefault(); void cancel(cancelTarget, cancelReason); }}>
+          <h3>Cancel review · {cancelTarget.case_id}</h3>
+          <label><span>Cancellation reason</span><textarea required minLength={3} maxLength={1000} rows={3} value={cancelReason} onChange={(event) => setCancelReason(event.target.value)} /></label>
+          <div className="review-case-actions">
+            <button type="submit" disabled={busy || !cancelReason.trim()}>Confirm cancellation</button>
+            <button type="button" disabled={busy} onClick={() => setCancelTarget(null)}>Keep case</button>
+          </div>
+        </form>
       )}
       {selected && (
         <form className="review-card review-completion" onSubmit={complete}>

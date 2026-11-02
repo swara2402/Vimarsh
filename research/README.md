@@ -36,3 +36,13 @@ Do not commit sensitive data, credentials, or large datasets without checking li
 - Baseline metrics and calibration metrics.
 - Results saved with experiment configuration.
 - Clear distinction between measured, simulated, and illustrative values.
+
+## Transactional outcome ledger
+
+The protected research API keeps the append-only JSONL ledger as its default. Set `VIMARSH_OUTCOME_LEDGER_BACKEND=sqlite` and `VIMARSH_OUTCOME_LEDGER=research/data/action_outcomes.sqlite3` to use transactional local SQLite storage. From this directory, migrate existing history with:
+
+```bash
+python -m src.verification.ledger_migration --source data/action_outcomes.jsonl --destination data/action_outcomes.sqlite3
+```
+
+The migration verifies the source chain, is resumable, and never deletes the original JSONL file. See [Milestone 70](docs/milestone70-transactional-outcome-ledger.md) for details and limitations.

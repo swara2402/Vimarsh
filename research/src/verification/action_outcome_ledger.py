@@ -51,6 +51,7 @@ class ActionOutcomeRecord:
     latency_ms: float | None = None
     provider_version: str | None = None
     event_id: str | None = None
+    parent_event_id: str | None = None
     occurred_at: str | None = None
 
     def validated(self) -> dict[str, Any]:
@@ -62,6 +63,8 @@ class ActionOutcomeRecord:
             raise ValueError("completed outcomes require final_prediction and retrospective ground_truth")
         if self.status != "completed" and self.ground_truth is not None:
             raise ValueError("ground_truth is only permitted for completed outcomes")
+        if self.parent_event_id is not None and (not isinstance(self.parent_event_id, str) or not self.parent_event_id.strip()):
+            raise ValueError("parent_event_id must be a non-empty string when supplied")
         if self.randomized_assignment and not self.assignment_id:
             raise ValueError("randomized assignment requires assignment_id")
         propensity = None if self.propensity is None else _finite(self.propensity, "propensity", 0.0)

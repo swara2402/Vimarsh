@@ -261,7 +261,7 @@ def test_jsonl_migration_accepts_legacy_records_without_parent_event_id(tmp_path
         "record_hash": ActionOutcomeLedger._digest(legacy_row),
         "record": legacy_row,
     }
-    source_path.write_text(json.dumps(envelope, sort_keys=True) + "\\n")
+    source_path.write_text(json.dumps(envelope, sort_keys=True) + "\n")
 
     destination = tmp_path / "legacy-migrated.sqlite3"
     result = migrate_jsonl_to_sqlite(source_path, destination)

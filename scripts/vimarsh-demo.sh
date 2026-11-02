@@ -75,11 +75,13 @@ case "$command_name" in
     cd "$ROOT"
     "${COMPOSE[@]}" config --quiet
     "${COMPOSE[@]}" up --build -d
-    echo "Waiting for API and model schema..."
+    echo "Waiting for API, model schema, sample inference, and dashboard..."
+    sample_payload='{"sample":{"fixed acidity":7.4,"volatile acidity":0.70,"citric acid":0.00,"residual sugar":1.9,"chlorides":0.076,"free sulfur dioxide":11,"total sulfur dioxide":34,"density":0.9978,"pH":3.51,"sulphates":0.56,"alcohol":9.4,"wine_type":0},"harm":2,"available_actions":[],"estimated_action_costs":{},"remaining_budget":2}'
     ready=false
     for attempt in $(seq 1 45); do
       if curl --silent --show-error --fail http://localhost:8000/health >/dev/null 2>&1 \
         && curl --silent --show-error --fail http://localhost:8000/v1/reliability/schema >/dev/null 2>&1 \
+        && curl --silent --show-error --fail -H "Content-Type: application/json" -d "$sample_payload" http://localhost:8000/v1/reliability/decisions >/dev/null 2>&1 \
         && curl --silent --show-error --fail http://localhost:8080/ >/dev/null 2>&1; then
         ready=true
         break

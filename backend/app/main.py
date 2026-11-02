@@ -242,3 +242,24 @@ def action_capabilities():
         },
         "execution_boundary": "Only the protected alternate-model endpoint executes an action; allocation recommendations never execute actions.",
     }
+
+
+@app.post("/v1/actions/alternate-model/execute")
+def run_alternate_model_action(request: AlternateModelRunRequest):
+    """Run non-primary models on an explicitly submitted sample; no labels are accepted or logged."""
+    try:
+        runtime = get_reliability_runtime()
+    except (FileNotFoundError, ValueError, OSError) as exc:
+        raise HTTPException(status_code=503, detail="Trusted reliability bundle is unavailable") from exc
+    try:
+        result = runtime.run_alternate_models(request.sample)
+    except (ValueError, TypeError, KeyError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    if not result["executed"]:
+        raise HTTPException(status_code=409, detail="No alternate model is present in the configured bundle")
+    return {
+        **result,
+        "execution_status": "executed",
+        "purpose": "explicit_alternate_model_inference",
+        "not_a_final_verification_decision": True,
+    }

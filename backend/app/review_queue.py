@@ -97,33 +97,41 @@ def _append_event(conn: sqlite3.Connection, review_id: str, event_type: str,
         (event_id, review_id, event_type, actor, payload_json, previous_hash, event_hash))
 
 
+def _verify_audit_chain(conn: sqlite3.Connection) -> bool:
+    rows = conn.execute("SELECT * FROM review_events ORDER BY sequence ASC").fetchall()
+    previous_hash = "0" * 64
+    for row in rows:
+        envelope = {
+            "event_id": row["event_id"], "review_id": row["review_id"],
+            "event_type": row["event_type"], "actor": row["actor"],
+            "payload_json": row["payload_json"], "previous_hash": previous_hash,
+        }
+        expected = hashlib.sha256(json.dumps(
+            envelope, sort_keys=True, separators=(",", ":"), ensure_ascii=False,
+        ).encode("utf-8")).hexdigest()
+        if row["previous_hash"] != previous_hash or not secrets.compare_digest(row["event_hash"], expected):
+            return False
+        previous_hash = row["event_hash"]
+    return True
+
+
 def verify_audit_chain() -> bool:
     conn = _connect()
     try:
-        rows = conn.execute("SELECT * FROM review_events ORDER BY sequence ASC").fetchall()
-        previous_hash = "0" * 64
-        for row in rows:
-            envelope = {
-                "event_id": row["event_id"], "review_id": row["review_id"],
-                "event_type": row["event_type"], "actor": row["actor"],
-                "payload_json": row["payload_json"], "previous_hash": previous_hash,
-            }
-            expected = hashlib.sha256(json.dumps(
-                envelope, sort_keys=True, separators=(",", ":"), ensure_ascii=False,
-            ).encode("utf-8")).hexdigest()
-            if row["previous_hash"] != previous_hash or not secrets.compare_digest(row["event_hash"], expected):
-                return False
-            previous_hash = row["event_hash"]
-        return True
+        conn.execute("BEGIN")
+        return _verify_audit_chain(conn)
     finally:
         conn.close()
 
 
 def list_events(review_id: str) -> list[dict[str, Any]]:
-    if not verify_audit_chain():
-        raise ValueError("review audit chain integrity verification failed")
     conn = _connect()
     try:
+        # Verify and retrieve inside one SQLite read snapshot so a concurrent
+        # append cannot slip between integrity verification and result loading.
+        conn.execute("BEGIN")
+        if not _verify_audit_chain(conn):
+            raise ValueError("review audit chain integrity verification failed")
         rows = conn.execute(
             "SELECT * FROM review_events WHERE review_id=? ORDER BY sequence ASC", (review_id,)
         ).fetchall()

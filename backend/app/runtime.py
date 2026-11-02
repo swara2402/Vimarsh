@@ -1,5 +1,6 @@
 """Trusted local artifact adapter for the trained VIMARSH reliability bundle."""
 from pathlib import Path
+from time import perf_counter
 from typing import Any
 import joblib
 import numpy as np
@@ -74,11 +75,51 @@ class ReliabilityBundleRuntime:
         primary = self.base_models[self.primary_model_index]
         primary_probabilities = probability_matrices[self.primary_model_index][0]
         classes = getattr(primary, "classes_", np.arange(len(primary_probabilities)))
-        prediction = primary.classes_[int(np.argmax(primary_probabilities))]
+        prediction = classes[int(np.argmax(primary_probabilities))]
         return {
             "prediction": str(prediction),
             "confidence": float(np.max(primary_probabilities)),
             "estimated_error_probability": error_probability,
             "base_model_count": len(self.base_models),
             "primary_model_index": self.primary_model_index,
+        }
+
+
+    def run_alternate_models(self, sample: dict[str, float]) -> dict[str, Any]:
+        """Run every non-primary model in the trusted local bundle and measure inference latency."""
+        if set(sample) != set(self.feature_names):
+            missing = sorted(set(self.feature_names) - set(sample))
+            extra = sorted(set(sample) - set(self.feature_names))
+            raise ValueError(f"Input feature schema mismatch; missing={missing}, extra={extra}")
+        frame = pd.DataFrame([[sample[name] for name in self.feature_names]], columns=self.feature_names)
+        transformed = self.preprocessor.transform(frame)
+        results = []
+        total_started = perf_counter()
+        for index, model in enumerate(self.base_models):
+            if index == self.primary_model_index:
+                continue
+            started = perf_counter()
+            probabilities = np.asarray(model.predict_proba(transformed), dtype=float)
+            latency_ms = (perf_counter() - started) * 1000.0
+            if (
+                probabilities.ndim != 2 or probabilities.shape[0] != 1
+                or probabilities.shape[1] < 2 or not np.isfinite(probabilities).all()
+                or (probabilities < 0).any() or (probabilities > 1).any()
+                or not np.allclose(probabilities.sum(axis=1), 1.0, atol=1e-6)
+            ):
+                raise ValueError(f"Alternate model {index} returned invalid probabilities")
+            classes = getattr(model, "classes_", np.arange(probabilities.shape[1]))
+            winner = int(np.argmax(probabilities[0]))
+            results.append({
+                "model_index": index,
+                "model_type": model.__class__.__name__,
+                "prediction": str(classes[winner]),
+                "confidence": float(probabilities[0, winner]),
+                "latency_ms": latency_ms,
+            })
+        total_latency_ms = (perf_counter() - total_started) * 1000.0
+        return {
+            "alternate_models": results,
+            "total_latency_ms": total_latency_ms,
+            "executed": bool(results),
         }

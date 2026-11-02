@@ -16,6 +16,7 @@ venv/
 research/datasets/raw/
 research/datasets/processed/
 research/models/
+research/data/
 research/results/
 data/
 datasets/

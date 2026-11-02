@@ -97,7 +97,7 @@ The integrated verification-engine workflow remains research-stage and runs on W
 The FastAPI service has two separate surfaces:
 
 - The demo-facing decision API loads a trusted reliability bundle and applies a transparent recommendation-only baseline policy. It does not execute verification actions.
-- The protected research API records validated action outcomes, estimates context-conditioned action benefit from completed propensity-logged records, and recommends batch allocations under shared budgets and action capacities. It is disabled until a server-side research token is configured and never executes selected actions.
+- The dashboard also supports an explicit local alternate-model inference action, showing each alternate prediction and measured inference latency without automatically replacing the primary prediction. The protected research API records validated action outcomes, estimates context-conditioned action benefit from completed propensity-logged records, and recommends batch allocations under shared budgets and action capacities. It is disabled until a server-side research token is configured; its allocation output never executes selected actions.
 
 Human review and additional evidence still require operational providers and real outcome collection. The contextual benefit lower-bound is a diagnostic, not a guaranteed confidence bound or causal estimate. See [Backend API](backend/README.md) and [Milestone 62 implementation notes](research/docs/milestone62-protected-outcome-allocation-api.md) for setup, endpoint contracts, tests, and limitations.
 

@@ -53,6 +53,15 @@ class OutcomeCompletionRequest(StrictResearchModel):
     latency_ms: Optional[float] = Field(default=None, ge=0)
     provider_version: Optional[str] = Field(default=None, max_length=128)
 
+    @field_validator("final_prediction", "ground_truth")
+    @classmethod
+    def retrospective_values_must_be_finite_scalars(cls, value):
+        if isinstance(value, bool) or isinstance(value, (str, int)):
+            return value
+        if isinstance(value, float) and math.isfinite(value):
+            return value
+        raise ValueError("final_prediction and ground_truth must be finite JSON scalars")
+
 
 class BenefitEstimateRequest(StrictResearchModel):
     action: ResearchAction

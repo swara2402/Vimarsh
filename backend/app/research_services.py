@@ -15,6 +15,7 @@ if str(REPOSITORY_ROOT) not in sys.path:
 
 from research.src.verification.action_benefit_estimator import estimate_action_benefit
 from research.src.verification.action_outcome_ledger import ActionOutcomeLedger, ActionOutcomeRecord
+from research.src.verification.sqlite_action_outcome_ledger import SQLiteActionOutcomeLedger
 from research.src.verification.action_allocator import allocate_verification_actions
 
 def require_research_token(x_vimarsh_research_token: str | None = Header(default=None)) -> None:
@@ -24,12 +25,16 @@ def require_research_token(x_vimarsh_research_token: str | None = Header(default
     if not x_vimarsh_research_token or not secrets.compare_digest(x_vimarsh_research_token, expected):
         raise HTTPException(status_code=401, detail="Invalid research API token")
 
-def get_ledger() -> ActionOutcomeLedger:
-    configured = os.getenv("VIMARSH_OUTCOME_LEDGER", "research/data/action_outcomes.jsonl")
+def get_ledger() -> ActionOutcomeLedger | SQLiteActionOutcomeLedger:
+    backend = os.getenv("VIMARSH_OUTCOME_LEDGER_BACKEND", "jsonl").strip().lower()
+    if backend not in {"jsonl", "sqlite"}:
+        raise HTTPException(status_code=503, detail="VIMARSH_OUTCOME_LEDGER_BACKEND must be jsonl or sqlite")
+    default_path = "research/data/action_outcomes.sqlite3" if backend == "sqlite" else "research/data/action_outcomes.jsonl"
+    configured = os.getenv("VIMARSH_OUTCOME_LEDGER", default_path)
     path = Path(configured).expanduser()
     if not path.is_absolute():
         path = REPOSITORY_ROOT / path
-    return ActionOutcomeLedger(path)
+    return SQLiteActionOutcomeLedger(path) if backend == "sqlite" else ActionOutcomeLedger(path)
 
 def append_outcome(payload: dict[str, Any]) -> dict[str, Any]:
     record = ActionOutcomeRecord(**payload)

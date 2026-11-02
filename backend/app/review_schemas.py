@@ -3,7 +3,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class ReviewEnqueueRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
     case_id: str = Field(min_length=1, max_length=128)
     prediction: str = Field(min_length=1, max_length=256)
     rationale: list[str] = Field(default_factory=list, max_length=20)

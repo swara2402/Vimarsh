@@ -1,5 +1,6 @@
 """Trusted local artifact adapter for the trained VIMARSH reliability bundle."""
 from pathlib import Path
+from time import perf_counter
 from typing import Any
 import joblib
 import numpy as np

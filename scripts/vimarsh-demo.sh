@@ -15,11 +15,45 @@ if [[ "$MODEL_DIR" != /* ]]; then MODEL_DIR="$ROOT/$MODEL_DIR"; fi
 BUNDLE="$MODEL_DIR/wine_quality_reliability_bundle.joblib"
 
 usage() {
-  echo "Usage: bash scripts/vimarsh-demo.sh {up|down|status|logs}"
+  echo "Usage: bash scripts/vimarsh-demo.sh {demo|prepare|up|down|status|logs}"
+}
+
+prepare_bundle() {
+  local python_bin="${PYTHON_BIN:-python3}"
+  local venv_dir="${VIMARSH_DEMO_VENV:-$ROOT/.venv-demo}"
+  local default_model_dir="$ROOT/research/models/reliability"
+  if [[ "$MODEL_DIR" != "$default_model_dir" ]]; then
+    echo "Automatic preparation uses the default research/models/reliability bundle path." >&2
+    echo "For a custom VIMARSH_MODEL_DIR, follow the manual training instructions in docs/demo-day-runbook.md." >&2
+    exit 1
+  fi
+  command -v "$python_bin" >/dev/null 2>&1 || { echo "Python 3 is required." >&2; exit 1; }
+  if [[ ! -x "$venv_dir/bin/python" ]]; then
+    "$python_bin" -m venv "$venv_dir"
+  fi
+  "$venv_dir/bin/python" -m pip install --upgrade pip
+  "$venv_dir/bin/python" -m pip install -r "$ROOT/research/requirements-demo.txt"
+  echo "Training the Wine Quality reliability bundle..."
+  (
+    cd "$ROOT/research"
+    "$venv_dir/bin/python" experiments/run_reliability_experiments.py
+  )
+  [[ -s "$ROOT/research/models/reliability/wine_quality_reliability_bundle.joblib" ]] || {
+    echo "Training did not create the expected reliability bundle." >&2
+    exit 1
+  }
+  echo "Trusted model bundle prepared successfully."
 }
 
 command_name="${1:-up}"
 case "$command_name" in
+  demo)
+    "$0" prepare
+    "$0" up
+    ;;
+  prepare)
+    prepare_bundle
+    ;;
   up)
     command -v docker >/dev/null 2>&1 || { echo "Docker is required. Install/start Docker Desktop first." >&2; exit 1; }
     docker compose version >/dev/null 2>&1 || { echo "Docker Compose v2 is required." >&2; exit 1; }

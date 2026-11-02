@@ -87,7 +87,7 @@ curl -X POST http://localhost:8000/v1/research/outcomes \
 
 Only submit a completed record after the outcome and retrospective label are genuinely observed and quality-checked. Do not fabricate propensity, randomization, provider, cost, or latency metadata.
 
-For an execution already recorded as pending, use the linked completion route. It appends a new child event, preserves the original pending record, and inherits the original propensity rather than allowing the completion request to invent one. See [Milestone 64](../research/docs/milestone64-linked-outcome-completion.md).
+For an execution already recorded as pending, use the linked completion route. It appends a new child event, preserves the original pending record, and inherits the original propensity rather than allowing the completion request to invent one. See [Milestone 66](../research/docs/milestone66-linked-outcome-completion.md).
 
 ## Ledger and research limitations
 

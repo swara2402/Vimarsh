@@ -22,3 +22,9 @@ class ReviewCompletionRequest(BaseModel):
     reviewer_note: str = Field(min_length=1, max_length=4000)
     final_prediction: str = Field(min_length=1, max_length=256)
     ground_truth: str | None = Field(default=None, max_length=256)
+
+
+class ReviewCancelRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    actor: str = Field(min_length=1, max_length=128)
+    reason: str = Field(min_length=1, max_length=1000)

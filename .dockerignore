@@ -1,6 +1,8 @@
 .git
 .github
 .venv
+.venv-demo
+**/.venv-demo
 **/.venv
 **/__pycache__
 **/.pytest_cache

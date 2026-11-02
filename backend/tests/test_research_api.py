@@ -1,3 +1,4 @@
+import json
 import pytest
 from fastapi.testclient import TestClient
 
@@ -63,7 +64,10 @@ def test_completed_outcome_requires_retrospective_truth(monkeypatch, tmp_path):
     configure(monkeypatch, tmp_path)
     payload = completed_payload(2)
     payload["ground_truth"] = None
-    response = client.post("/v1/research/outcomes", headers=HEADERS, json=payload)
+    response = client.post(
+        "/v1/research/outcomes", headers={**HEADERS, "Content-Type": "application/json"},
+        content=json.dumps(payload, allow_nan=True),
+    )
     assert response.status_code == 422
 
 
@@ -113,7 +117,10 @@ def test_policy_context_rejects_ground_truth_leakage(monkeypatch, tmp_path):
     configure(monkeypatch, tmp_path)
     payload = completed_payload(3)
     payload["context"] = {"uncertainty": 0.4, "harm": 1.0, "ground_truth": 1.0}
-    response = client.post("/v1/research/outcomes", headers=HEADERS, json=payload)
+    response = client.post(
+        "/v1/research/outcomes", headers={**HEADERS, "Content-Type": "application/json"},
+        content=json.dumps(payload, allow_nan=True),
+    )
     assert response.status_code == 422
 
 
@@ -191,3 +198,98 @@ def test_batch_allocator_excludes_actions_without_operational_providers(monkeypa
     assert all(item["action"] == "alternate_model" for item in body["allocation"]["selected"])
     excluded = [item for item in body["diagnostics"] if item.get("status") == "excluded"]
     assert {item["action"] for item in excluded} == {"human_review", "additional_evidence"}
+
+
+@pytest.mark.parametrize("bad_number", [float("nan"), float("inf"), float("-inf")])
+def test_research_api_rejects_non_finite_allocation_context(monkeypatch, tmp_path, bad_number):
+    configure(monkeypatch, tmp_path)
+    payload = {
+        "cases": [{
+            "case_id": "finite-check",
+            "context": {"uncertainty": bad_number},
+            "available_actions": ["alternate_model"],
+            "estimated_action_costs": {"alternate_model": 1.0},
+        }],
+        "total_budget": 1.0,
+    }
+    response = client.post(
+        "/v1/research/allocate", headers={**HEADERS, "Content-Type": "application/json"},
+        content=json.dumps(payload, allow_nan=True),
+    )
+    assert response.status_code == 422
+
+
+@pytest.mark.parametrize("bad_cost", [-0.01, float("nan"), float("inf")])
+def test_allocation_rejects_negative_or_non_finite_action_cost(monkeypatch, tmp_path, bad_cost):
+    configure(monkeypatch, tmp_path)
+    payload = {
+        "cases": [{
+            "case_id": "bad-cost",
+            "context": {"uncertainty": 0.4},
+            "available_actions": ["alternate_model"],
+            "estimated_action_costs": {"alternate_model": bad_cost},
+        }],
+        "total_budget": 1.0,
+    }
+    response = client.post(
+        "/v1/research/allocate", headers={**HEADERS, "Content-Type": "application/json"},
+        content=json.dumps(payload, allow_nan=True),
+    )
+    assert response.status_code == 422
+
+
+def test_allocation_rejects_negative_capacity(monkeypatch, tmp_path):
+    configure(monkeypatch, tmp_path)
+    response = client.post(
+        "/v1/research/allocate",
+        headers=HEADERS,
+        json={
+            "cases": [{
+                "case_id": "capacity-check",
+                "context": {"uncertainty": 0.4},
+                "available_actions": ["alternate_model"],
+                "estimated_action_costs": {"alternate_model": 1.0},
+            }],
+            "total_budget": 1.0,
+            "action_capacities": {"alternate_model": -1},
+        },
+    )
+    assert response.status_code == 422
+
+
+def test_allocation_rejects_duplicate_cases_actions_and_orphan_costs(monkeypatch, tmp_path):
+    configure(monkeypatch, tmp_path)
+    case = {
+        "case_id": "duplicate-check",
+        "context": {"uncertainty": 0.4},
+        "available_actions": ["alternate_model"],
+        "estimated_action_costs": {"alternate_model": 1.0},
+    }
+    duplicate_case = client.post(
+        "/v1/research/allocate", headers=HEADERS,
+        json={"cases": [case, case], "total_budget": 2.0},
+    )
+    duplicate_action = client.post(
+        "/v1/research/allocate", headers=HEADERS,
+        json={"cases": [{**case, "available_actions": ["alternate_model", "alternate_model"]}],
+              "total_budget": 2.0},
+    )
+    orphan_cost = client.post(
+        "/v1/research/allocate", headers=HEADERS,
+        json={"cases": [{**case, "available_actions": [], "estimated_action_costs": {"alternate_model": 1.0}}],
+              "total_budget": 2.0},
+    )
+    assert duplicate_case.status_code == 422
+    assert duplicate_action.status_code == 422
+    assert orphan_cost.status_code == 422
+
+
+def test_outcome_api_rejects_non_finite_context(monkeypatch, tmp_path):
+    configure(monkeypatch, tmp_path)
+    payload = completed_payload(44)
+    payload["context"] = {"uncertainty": float("nan")}
+    response = client.post(
+        "/v1/research/outcomes", headers={**HEADERS, "Content-Type": "application/json"},
+        content=json.dumps(payload, allow_nan=True),
+    )
+    assert response.status_code == 422

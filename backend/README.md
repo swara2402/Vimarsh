@@ -55,7 +55,7 @@ Send the token in the `X-Vimarsh-Research-Token` header. If the token is not con
 - `POST /v1/research/action-benefit`: estimate context-conditioned action benefit from completed, propensity-logged records.
 - `POST /v1/research/allocate`: estimate benefit for each requested case/action pair and pass only positive diagnostic candidates to the constrained allocator.
 
-The allocator enforces one action per case, shared total budget, optional action capacities, and a safe no-allocation fallback. The estimator excludes incomplete or propensity-missing records and abstains when effective sample support is inadequate.
+The allocator enforces one action per case, shared total budget, optional action capacities, and a safe no-allocation fallback. The API rejects non-finite numeric inputs, negative/non-finite action costs, negative capacities, duplicate case IDs/actions, and costs for actions not declared available. Feature/context maps and action maps are bounded. The estimator excludes incomplete or propensity-missing records and abstains when effective sample support is inadequate.
 
 ### Example: append a completed outcome
 

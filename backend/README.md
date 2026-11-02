@@ -132,3 +132,13 @@ The container demo passes these settings from `.env.example` and stores the queu
 - `POST /v1/reviews/{review_id}/complete`: record the reviewer's note, final prediction, and optional retrospective ground truth.
 
 Send the token in `X-Vimarsh-Reviewer-Token`. The service rejects duplicate case IDs and prevents a second reviewer from claiming an already-claimed case. A completion is accepted only from the reviewer ID that claimed the case. Reviewer IDs are operator-supplied labels; the shared token is not a substitute for individual accounts, MFA, or role-based access control. Do not expose this queue publicly. The workflow is an initial local operator integration and still requires identity, access policy, audit/retention controls, reviewer training, and independent operational validation before consequential use.
+
+
+## Operator-managed review and manual evidence workflows
+
+Two optional local workflows are available behind separate server-side tokens:
+
+- Human review queue: set `VIMARSH_REVIEWER_API_TOKEN` and optionally `VIMARSH_REVIEW_QUEUE_DB`. The API exposes `POST/GET /v1/reviews`, `POST /v1/reviews/{review_id}/claim`, and `POST /v1/reviews/{review_id}/complete`. Cases are persisted in SQLite; claims are atomic and completion is restricted to the reviewer ID that claimed the case.
+- Manual evidence intake: set `VIMARSH_EVIDENCE_API_TOKEN` and optionally `VIMARSH_EVIDENCE_DB`. The API exposes `POST /v1/evidence` and `GET /v1/evidence/{case_id}`. Each record retains a source name, source reference, submitted content, metadata, and SHA-256 content digest in an append-only SQLite register.
+
+The dashboard provides operator forms for both workflows. Tokens remain in page memory and are not written to local storage. These are controlled local operator workflows, not third-party provider integrations: evidence is submitted by an operator and is not independently fetched or verified. Reviewer IDs are labels behind a shared token, not individual authenticated identities. Do not expose either endpoint publicly. Production use still requires an identity provider, per-user authorization, rate limiting, audit/retention policy, encrypted backups, secure secret management, and operational validation.

@@ -12,6 +12,14 @@ from .schemas import (
     DecisionRequest, DecisionResponse, ReliabilityDecisionRequest,
     ReliabilityDecisionResponse, DecisionAction,
 )
+from .research_schemas import (
+    OutcomeCreateRequest, BenefitEstimateRequest, AllocationRequest,
+    AlternateModelExecutionRequest, AlternateModelRunRequest,
+)
+from .research_services import (
+    require_research_token, append_outcome, outcome_summary,
+    estimate_benefit, allocate_cases,
+)
 
 app = FastAPI(
     title="VIMARSH Decision API",

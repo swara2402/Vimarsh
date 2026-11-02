@@ -294,7 +294,7 @@ export default function ReviewQueue({ suggestedCase }: ReviewQueueProps) {
           {cases.length === 0 ? <p className="review-empty">No {queueStatus} cases loaded.</p> : cases.map((item) => (
             <div className="review-case" key={item.review_id}>
               <div><strong>{item.case_id}</strong><span>Priority {item.priority} · {item.prediction}</span></div>
-              <div className="review-case-actions">{item.status === "pending" && <button type="button" disabled={!reviewer || busy} onClick={() => claim(item)}>Claim</button>}{["pending", "claimed"].includes(item.status) && <button type="button" disabled={busy} onClick={() => { setCancelTarget(item); setCancelReason(""); }}>Cancel</button>}<button type="button" disabled={busy} onClick={() => inspectHistory(item)}>History</button><button type="button" disabled={busy} onClick={() => inspectEvidence(item)}>Evidence</button></div>
+              <div className="review-case-actions">{item.status === "pending" && <button type="button" disabled={!reviewer || busy} onClick={() => claim(item)}>Claim</button>}{["pending", "claimed"].includes(item.status) && <button type="button" disabled={busy} onClick={() => { setSelected(null); setCancelTarget(item); setCancelReason(""); }}>Cancel</button>}<button type="button" disabled={busy} onClick={() => inspectHistory(item)}>History</button><button type="button" disabled={busy} onClick={() => inspectEvidence(item)}>Evidence</button></div>
             </div>
           ))}
         </div>

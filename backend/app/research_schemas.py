@@ -65,3 +65,16 @@ class AllocationRequest(BaseModel):
     confidence: float = Field(default=0.95, gt=0, lt=1)
     min_effective_samples: float = Field(default=10, gt=0)
     bandwidth: float = Field(default=1, gt=0)
+
+
+class AlternateModelRunRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    sample: Dict[str, float] = Field(min_length=1)
+
+    @field_validator("sample")
+    @classmethod
+    def model_run_values_must_be_finite(cls, value):
+        import math
+        if any(not math.isfinite(item) for item in value.values()):
+            raise ValueError("sample values must be finite")
+        return value

@@ -25,9 +25,8 @@ class SQLiteActionOutcomeLedger:
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.timeout = timeout
-        with self._connect() as connection:
-            connection.execute("PRAGMA journal_mode=WAL")
-            connection.execute("PRAGMA synchronous=FULL")
+        connection = self._connect()
+        try:
             connection.execute(
                 """
                 CREATE TABLE IF NOT EXISTS action_outcomes (
@@ -39,6 +38,8 @@ class SQLiteActionOutcomeLedger:
                 )
                 """
             )
+        finally:
+            connection.close()
 
     def _connect(self) -> sqlite3.Connection:
         connection = sqlite3.connect(
@@ -48,6 +49,7 @@ class SQLiteActionOutcomeLedger:
         )
         connection.row_factory = sqlite3.Row
         connection.execute(f"PRAGMA busy_timeout={int(self.timeout * 1000)}")
+        connection.execute("PRAGMA synchronous=FULL")
         return connection
 
     @staticmethod
@@ -55,13 +57,16 @@ class SQLiteActionOutcomeLedger:
         return ActionOutcomeLedger._digest(record)
 
     def read_verified(self) -> list[dict[str, Any]]:
-        with self._connect() as connection:
+        connection = self._connect()
+        try:
             rows = connection.execute(
                 """
                 SELECT sequence, event_id, previous_hash, record_hash, record_json
                 FROM action_outcomes ORDER BY sequence ASC
                 """
             ).fetchall()
+        finally:
+            connection.close()
 
         verified: list[dict[str, Any]] = []
         previous = GENESIS_HASH

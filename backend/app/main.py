@@ -25,8 +25,9 @@ app = FastAPI(
     title="VIMARSH Decision API",
     version="0.2.0",
     description=(
-        "Research-stage recommendation API. It applies a transparent baseline "
-        "policy and does not execute verification actions or establish deployment safety."
+        "Research-stage API: decision endpoints return recommendations, an explicit endpoint "
+        "runs trusted local alternate models, and protected research endpoints support "
+        "outcome logging and offline allocation. Human review and evidence actions are not executed."
     ),
 )
 
@@ -52,7 +53,7 @@ app.add_middleware(
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "service": "vimarsh-api", "mode": "recommendation_only"}
+    return {\n        "status": "ok",\n        "service": "vimarsh-api",\n        "mode": "research_preview",\n        "decision_mode": "recommendation_only",\n        "alternate_model_execution": "explicit_opt_in",\n    }
 
 
 @app.post("/v1/decisions", response_model=DecisionResponse)

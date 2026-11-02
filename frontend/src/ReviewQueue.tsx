@@ -256,7 +256,7 @@ export default function ReviewQueue() {
       </div>
       <form className="review-card review-evidence" onSubmit={submitEvidence}>
         <h3>Attach operator-submitted evidence</h3>
-        <p className="review-empty">Records a source reference and evidence text with a SHA-256 digest. It does not independently verify or fetch the source.</p>
+        <p className="review-empty">Manual entries are operator-submitted. DOI lookup retrieves Crossref bibliographic metadata only, not full text or scientific-claim verification.</p>
         <div className="review-connect">
           <label><span>Evidence intake token</span><input type="password" autoComplete="off" value={evidenceToken} onChange={(e) => setEvidenceToken(e.target.value)} /></label>
           <label><span>Case ID</span><input required value={evidenceCaseId} onChange={(e) => setEvidenceCaseId(e.target.value)} /></label>

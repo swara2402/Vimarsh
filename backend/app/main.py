@@ -226,7 +226,7 @@ def action_capabilities():
                 "available": alternate_available,
                 "mode": "explicit_local_inference" if alternate_available else "unavailable",
                 "execution_endpoint": "/v1/research/execute/alternate-model" if alternate_available else None,
-                "requires_research_token": True,
+                "requires_research_token": False,\n                "research_logging_requires_token": True,
             },
             "human_review": {
                 "available": False,
@@ -240,7 +240,7 @@ def action_capabilities():
             },
             "abstain": {"available": True, "mode": "decision_only"},
         },
-        "execution_boundary": "Only the protected alternate-model endpoint executes an action; allocation recommendations never execute actions.",
+        "execution_boundary": "The explicit local alternate-model endpoint runs trusted bundle inference; the protected research variant also logs a pending outcome. Allocation recommendations never execute actions.",
     }
 
 

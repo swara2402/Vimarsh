@@ -8,7 +8,7 @@ MODEL_DIR="${VIMARSH_MODEL_DIR:-}"
 # Docker Compose reads .env itself. Mirror its simple MODEL_DIR setting for the
 # preflight check without sourcing/evaluating arbitrary shell from that file.
 if [[ -z "$MODEL_DIR" && -f "$ROOT/.env" ]]; then
-  MODEL_DIR="$(sed -n 's/^VIMARSH_MODEL_DIR=//p' "$ROOT/.env" | tail -n 1 | tr -d '"'"'\'')"
+  MODEL_DIR="$(sed -n 's/^VIMARSH_MODEL_DIR=//p' "$ROOT/.env" | tail -n 1)"
 fi
 MODEL_DIR="${MODEL_DIR:-./research/models/reliability}"
 if [[ "$MODEL_DIR" != /* ]]; then MODEL_DIR="$ROOT/$MODEL_DIR"; fi

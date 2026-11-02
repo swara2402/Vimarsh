@@ -3,7 +3,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class EvidenceCreateRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
     case_id: str = Field(min_length=1, max_length=128)
     source_name: str = Field(min_length=1, max_length=128)
     source_reference: str = Field(min_length=1, max_length=2048)

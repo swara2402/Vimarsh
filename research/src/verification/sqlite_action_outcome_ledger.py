@@ -54,6 +54,7 @@ class SQLiteActionOutcomeLedger:
                 BEGIN
                     SELECT RAISE(ABORT, 'outcome ledger is append-only');
                 END
+                """
             )
         finally:
             connection.close()

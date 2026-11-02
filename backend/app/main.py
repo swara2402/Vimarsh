@@ -3,7 +3,9 @@ import os
 from functools import lru_cache
 from uuid import uuid4
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from .policy import PolicyConfig, select_decision
@@ -49,6 +51,34 @@ app.add_middleware(
     allow_methods=["GET", "POST"],
     allow_headers=["Content-Type"],
 )
+
+
+def _json_safe_validation_detail(value):
+    """Make rejected non-finite inputs safe to include in a JSON 422 response."""
+    if isinstance(value, float):
+        if value != value:
+            return "NaN"
+        if value == float("inf"):
+            return "Infinity"
+        if value == float("-inf"):
+            return "-Infinity"
+        return value
+    if isinstance(value, dict):
+        return {str(key): _json_safe_validation_detail(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_safe_validation_detail(item) for item in value]
+    if isinstance(value, (str, int, bool)) or value is None:
+        return value
+    return str(value)
+
+
+@app.exception_handler(RequestValidationError)
+async def request_validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Return consistent 422 responses even when clients submit non-standard NaN/Infinity JSON."""
+    return JSONResponse(
+        status_code=422,
+        content={"detail": _json_safe_validation_detail(exc.errors())},
+    )
 
 
 @app.get("/health")

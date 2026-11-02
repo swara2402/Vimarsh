@@ -3,7 +3,7 @@
 **Evidence snapshot:** 2 November 2026  
 **Reproducibility source:** GitHub Actions research run `41438973113`, commit `8101d4ec6098e6de1dc9946a69159f8a2178d4e5`. All nine research jobs in that run completed successfully. Calibration/safety audit run `41438973085` also completed successfully. The run produced downloadable artifacts for Wine, MAGIC, HTRU2, independent datasets, measured alternate-model outcomes, primary-model sensitivity, calibration, and paired action-benefit analysis.
 
-This document summarizes benchmark evidence, including negative findings. It is not a claim of clinical, financial, or production validation.
+This document summarizes benchmark evidence, including negative findings. The research run produced artifacts for Wine, MAGIC, HTRU2, independent datasets, measured alternate-model outcomes, primary-model sensitivity, and paired action-benefit analysis; the separate calibration audit produced its own calibration artifact. It is not a claim of clinical, financial, or production validation.
 
 ## Executive interpretation
 

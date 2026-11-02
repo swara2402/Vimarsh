@@ -17,4 +17,4 @@ Start the FastAPI service and set `VIMARSH_RELIABILITY_BUNDLE` to a trusted vers
 
 The dashboard also reads `GET /v1/actions/capabilities` and displays which action paths are configured. The alternate-model option is disabled when the trusted bundle contains no non-primary model. Human review and additional evidence remain clearly marked unavailable. An explicit user action can run alternate models already present in the trusted bundle; their outputs are displayed as evidence and never silently replace the primary prediction. The dashboard does not accept ground-truth labels or precomputed reliability scores. Recommendations are not action execution. This is a research preview, not a validated decision-support product.
 
-See [Milestone 65 capability-aware dashboard notes](../research/docs/milestone65-capability-aware-dashboard.md).
+See [Milestone 67 capability-aware dashboard notes](../research/docs/milestone67-capability-aware-dashboard.md).

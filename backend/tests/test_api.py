@@ -109,7 +109,9 @@ def test_action_capabilities_do_not_claim_unconfigured_providers(monkeypatch):
     assert response.status_code == 200
     actions = response.json()["actions"]
     assert actions["accept"]["available"] is True
-    assert actions["alternate_model"]["available"] is False\n    assert actions["alternate_model"]["requires_research_token"] is False\n    assert actions["alternate_model"]["research_logging_requires_token"] is True
+    assert actions["alternate_model"]["available"] is False
+    assert actions["alternate_model"]["requires_research_token"] is False
+    assert actions["alternate_model"]["research_logging_requires_token"] is True
     assert actions["human_review"]["available"] is False
     assert actions["additional_evidence"]["available"] is False
     assert actions["abstain"]["available"] is True

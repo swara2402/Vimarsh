@@ -21,19 +21,26 @@ def migrate_jsonl_to_sqlite(
         raise FileNotFoundError(f"source JSONL ledger not found: {source}")
 
     source_rows = ActionOutcomeLedger(source).read_verified()
+
+    def normalize(row: dict[str, Any]) -> dict[str, Any]:
+        # Revalidate against the current schema while preserving recorded IDs/timestamps.
+        return ActionOutcomeRecord(**row).validated()
+
+    normalized_source = [normalize(row) for row in source_rows]
     destination_ledger = SQLiteActionOutcomeLedger(destination)
     existing_rows = destination_ledger.read_verified()
+    normalized_existing = [normalize(row) for row in existing_rows]
 
-    if len(existing_rows) > len(source_rows):
+    if len(normalized_existing) > len(normalized_source):
         raise ValueError("destination contains records beyond the source ledger")
-    if existing_rows != source_rows[: len(existing_rows)]:
+    if normalized_existing != normalized_source[: len(normalized_existing)]:
         raise ValueError("destination is not an exact prefix of the verified source ledger")
 
-    for row in source_rows[len(existing_rows):]:
+    for row in normalized_source[len(normalized_existing):]:
         destination_ledger.append(ActionOutcomeRecord(**row))
 
     verified_rows = destination_ledger.read_verified()
-    if verified_rows != source_rows:
+    if [normalize(row) for row in verified_rows] != normalized_source:
         raise ValueError("post-migration verification did not match the source ledger")
 
     return {

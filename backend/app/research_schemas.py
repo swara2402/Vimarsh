@@ -1,6 +1,6 @@
 """Validated contracts for offline action-outcome research endpoints."""
 from typing import Any, Dict, List, Literal, Optional
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 ResearchAction = Literal["alternate_model", "human_review", "additional_evidence"]
 

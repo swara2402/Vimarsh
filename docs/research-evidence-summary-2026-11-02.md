@@ -63,7 +63,7 @@ A separate held-out Wine Quality experiment executes a Random Forest alternate m
 | Low primary confidence | 38.3 | 22.0 | 16.3 | 18.49 |
 | Random matched budget | 14.0 | 7.0 | 7.0 | 35.28 |
 
-Each policy selected 139 of 929 test cases per seed. This is useful paired offline evidence that routing can affect alternate-model substitution outcomes in this benchmark. It is **not** a human-review experiment, a real-world causal estimate, or measured monetary/latency cost. It does not mean the alternate model is always better.
+Each policy selected 139 of 929 test cases per seed. Importantly, both models' predictions were generated for every test row before the routing masks were applied. This is therefore an offline paired substitution/counterfactual comparison, not a compute-saving routing implementation; alternate-model inference was not limited to the selected 15%. It is **not** a human-review experiment, a real-world causal estimate, or measured monetary/latency cost. It does not mean the alternate model is always better.
 
 ## Primary-model and independent-dataset sensitivity
 

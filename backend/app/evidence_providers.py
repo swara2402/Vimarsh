@@ -47,24 +47,50 @@ def resolve_crossref_doi(doi: str) -> dict:
     if not isinstance(message, dict):
         raise RuntimeError("Crossref returned an invalid metadata response")
 
-    titles = message.get("title") or []
-    authors = message.get("author") or []
-    published = message.get("published-print") or message.get("published-online") or message.get("created") or {}
+    titles = message.get("title")
+    if not isinstance(titles, list):
+        titles = []
+    authors = message.get("author")
+    if not isinstance(authors, list):
+        authors = []
+    published = (
+        message.get("published-print")
+        or message.get("published-online")
+        or message.get("created")
+        or {}
+    )
+    if not isinstance(published, dict):
+        published = {}
     date_parts = published.get("date-parts") or []
-    year = date_parts[0][0] if date_parts and date_parts[0] else None
+    year = (
+        date_parts[0][0]
+        if isinstance(date_parts, list)
+        and date_parts
+        and isinstance(date_parts[0], list)
+        and date_parts[0]
+        else None
+    )
     author_names = [
-        " ".join(part for part in (author.get("given"), author.get("family")) if part)
+        " ".join(
+            part for part in (author.get("given"), author.get("family"))
+            if isinstance(part, str) and part
+        )
         for author in authors[:30]
+        if isinstance(author, dict)
     ]
+    container_titles = message.get("container-title")
+    if not isinstance(container_titles, list):
+        container_titles = []
+
     return {
         "provider": "Crossref",
-        "doi": message.get("DOI", normalized),
+        "doi": message.get("DOI") or normalized,
         "title": str(titles[0])[:1000] if titles else None,
         "authors": author_names,
         "publisher": str(message.get("publisher", ""))[:500] or None,
         "year": year,
         "work_type": str(message.get("type", ""))[:100] or None,
-        "container_title": str((message.get("container-title") or [""])[0])[:500] or None,
+        "container_title": str(container_titles[0])[:500] if container_titles and container_titles[0] else None,
         "url": "https://doi.org/" + normalized,
         "metadata_only": True,
         "claim_verification": "not_performed",

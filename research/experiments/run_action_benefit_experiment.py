@@ -70,6 +70,45 @@ def summarize_selection(mask, baseline, alternate, truth):
     }
 
 
+def summarize_estimator_diagnostics(estimates):
+    """Explain why the contextual estimator selected or abstained on each query."""
+    from collections import Counter
+
+    status_counts = Counter(item.get("status", "unknown") for item in estimates)
+    reason_counts = Counter(item.get("reason", "unspecified") for item in estimates)
+    summary = {
+        "query_count": len(estimates),
+        "status_counts": dict(sorted(status_counts.items())),
+        "reason_counts": dict(sorted(reason_counts.items())),
+        "numeric_diagnostics": {},
+    }
+    for field in (
+        "sample_count",
+        "effective_sample_size",
+        "weighted_mean_benefit",
+        "standard_error",
+        "uncertainty_penalty",
+        "lower_bound_diagnostic",
+    ):
+        values = np.asarray(
+            [float(item[field]) for item in estimates if item.get(field) is not None],
+            dtype=float,
+        )
+        if not len(values):
+            summary["numeric_diagnostics"][field] = {"n": 0}
+            continue
+        summary["numeric_diagnostics"][field] = {
+            "n": int(len(values)),
+            "mean": float(values.mean()),
+            "median": float(np.median(values)),
+            "p05": float(np.quantile(values, 0.05)),
+            "p95": float(np.quantile(values, 0.95)),
+            "min": float(values.min()),
+            "max": float(values.max()),
+        }
+    return summary
+
+
 def run(seed: int, action_fraction: float = 0.5, min_effective_samples: float = 10.0):
     if not 0 < action_fraction <= 1:
         raise ValueError("action_fraction must be in (0, 1]")
@@ -158,6 +197,13 @@ def run(seed: int, action_fraction: float = 0.5, min_effective_samples: float = 
             "contextual_estimator_eligible": selected_count,
             "contextual_estimator_abstentions": int(len(X_test) - selected_count),
             "contextual_estimator": summarize_selection(proposed_mask, test_primary, test_alternate, y_test_values),
+            "estimator_diagnostics": summarize_estimator_diagnostics(estimates),
+            "matched_budget_comparison_informative": selected_count > 0,
+            "matched_budget_comparison_note": (
+                "Baselines use the exact selected action count."
+                if selected_count > 0
+                else "Not informative: the estimator selected zero actions, so both matched-budget baselines also select zero."
+            ),
             "confidence_only_matched_budget": summarize_selection(confidence_mask, test_primary, test_alternate, y_test_values),
             "random_matched_budget": summarize_selection(random_mask, test_primary, test_alternate, y_test_values),
         },

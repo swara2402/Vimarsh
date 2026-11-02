@@ -40,9 +40,9 @@ function median(values: number[]) {
   const mid = Math.floor(sorted.length / 2);
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
-function correlation(a: number[], b: number[]) {
+function correlation(a: number[], b: number[]): number | null {
   const n = Math.min(a.length, b.length);
-  if (n < 2) return 0;
+  if (n < 2) return null;
   const ma = a.slice(0, n).reduce((s, v) => s + v, 0) / n;
   const mb = b.slice(0, n).reduce((s, v) => s + v, 0) / n;
   const numerator = a.slice(0, n).reduce((s, v, i) => s + (v - ma) * (b[i] - mb), 0);

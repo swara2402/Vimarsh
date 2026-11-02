@@ -15,7 +15,7 @@ from .schemas import (
 
 app = FastAPI(
     title="VIMARSH Decision API",
-    version="0.1.0",
+    version="0.2.0",
     description=(
         "Research-stage recommendation API. It applies a transparent baseline "
         "policy and does not execute verification actions or establish deployment safety."

@@ -61,6 +61,16 @@ def test_review_queue_claim_completion_and_audit_chain(monkeypatch, tmp_path):
     )
     assert second_claim.status_code == 409
 
+    wrong_reviewer_completion = client.post(
+        f"/v1/reviews/{review_id}/complete", headers=operator_headers(),
+        json={
+            "reviewer_id": "reviewer-02",
+            "reviewer_note": "Attempted unauthorized completion.",
+            "final_prediction": "class-b",
+        },
+    )
+    assert wrong_reviewer_completion.status_code == 409
+
     completed = client.post(
         f"/v1/reviews/{review_id}/complete", headers=operator_headers(),
         json={

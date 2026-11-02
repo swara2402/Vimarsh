@@ -49,7 +49,7 @@ app.add_middleware(
     allow_origins=cors_origins,
     allow_credentials=False,
     allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type", "X-Vimarsh-Research-Token"],
+    allow_headers=["Content-Type", "X-Vimarsh-Research-Token", "X-Vimarsh-Reviewer-Token"],
 )
 
 
@@ -307,7 +307,7 @@ def action_capabilities():
     }
 
 
-@app.post("/v1/actions/alternate-model/execute")
+\n@app.post("/v1/reviews", dependencies=[Depends(require_reviewer_token)])\ndef create_review_case(request: ReviewEnqueueRequest):\n    """Queue a case for a human operator; this does not imply a reviewer is online."""\n    try:\n        return enqueue_review(request.model_dump())\n    except ValueError as exc:\n        raise HTTPException(status_code=409, detail=str(exc)) from exc\n\n@app.get("/v1/reviews", dependencies=[Depends(require_reviewer_token)])\ndef get_review_cases(status: str = "pending", limit: int = 50):\n    """List queued cases without exposing the outcome research ledger."""\n    if status not in {"pending", "claimed", "completed", "cancelled"}:\n        raise HTTPException(status_code=422, detail="Unsupported review status")\n    if not 1 <= limit <= 200:\n        raise HTTPException(status_code=422, detail="limit must be between 1 and 200")\n    return {"cases": list_review_cases(status=status, limit=limit)}\n\n@app.post("/v1/reviews/{review_id}/claim", dependencies=[Depends(require_reviewer_token)])\ndef claim_review(review_id: str, request: ReviewClaimRequest):\n    """Atomically claim one pending case for a reviewer."""\n    try:\n        return claim_review_case(review_id, request.reviewer_id)\n    except ValueError as exc:\n        raise HTTPException(status_code=409, detail=str(exc)) from exc\n\n@app.post("/v1/reviews/{review_id}/complete", dependencies=[Depends(require_reviewer_token)])\ndef complete_review(review_id: str, request: ReviewCompletionRequest):\n    """Record a reviewer adjudication after the case has been claimed."""\n    try:\n        return complete_review_case(review_id, request.reviewer_id, request.reviewer_note, request.final_prediction, request.ground_truth)\n    except ValueError as exc:\n        raise HTTPException(status_code=409, detail=str(exc)) from exc\n\n@app.post("/v1/actions/alternate-model/execute")
 def run_alternate_model_action(request: AlternateModelRunRequest):
     """Run non-primary models on an explicitly submitted sample; no labels are accepted or logged."""
     try:

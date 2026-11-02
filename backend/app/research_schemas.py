@@ -56,7 +56,9 @@ class OutcomeCompletionRequest(StrictResearchModel):
     @field_validator("final_prediction", "ground_truth")
     @classmethod
     def retrospective_values_must_be_finite_scalars(cls, value):
-        if isinstance(value, bool) or isinstance(value, (str, int)):
+        if isinstance(value, bool):
+            raise ValueError("final_prediction and ground_truth must not be booleans")
+        if isinstance(value, (str, int)):
             return value
         if isinstance(value, float) and math.isfinite(value):
             return value

@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";\nimport ReviewQueue from "./ReviewQueue";
 
 type Schema = {
   feature_names: string[];
@@ -406,7 +406,7 @@ function App() {
         </div>
       </section>
 
-      <footer>
+      <ReviewQueue />\n\n      <footer>
         <span>VIMARSH · RESEARCH BUILD 0.1</span>
         <span>Experimental decision support. Not validated for safety-critical use.</span>
       </footer>

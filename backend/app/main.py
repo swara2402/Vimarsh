@@ -24,7 +24,7 @@ from .research_services import (
 )
 from .review_queue import (
     require_reviewer_token, enqueue as enqueue_review, list_cases as list_review_cases,
-    claim_case as claim_review_case, complete_case as complete_review_case,
+    claim_case as claim_review_case, complete_case as complete_review_case, list_events as list_review_events,
 )
 from .review_schemas import ReviewEnqueueRequest, ReviewClaimRequest, ReviewCompletionRequest
 from .evidence_register import require_evidence_token, add_evidence, list_evidence
@@ -349,6 +349,15 @@ def complete_review(review_id: str, request: ReviewCompletionRequest):
         return complete_review_case(review_id, request.reviewer_id, request.reviewer_note, request.final_prediction, request.ground_truth)
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@app.get("/v1/reviews/{review_id}/events", dependencies=[Depends(require_reviewer_token)])
+def get_review_events(review_id: str):
+    """Return audit events after verifying the global hash chain."""
+    try:
+        return {"events": list_review_events(review_id), "integrity": "verified"}
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail="Review audit integrity verification failed") from exc
 
 
 @app.post("/v1/evidence", dependencies=[Depends(require_evidence_token)])

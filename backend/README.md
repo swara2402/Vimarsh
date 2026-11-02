@@ -130,6 +130,7 @@ The container demo passes these settings from `.env.example` and stores the queu
 - `GET /v1/reviews?status=pending&limit=50`: list queue entries.
 - `POST /v1/reviews/{review_id}/claim`: atomically claim a pending case for a reviewer ID.
 - `POST /v1/reviews/{review_id}/complete`: record the reviewer's note, final prediction, and optional retrospective ground truth.
+- `POST /v1/reviews/{review_id}/cancel`: cancel a pending or claimed case and append the reason to the audit chain.
 - `GET /v1/reviews/{review_id}/events`: return review lifecycle events after verifying the append-only SHA-256 audit chain.
 
 Send the token in `X-Vimarsh-Reviewer-Token`. The service rejects duplicate case IDs and prevents a second reviewer from claiming an already-claimed case. A completion is accepted only from the reviewer ID that claimed the case. Reviewer IDs are operator-supplied labels; the shared token is not a substitute for individual accounts, MFA, or role-based access control. Do not expose this queue publicly. The workflow is an initial local operator integration and still requires identity, access policy, audit/retention controls, reviewer training, and independent operational validation before consequential use.

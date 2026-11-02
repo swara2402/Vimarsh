@@ -48,4 +48,4 @@ VIMARSH_OUTCOME_LEDGER_BACKEND=sqlite
 VIMARSH_OUTCOME_LEDGER=research/data/action_outcomes.sqlite3
 ```
 
-See [Milestone 66: Transactional outcome ledger](docs/milestone66-transactional-outcome-ledger.md) for the storage guarantees and limitations. SQLite is local transactional storage, not a distributed database.
+Use `python -m src.verification.ledger_migration --source data/action_outcomes.jsonl --destination data/action_outcomes.sqlite3` from this directory to migrate verified history without deleting the source. The migration is resumable and rejects divergent histories. See [Milestone 66: Transactional outcome ledger](docs/milestone66-transactional-outcome-ledger.md) for the storage guarantees and limitations. SQLite is local transactional storage, not a distributed database.

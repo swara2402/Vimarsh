@@ -31,6 +31,16 @@ For the ordinary demo, leave `VIMARSH_RESEARCH_API_TOKEN` blank. If protected re
 
 ## 3. Build and start
 
+For a guided preflight, build, startup, and readiness check, run:
+
+```bash
+bash scripts/vimarsh-demo.sh up
+```
+
+The helper requires the trusted model bundle to exist and prints service URLs only after the API schema and dashboard respond. Use `bash scripts/vimarsh-demo.sh status`, `logs`, or `down` to manage the local stack.
+
+For manual startup, use:
+
 ```bash
 docker compose -f compose.yaml up --build
 ```

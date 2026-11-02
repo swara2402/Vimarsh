@@ -44,6 +44,9 @@ def resolve_crossref_doi(doi: str) -> dict:
     except (ValueError, KeyError, TypeError) as exc:
         raise RuntimeError("Crossref returned an invalid metadata response") from exc
 
+    if not isinstance(message, dict):
+        raise RuntimeError("Crossref returned an invalid metadata response")
+
     titles = message.get("title") or []
     authors = message.get("author") or []
     published = message.get("published-print") or message.get("published-online") or message.get("created") or {}

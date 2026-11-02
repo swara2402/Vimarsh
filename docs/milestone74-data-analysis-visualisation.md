@@ -32,3 +32,21 @@ The histogram uses ten equal-width bins. Standard deviation is the population fo
 ## Validation status
 
 The implementation is committed on the milestone branch. Run `npm run build` from `frontend/` and the existing frontend CI workflow before merging. This environment has not executed the build, so the milestone must not be described as CI-verified until GitHub Actions completes.
+
+## Saved VIMARSH policy evaluation visualisation
+
+The dashboard also presents the committed verification evaluation snapshots dated 31 October 2026. It reads the aggregate values computed from these exact source files:
+
+- `results/verification/conservative_evaluation_table_20261031_190449.json`
+- `results/verification/balanced_evaluation_table_20261031_190449.json`
+- `results/verification/coverage_oriented_evaluation_table_20261031_190450.json`
+
+Each snapshot contains 975 rows. The current dashboard selector compares coverage, error among covered cases, abstention count, action distribution, and a confusion matrix for covered predictions. Confusion-matrix-derived precision, recall, and F1 are calculated on covered rows only; they must not be described as full-population classifier metrics.
+
+| Policy snapshot | Coverage | Error among covered | Abstentions | Recorded introduced errors |
+|---|---:|---:|---:|---:|
+| Conservative | 6.87% | 16.42% | 908 | 2 |
+| Balanced | 29.44% | 23.00% | 688 | 0 |
+| Coverage-oriented | 100.00% | 22.46% | 0 | 12 |
+
+These are historical saved evaluation outcomes, not a fresh model run. The coverage-oriented snapshot includes alternate-model and additional-evidence actions among covered cases; coverage is not synonymous with accepting the original prediction. The comparison is descriptive and does not establish causal harm reduction or real-world effectiveness.

@@ -35,6 +35,34 @@ def append_outcome(payload: dict[str, Any]) -> dict[str, Any]:
     record = ActionOutcomeRecord(**payload)
     return get_ledger().append(record)
 
+
+def complete_pending_outcome(event_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    """Append a completed child event for one existing pending execution."""
+    ledger = get_ledger()
+    rows = ledger.read_verified()
+    pending = next((row for row in rows if row["event_id"] == event_id), None)
+    if pending is None:
+        raise ValueError("pending outcome event was not found")
+    if pending["status"] != "pending":
+        raise ValueError("only pending outcome events can be completed")
+    if any(row.get("parent_event_id") == event_id for row in rows):
+        raise ValueError("pending outcome event already has a completion record")
+
+    fields = ActionOutcomeRecord.__dataclass_fields__
+    completed = {key: pending.get(key) for key in fields if key in pending}
+    completed.update({
+        "status": "completed",
+        "event_id": None,
+        "parent_event_id": event_id,
+        "occurred_at": None,
+        "final_prediction": payload["final_prediction"],
+        "ground_truth": payload["ground_truth"],
+        "observed_cost": payload.get("observed_cost"),
+        "latency_ms": payload.get("latency_ms", pending.get("latency_ms")),
+        "provider_version": payload.get("provider_version", pending.get("provider_version")),
+    })
+    return ledger.append(ActionOutcomeRecord(**completed))
+
 def outcome_summary() -> dict[str, Any]:
     rows = get_ledger().read_verified()
     return {

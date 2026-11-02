@@ -152,6 +152,14 @@ def test_claimed_review_can_be_cancelled_but_not_completed_afterward(monkeypatch
     assert completion.status_code == 409
 
 
+def test_review_history_returns_not_found_for_unknown_case(monkeypatch, tmp_path):
+    configure_operator_workflows(monkeypatch, tmp_path)
+    response = client.get(
+        "/v1/reviews/not-a-real-review/events", headers=operator_headers()
+    )
+    assert response.status_code == 404
+
+
 def test_review_audit_chain_detects_database_tampering(monkeypatch, tmp_path):
     configure_operator_workflows(monkeypatch, tmp_path)
     created = client.post(

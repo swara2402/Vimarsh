@@ -14,6 +14,8 @@ on:
     paths:
       - "backend/**"
       - "frontend/**"
+      - "scripts/**"
+      - "research/requirements-demo.txt"
       - ".github/workflows/application-checks.yml"
 
 jobs:

@@ -88,8 +88,8 @@ Only submit a completed record after the outcome and retrospective label are gen
 
 ## Ledger and research limitations
 
-- The local JSONL ledger is append-only by application convention and tamper-evident through a SHA-256 hash chain. It is not a distributed database or a substitute for access-controlled backups.
-- Concurrent multi-process writers are not coordinated. Use a single API worker for this local ledger; use a transactional database before multi-worker deployment.
+- The default JSONL ledger is append-only by application convention and tamper-evident through a SHA-256 hash chain. Concurrent multi-process writers are not coordinated; keep it to a single API worker.
+- An optional SQLite backend provides transactional `BEGIN IMMEDIATE` appends, a unique event ID constraint, WAL journaling, and the same hash-chain verification. Select it with `VIMARSH_OUTCOME_LEDGER_BACKEND=sqlite` and point `VIMARSH_OUTCOME_LEDGER` at a `.sqlite3` file. This supports coordinated local multi-process writes, but is not a distributed database or a substitute for access-controlled backups.
 - The contextual estimator's lower-bound output is a diagnostic, not a finite-sample guarantee or causal effect estimate.
 - Propensity adjustment does not remove unmeasured confounding or repair incorrect logging.
 - The dashboard's `/v1/actions/alternate-model/execute` route is an explicit local inference action. It runs only models already present in the trusted local bundle and returns outputs plus measured inference latency; it does not record ground truth or automatically select a final prediction. The protected `/v1/research/execute/alternate-model` route additionally appends a pending event. Submit a separate completed outcome record after a final result and ground truth are genuinely available. Reuse the returned `case_id`, baseline prediction, and `context_for_outcome_completion` values when recording that outcome. Do not invent a propensity. A deterministic/manual run without a defensible assignment propensity is not eligible for the propensity-adjusted estimator.

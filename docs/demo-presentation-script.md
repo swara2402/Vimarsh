@@ -56,6 +56,10 @@ Be explicit:
 
 Next steps are to complete CI and integration review, connect the allocator behind a versioned policy interface, collect genuine action outcomes where ethically and operationally possible, and validate on additional domains.
 
+## Earlier paired alternate-model benchmark (Milestone 53)
+
+A separate held-out Wine Quality experiment compared which 15% of cases should receive an alternate Random Forest prediction instead of the primary Logistic Regression prediction. Across three seeds (17, 42, 73), model-disagreement routing produced 23, 25, and 41 net corrections (mean 29.7); low-primary-confidence routing produced 7, 11, and 31 (mean 16.3); and a random matched-budget baseline produced 4, 6, and 11 (mean 7.0). Each policy used 139 of 929 test cases per seed. This is an offline paired benchmark of two models, not a live verification service, human review, or causal deployment result. The assumed action-cost units are experimental rather than measured monetary or latency costs.
+
 ## Milestone 60 first-run result (important)
 
 The first three-seed CI artifact completed, but the contextual estimator recommended **zero** alternate-model actions across all 929 test cases in each seed. Therefore the matched-budget confidence-only and random baselines also selected zero cases. The conservative lower-bound/support gate abstained throughout; this is a valid negative/abstention result, not evidence that contextual selection outperformed the baselines. Present it honestly as a current limitation and say that estimator-support and threshold debugging is the next research task. Do not quote a positive action-benefit result from this run.

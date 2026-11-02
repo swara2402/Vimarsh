@@ -8,10 +8,11 @@ This is a reproducible local research demonstration using the Wine Quality bench
 2. Show the React dashboard loading the model feature schema and live action capabilities from FastAPI.
 3. Click **Load example wine sample**, set harm to 8 and remaining budget to 2, then evaluate. This makes the risk calculation and feasible alternate-model option easier to demonstrate when the estimated error probability is above the configured acceptance threshold.
 4. Explain the primary prediction, confidence, estimated error probability, baseline risk, recommended action, and rationale.
-5. Change the budget to demonstrate how feasibility constraints affect the recommendation.
-6. Point out that the capability panel marks human review and additional evidence as unavailable. Alternate-model inference requires a separate explicit action.
-7. State clearly that the serving policy is a transparent baseline. The contextual estimator and constrained allocator are offline research components, not the live serving policy.
-8. Use the [research evidence summary](research-evidence-summary-2026-11-02.md) for the multi-dataset findings, including mixed and negative results.
+5. If the capability panel confirms an alternate model is available, click **Run alternate models** to show its explicit local predictions and measured inference latency. Explain that the primary prediction is not automatically replaced.
+6. Change the budget to demonstrate how feasibility constraints affect the recommendation.
+7. Point out that the capability panel marks human review and additional evidence as unavailable. Alternate-model inference requires a separate explicit action.
+8. State clearly that the serving policy is a transparent baseline. The contextual estimator and constrained allocator are offline research components, not the live serving policy.
+9. Use the [research evidence summary](research-evidence-summary-2026-11-02.md) for the multi-dataset findings, including mixed and negative results.
 
 ## Fastest startup: one command
 

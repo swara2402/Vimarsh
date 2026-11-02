@@ -111,3 +111,24 @@ PYTHONPATH=backend pytest backend/tests -q
 ```
 
 The test suite covers API validation, trusted bundle inference, protected research routes, label separation, outcome-ledger writes, contextual estimation, and constrained allocation.
+
+
+## Operator-managed human-review queue
+
+The local review queue is an optional, protected workflow for an actual operator to claim and adjudicate cases. It is not an automated reviewer, does not guarantee reviewer availability, and does not provide enterprise identity or role management.
+
+Configure a separate server-side shared token and a persistent SQLite path:
+
+```bash
+export VIMARSH_REVIEWER_API_TOKEN='use-a-different-long-random-secret'
+export VIMARSH_REVIEW_QUEUE_DB=research/data/review_queue.sqlite3
+```
+
+The container demo passes these settings from `.env.example` and stores the queue database in the persistent research-data volume. Never put the reviewer token in Vite variables or browser code.
+
+- `POST /v1/reviews`: enqueue a case with a case ID, prediction, rationale, context, and priority.
+- `GET /v1/reviews?status=pending&limit=50`: list queue entries.
+- `POST /v1/reviews/{review_id}/claim`: atomically claim a pending case for a reviewer ID.
+- `POST /v1/reviews/{review_id}/complete`: record the reviewer's note, final prediction, and optional retrospective ground truth.
+
+Send the token in `X-Vimarsh-Reviewer-Token`. The service rejects duplicate case IDs and prevents a second reviewer from claiming an already-claimed case. A completion is accepted only from the reviewer ID that claimed the case. Reviewer IDs are operator-supplied labels; the shared token is not a substitute for individual accounts, MFA, or role-based access control. Do not expose this queue publicly. The workflow is an initial local operator integration and still requires identity, access policy, audit/retention controls, reviewer training, and independent operational validation before consequential use.

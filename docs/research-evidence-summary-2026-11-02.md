@@ -79,9 +79,11 @@ Therefore calibration must be judged with multiple metrics and fresh validation,
 
 ## Contextual action-benefit experiment: negative result
 
-The first three-seed paired contextual action-benefit experiment selected **zero of 929 test cases in every seed**. The confidence-only and random matched-budget baselines also selected zero because their budget was matched to the estimator's selected count. That comparison is non-informative. The estimator's conservative effective-sample and positive lower-bound gates abstained throughout.
+The three-seed paired contextual action-benefit experiment selected **zero of 929 test cases in every seed**. The confidence-only and random matched-budget baselines also selected zero because their budget was matched to the estimator's selected count, so that comparison is non-informative.
 
-This is a valid negative result and a current limitation. It is not evidence that the contextual estimator is superior. Follow-up work should inspect effective sample sizes, weighted benefit estimates, and uncertainty penalties, then run a pre-specified sensitivity analysis on validation data before any new held-out test.
+The follow-up diagnostics identify the reason: all 2,787 test queries abstained because the conservative benefit diagnostic was not positive, **not** because effective sample support was too small. Mean effective sample sizes were approximately 441.0, 426.5, and 439.2 for seeds 17, 42, and 73, well above the configured minimum of 10. Mean weighted benefits were 0.0024, -0.0062, and 0.0011, while mean uncertainty penalties were 0.1166, 0.1186, and 0.1168. The resulting mean lower-bound diagnostics were -0.1142, -0.1247, and -0.1158. In short, observed paired benefit was close to zero relative to the uncertainty penalty.
+
+This is a valid negative result and a current limitation. It is not evidence that the contextual estimator is superior. The correct next step is to improve the action-effect signal or collect more informative genuine paired outcomes, then evaluate any pre-specified estimator change on a fresh held-out test. Do not weaken the gate merely to force non-zero selections.
 
 ## What is implemented versus what is not
 

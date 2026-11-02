@@ -94,7 +94,12 @@ The integrated verification-engine workflow remains research-stage and runs on W
 
 ## API implementation status
 
-Milestone 55 begins the FastAPI implementation in `backend/`. The current API is recommendation-only and uses a transparent rule-based baseline; it does not execute verification actions. See [Backend API](backend/README.md) for endpoints, local setup, tests, and limitations. This implementation is under review in PR #17.
+The FastAPI service has two separate surfaces:
+
+- The demo-facing decision API loads a trusted reliability bundle and applies a transparent recommendation-only baseline policy. It does not execute verification actions.
+- The protected research API records validated action outcomes, estimates context-conditioned action benefit from completed propensity-logged records, and recommends batch allocations under shared budgets and action capacities. It is disabled until a server-side research token is configured and never executes selected actions.
+
+Human review and additional evidence still require operational providers and real outcome collection. The contextual benefit lower-bound is a diagnostic, not a guaranteed confidence bound or causal estimate. See [Backend API](backend/README.md) and [Milestone 62 implementation notes](research/docs/milestone62-protected-outcome-allocation-api.md) for setup, endpoint contracts, tests, and limitations.
 
 ## Getting started
 

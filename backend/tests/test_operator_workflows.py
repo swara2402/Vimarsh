@@ -111,6 +111,37 @@ def test_review_cancellation_is_audited_and_terminal(monkeypatch, tmp_path):
     assert repeated.status_code == 409
 
 
+def test_claimed_review_can_be_cancelled_but_not_completed_afterward(monkeypatch, tmp_path):
+    configure_operator_workflows(monkeypatch, tmp_path)
+    created = client.post(
+        "/v1/reviews", headers=operator_headers(),
+        json={"case_id": "claimed-cancel-case", "prediction": "class-a", "priority": 2},
+    )
+    review_id = created.json()["review_id"]
+    claimed = client.post(
+        f"/v1/reviews/{review_id}/claim", headers=operator_headers(),
+        json={"reviewer_id": "reviewer-01"},
+    )
+    assert claimed.status_code == 200
+
+    cancelled = client.post(
+        f"/v1/reviews/{review_id}/cancel", headers=operator_headers(),
+        json={"actor": "operator-01", "reason": "Review withdrawn"},
+    )
+    assert cancelled.status_code == 200
+    assert cancelled.json()["status"] == "cancelled"
+
+    completion = client.post(
+        f"/v1/reviews/{review_id}/complete", headers=operator_headers(),
+        json={
+            "reviewer_id": "reviewer-01",
+            "reviewer_note": "Attempt after cancellation",
+            "final_prediction": "class-a",
+        },
+    )
+    assert completion.status_code == 409
+
+
 def test_review_audit_chain_detects_database_tampering(monkeypatch, tmp_path):
     configure_operator_workflows(monkeypatch, tmp_path)
     created = client.post(

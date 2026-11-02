@@ -4,6 +4,22 @@ from pydantic import BaseModel, ConfigDict, Field
 
 ResearchAction = Literal["alternate_model", "human_review", "additional_evidence"]
 
+class AlternateModelExecutionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    case_id: str = Field(min_length=1, max_length=256)
+    sample: Dict[str, float] = Field(min_length=1)
+    harm: float = Field(ge=0, le=10)
+    estimated_action_cost: float = Field(ge=0)
+
+    @field_validator("sample")
+    @classmethod
+    def alternate_sample_values_must_be_finite(cls, value):
+        import math
+        if any(not math.isfinite(item) for item in value.values()):
+            raise ValueError("sample values must be finite")
+        return value
+
+
 class OutcomeCreateRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     case_id: str = Field(min_length=1, max_length=256)

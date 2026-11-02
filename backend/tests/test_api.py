@@ -22,7 +22,8 @@ def payload(**overrides):
 def test_health_endpoint():
     response = client.get("/health")
     assert response.status_code == 200
-    assert response.json()["mode"] == "recommendation_only"
+    assert response.json()["mode"] == "research_preview"
+    assert response.json()["decision_mode"] == "recommendation_only"
 
 
 def test_low_risk_prediction_is_accepted():

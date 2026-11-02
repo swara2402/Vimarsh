@@ -29,8 +29,9 @@ Emphasize that the current API is recommendation-only. It does not execute the r
    - estimated error probability from the reliability estimator;
    - baseline risk, calculated as estimated error probability multiplied by harm;
    - recommended action and the policy rationale.
-8. Change the remaining budget so the alternate-model action is no longer affordable, then evaluate again. If estimated risk is above the acceptance threshold, the policy should abstain rather than recommend an infeasible action.
-9. Disable alternate-model availability and repeat to show the same hard-constraint behavior.
+8. If the capability panel reports an alternate model as available, click **Run alternate models**. Explain that this is an explicit local inference action and its predictions/latency are shown as additional evidence; VIMARSH does not automatically replace the primary prediction.
+9. Change the remaining budget so the alternate-model action is no longer affordable, then evaluate again. If estimated risk is above the acceptance threshold, the policy should abstain rather than recommend an infeasible action.
+10. Disable alternate-model availability and repeat to show the same hard-constraint behavior.
 
 ## 3:30–4:20 | Research contributions
 

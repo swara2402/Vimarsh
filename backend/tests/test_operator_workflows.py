@@ -129,3 +129,24 @@ def test_operator_workflow_capabilities_reflect_server_configuration(monkeypatch
     assert actions["human_review"]["mode"] == "operator_managed_queue"
     assert actions["additional_evidence"]["available"] is True
     assert actions["additional_evidence"]["mode"] == "operator_submitted_evidence"
+
+
+def test_operator_token_headers_are_allowed_by_cors_and_api_responses_are_hardened():
+    response = client.options(
+        "/v1/reviews",
+        headers={
+            "Origin": "http://localhost:5173",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type,x-vimarsh-reviewer-token,x-vimarsh-evidence-token",
+        },
+    )
+    assert response.status_code == 200
+    allowed = response.headers.get("access-control-allow-headers", "").lower()
+    assert "x-vimarsh-reviewer-token" in allowed
+    assert "x-vimarsh-evidence-token" in allowed
+
+    health = client.get("/health")
+    assert health.headers["x-content-type-options"] == "nosniff"
+    assert health.headers["x-frame-options"] == "DENY"
+    assert health.headers["referrer-policy"] == "no-referrer"
+    assert health.headers["permissions-policy"] == "camera=(), microphone=(), geolocation=()"

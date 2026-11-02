@@ -48,6 +48,23 @@ function correlation(a: number[], b: number[]) {
 }
 function fmt(value: number) { return Number.isFinite(value) ? value.toFixed(2) : "N/A"; }
 
+type PolicySnapshot = {
+  name: string;
+  coverage: number;
+  error: number;
+  accuracy: number;
+  precision: number;
+  recall: number;
+  f1: number;
+  abstain: number;
+  accept: number;
+  review: number;
+  introduced: number;
+  alternate?: number;
+  evidence?: number;
+  cm: [[number, number], [number, number]];
+};
+
 export default function DataAnalysis() {
   const [dataset, setDataset] = useState<{ name: string; headers: string[]; rows: Row[] } | null>(null);
   const [error, setError] = useState("");
@@ -99,7 +116,7 @@ export default function DataAnalysis() {
     return { numeric, summaries, missing, selected, bins, categoryRows, corrNames, corr };
   }, [dataset, target, focus]);
 
-  const policySnapshots = [
+  const policySnapshots: PolicySnapshot[] = [
     { name: "Conservative", coverage: 6.87, error: 16.42, accuracy: 83.58, precision: 89.58, recall: 87.76, f1: 88.66, abstain: 908, accept: 56, review: 11, introduced: 2, cm: [[13, 5], [6, 43]] },
     { name: "Balanced", coverage: 29.44, error: 23.00, accuracy: 77.00, precision: 78.24, recall: 86.29, f1: 82.07, abstain: 688, accept: 287, review: 0, introduced: 0, cm: [[70, 42], [24, 151]] },
     { name: "Coverage-oriented", coverage: 100, error: 22.46, accuracy: 77.54, precision: 79.01, recall: 87.84, f1: 83.19, abstain: 0, accept: 397, review: 0, introduced: 12, alternate: 202, evidence: 376, cm: [[214, 144], [75, 542]] }

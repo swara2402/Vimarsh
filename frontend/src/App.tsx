@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import ReviewQueue, { type ReviewDraft } from "./ReviewQueue";
+import DataAnalysis from "./DataAnalysis";
 
 type Schema = {
   feature_names: string[];
@@ -424,6 +425,8 @@ function App() {
           </aside>
         </div>
       </section>
+
+      <DataAnalysis />
 
       <ReviewQueue suggestedCase={reviewDraft} />
 

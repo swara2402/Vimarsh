@@ -54,6 +54,14 @@ def allocate_cases(payload: dict[str, Any]) -> dict[str, Any]:
     diagnostics = []
     for case in payload["cases"]:
         for action in case["available_actions"]:
+            if action != "alternate_model":
+                diagnostics.append({
+                    "case_id": case["case_id"],
+                    "action": action,
+                    "status": "excluded",
+                    "reason": "no_operational_provider_configured",
+                })
+                continue
             cost = case["estimated_action_costs"].get(action)
             if cost is None:
                 diagnostics.append({"case_id": case["case_id"], "action": action,

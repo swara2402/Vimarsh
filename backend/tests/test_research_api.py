@@ -390,4 +390,10 @@ def test_outcome_completion_rejects_non_scalar_retrospective_values(monkeypatch,
         headers=HEADERS,
         json={"final_prediction": {"class": 1}, "ground_truth": 1},
     )
+    boolean_response = client.post(
+        f"/v1/research/outcomes/{pending['event_id']}/complete",
+        headers=HEADERS,
+        json={"final_prediction": True, "ground_truth": 1},
+    )
     assert response.status_code == 422
+    assert boolean_response.status_code == 422

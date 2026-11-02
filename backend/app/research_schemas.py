@@ -46,6 +46,14 @@ class OutcomeCreateRequest(StrictResearchModel):
     occurred_at: Optional[str] = Field(default=None, max_length=64)
 
 
+class OutcomeCompletionRequest(StrictResearchModel):
+    final_prediction: Any
+    ground_truth: Any
+    observed_cost: Optional[float] = Field(default=None, ge=0)
+    latency_ms: Optional[float] = Field(default=None, ge=0)
+    provider_version: Optional[str] = Field(default=None, max_length=128)
+
+
 class BenefitEstimateRequest(StrictResearchModel):
     action: ResearchAction
     query_context: Dict[str, float] = Field(min_length=1, max_length=128)

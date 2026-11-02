@@ -22,7 +22,7 @@ Emphasize that the current API is recommendation-only. It does not execute the r
 2. Explain that the feature fields are retrieved from the trained bundle, not hard-coded into the page.
 3. Point out the live capability panel: the dashboard reports which action paths are configured and marks human review/evidence acquisition unavailable rather than pretending they are integrated.
 4. Click **Load example wine sample** to populate a complete red-wine benchmark row. Point out that the UI maps the sample by the feature names returned from the trained bundle.
-5. Set a harm score and leave the alternate model enabled with an affordable estimated cost.
+5. Set harm to 8, keep the remaining budget at 2, and leave the alternate-model option enabled with its default estimated cost of 1. This illustrates how the supplied harm weight affects baseline risk and how the budget constrains the recommendation.
 6. Select **Evaluate reliability**.
 7. Explain the output in this order:
    - primary-model prediction and confidence;

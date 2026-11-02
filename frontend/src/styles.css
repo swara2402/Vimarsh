@@ -113,3 +113,9 @@ footer { min-height: 65px; border-top: 1px solid #e9e8f0; display: flex; align-i
   .cost-field { width: 100%; }
   footer { align-items: flex-start; flex-direction: column; justify-content: center; padding: 17px 0; }
 }
+
+
+.sample-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: -7px 0 18px; color: #918da2; font-size: 11px; }
+.sample-button { border: 1px solid #e3def1; background: #f6f4fb; color: #62558f; border-radius: 6px; padding: 8px 11px; font: 600 10px Manrope, sans-serif; cursor: pointer; transition: background .18s, border-color .18s; }
+.sample-button:hover { background: #eeebf7; border-color: #cfc8e4; }
+@media (max-width: 560px) { .sample-row { align-items: flex-start; flex-direction: column; } }

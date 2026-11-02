@@ -270,3 +270,22 @@ def test_jsonl_migration_accepts_legacy_records_without_parent_event_id(tmp_path
     assert result["migrated_records"] == 1
     assert migrated[0]["event_id"] == legacy_row["event_id"]
     assert migrated[0]["parent_event_id"] is None
+
+
+
+def test_sqlite_ledger_refuses_to_extend_a_corrupted_hash_chain(tmp_path):
+    path = tmp_path / "corrupt-before-append.sqlite3"
+    ledger = SQLiteActionOutcomeLedger(path)
+    ledger.append(record(501))
+    with sqlite3.connect(path) as connection:
+        connection.execute("DROP TRIGGER action_outcomes_no_update")
+        connection.execute(
+            "UPDATE action_outcomes SET record_json = ? WHERE event_id = ?",
+            ('{"event_id":"event-501","status":"completed"}', "event-501"),
+        )
+
+    with pytest.raises(ValueError, match="integrity failure"):
+        ledger.append(record(502))
+
+    with pytest.raises(ValueError, match="integrity failure"):
+        ledger.read_verified()

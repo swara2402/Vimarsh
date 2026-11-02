@@ -22,15 +22,15 @@ Emphasize that the current API is recommendation-only. It does not execute the r
 2. Explain that the feature fields are retrieved from the trained bundle, not hard-coded into the page.
 3. Point out the live capability panel: the dashboard reports which action paths are configured and marks human review/evidence acquisition unavailable rather than pretending they are integrated.
 4. Click **Load example wine sample** to populate a complete red-wine benchmark row. Point out that the UI maps the sample by the feature names returned from the trained bundle.
-4. Set a harm score and leave the alternate model enabled with an affordable estimated cost.
-5. Select **Evaluate reliability**.
-6. Explain the output in this order:
+5. Set a harm score and leave the alternate model enabled with an affordable estimated cost.
+6. Select **Evaluate reliability**.
+7. Explain the output in this order:
    - primary-model prediction and confidence;
    - estimated error probability from the reliability estimator;
    - baseline risk, calculated as estimated error probability multiplied by harm;
    - recommended action and the policy rationale.
-7. Change the remaining budget so the alternate-model action is no longer affordable, then evaluate again. If estimated risk is above the acceptance threshold, the policy should abstain rather than recommend an infeasible action.
-8. Disable alternate-model availability and repeat to show the same hard-constraint behavior.
+8. Change the remaining budget so the alternate-model action is no longer affordable, then evaluate again. If estimated risk is above the acceptance threshold, the policy should abstain rather than recommend an infeasible action.
+9. Disable alternate-model availability and repeat to show the same hard-constraint behavior.
 
 ## 3:30–4:20 | Research contributions
 

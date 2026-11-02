@@ -27,7 +27,7 @@ Use a header row with unique column names. Numeric columns are detected when at 
 
 This is descriptive exploratory analysis, not a substitute for the repository's controlled experiment pipeline. It does not compute model accuracy, precision, recall, F1, ROC-AUC, a confusion matrix, calibration curves, or drift metrics because those require aligned model predictions, labels, or a defined reference population. It does not infer causal relationships. Correlation is descriptive and may be affected by missingness, outliers, and confounding.
 
-The histogram uses ten equal-width bins. Standard deviation is the population form. Empty strings are treated as missing; other special missing-value spellings (for example, `NA` or `null`) are treated as category/text values unless exported as blank cells. The CSV parser supports quoted fields and escaped double quotes, but expects comma-separated UTF-8 text.
+The histogram uses ten equal-width bins. Standard deviation is the population form. Empty strings are treated as missing; other special missing-value spellings (for example, `NA` or `null`) are treated as category/text values unless exported as blank cells. The CSV parser supports quoted fields and escaped double quotes, strips a UTF-8 byte-order mark, rejects unclosed quoted fields and rows with more fields than the header, and expects comma-separated UTF-8 text. Short rows are padded with blank cells. Correlations that are undefined because a feature is constant or has too few paired observations are displayed as N/A rather than as zero.
 
 ## Validation status
 

@@ -16,7 +16,7 @@ type ReviewCase = {
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8000").replace(/\/$/, "");
 
 export default function ReviewQueue() {
-  const [token, setToken] = useState("");
+  const [token, setToken] = useState("");\n  const [evidenceToken, setEvidenceToken] = useState("");\n  const [evidenceSource, setEvidenceSource] = useState("");\n  const [evidenceReference, setEvidenceReference] = useState("");\n  const [evidenceText, setEvidenceText] = useState("");\n  const [evidenceCaseId, setEvidenceCaseId] = useState("");
   const [reviewer, setReviewer] = useState("");
   const [caseId, setCaseId] = useState("");
   const [prediction, setPrediction] = useState("");
@@ -152,7 +152,7 @@ export default function ReviewQueue() {
           ))}
         </div>
       </div>
-      {selected && (
+      <form className="review-card review-evidence" onSubmit={submitEvidence}>\n        <h3>Attach operator-submitted evidence</h3>\n        <p className="review-empty">Records a source reference and evidence text with a SHA-256 digest. It does not independently verify or fetch the source.</p>\n        <div className="review-connect">\n          <label><span>Evidence intake token</span><input type="password" autoComplete="off" value={evidenceToken} onChange={(e) => setEvidenceToken(e.target.value)} /></label>\n          <label><span>Case ID</span><input required value={evidenceCaseId} onChange={(e) => setEvidenceCaseId(e.target.value)} /></label>\n        </div>\n        <div className="review-connect">\n          <label><span>Source name</span><input required value={evidenceSource} onChange={(e) => setEvidenceSource(e.target.value)} placeholder="Source / provider" /></label>\n          <label><span>Source reference</span><input required value={evidenceReference} onChange={(e) => setEvidenceReference(e.target.value)} placeholder="URL or reference identifier" /></label>\n        </div>\n        <label><span>Evidence content</span><textarea required rows={4} maxLength={20000} value={evidenceText} onChange={(e) => setEvidenceText(e.target.value)} /></label>\n        <button type="submit" disabled={!evidenceToken || busy}>Record evidence</button>\n      </form>\n\n      {selected && (
         <form className="review-card review-completion" onSubmit={complete}>
           <h3>Complete review · {selected.case_id}</h3>
           <label><span>Final prediction</span><input required value={finalPrediction} onChange={(e) => setFinalPrediction(e.target.value)} /></label>

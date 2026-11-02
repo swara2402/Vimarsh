@@ -150,3 +150,43 @@ def test_operator_token_headers_are_allowed_by_cors_and_api_responses_are_harden
     assert health.headers["x-frame-options"] == "DENY"
     assert health.headers["referrer-policy"] == "no-referrer"
     assert health.headers["permissions-policy"] == "camera=(), microphone=(), geolocation=()"
+
+
+def test_crossref_doi_metadata_provider_is_token_protected_and_logged(monkeypatch, tmp_path):
+    configure_operator_workflows(monkeypatch, tmp_path)
+    from app import main
+
+    monkeypatch.setattr(main, "resolve_crossref_doi", lambda doi: {
+        "provider": "Crossref",
+        "doi": "10.1234/example",
+        "title": "A metadata-only research record",
+        "authors": ["Example Author"],
+        "publisher": "Example Publisher",
+        "year": 2025,
+        "work_type": "journal-article",
+        "container_title": "Example Journal",
+        "url": "https://doi.org/10.1234/example",
+        "metadata_only": True,
+        "claim_verification": "not_performed",
+    })
+    response = client.post(
+        "/v1/evidence/resolve-doi",
+        headers=evidence_headers(),
+        json={"case_id": "doi-case-1", "doi": "10.1234/example"},
+    )
+    assert response.status_code == 200
+    assert response.json()["provider"] == "crossref"
+    assert response.json()["claim_verification"] == "not_performed"
+
+    evidence = client.get("/v1/evidence/doi-case-1", headers=evidence_headers())
+    assert evidence.status_code == 200
+    assert evidence.json()["evidence"][0]["integrity_valid"] is True
+
+
+def test_crossref_doi_provider_rejects_invalid_doi_without_network():
+    response = client.post(
+        "/v1/evidence/resolve-doi",
+        headers=evidence_headers(),
+        json={"case_id": "doi-case-invalid", "doi": "not-a-doi"},
+    )
+    assert response.status_code == 422

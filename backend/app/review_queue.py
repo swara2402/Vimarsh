@@ -1,10 +1,11 @@
-"""Persistent local human-review queue for explicitly routed VIMARSH cases.
+"""Persistent local review queue with an append-only, hash-chained audit trail.
 
-This queue is an operator workflow, not an automated reviewer or a claim of
-human-review availability. Access is gated by a separate server-side token.
+Reviewer IDs are operator-supplied labels behind a shared token, not individual
+authenticated accounts. This module does not claim identity or RBAC.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import secrets
@@ -57,7 +58,83 @@ def _connect() -> sqlite3.Connection:
         )
     """)
     conn.execute("CREATE INDEX IF NOT EXISTS review_cases_queue_idx ON review_cases(status, priority DESC, created_at ASC)")
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS review_events (
+            sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+            event_id TEXT NOT NULL UNIQUE,
+            review_id TEXT NOT NULL,
+            event_type TEXT NOT NULL,
+            actor TEXT NOT NULL,
+            payload_json TEXT NOT NULL,
+            previous_hash TEXT NOT NULL,
+            event_hash TEXT NOT NULL UNIQUE,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    conn.execute("""CREATE TRIGGER IF NOT EXISTS review_events_no_update
+        BEFORE UPDATE ON review_events BEGIN SELECT RAISE(ABORT, 'review audit log is append-only'); END""")
+    conn.execute("""CREATE TRIGGER IF NOT EXISTS review_events_no_delete
+        BEFORE DELETE ON review_events BEGIN SELECT RAISE(ABORT, 'review audit log is append-only'); END""")
     return conn
+
+
+def _append_event(conn: sqlite3.Connection, review_id: str, event_type: str,
+                  actor: str, payload: dict[str, Any]) -> None:
+    previous = conn.execute("SELECT event_hash FROM review_events ORDER BY sequence DESC LIMIT 1").fetchone()
+    previous_hash = previous["event_hash"] if previous else "0" * 64
+    event_id = str(uuid4())
+    payload_json = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False)
+    envelope = {
+        "event_id": event_id, "review_id": review_id, "event_type": event_type,
+        "actor": actor, "payload_json": payload_json, "previous_hash": previous_hash,
+    }
+    event_hash = hashlib.sha256(json.dumps(
+        envelope, sort_keys=True, separators=(",", ":"), ensure_ascii=False,
+    ).encode("utf-8")).hexdigest()
+    conn.execute("""INSERT INTO review_events
+        (event_id, review_id, event_type, actor, payload_json, previous_hash, event_hash)
+        VALUES (?, ?, ?, ?, ?, ?, ?)""",
+        (event_id, review_id, event_type, actor, payload_json, previous_hash, event_hash))
+
+
+def verify_audit_chain() -> bool:
+    conn = _connect()
+    try:
+        rows = conn.execute("SELECT * FROM review_events ORDER BY sequence ASC").fetchall()
+        previous_hash = "0" * 64
+        for row in rows:
+            envelope = {
+                "event_id": row["event_id"], "review_id": row["review_id"],
+                "event_type": row["event_type"], "actor": row["actor"],
+                "payload_json": row["payload_json"], "previous_hash": previous_hash,
+            }
+            expected = hashlib.sha256(json.dumps(
+                envelope, sort_keys=True, separators=(",", ":"), ensure_ascii=False,
+            ).encode("utf-8")).hexdigest()
+            if row["previous_hash"] != previous_hash or not secrets.compare_digest(row["event_hash"], expected):
+                return False
+            previous_hash = row["event_hash"]
+        return True
+    finally:
+        conn.close()
+
+
+def list_events(review_id: str) -> list[dict[str, Any]]:
+    if not verify_audit_chain():
+        raise ValueError("review audit chain integrity verification failed")
+    conn = _connect()
+    try:
+        rows = conn.execute(
+            "SELECT * FROM review_events WHERE review_id=? ORDER BY sequence ASC", (review_id,)
+        ).fetchall()
+        return [{
+            "event_id": row["event_id"], "review_id": row["review_id"],
+            "event_type": row["event_type"], "actor": row["actor"],
+            "payload": json.loads(row["payload_json"]), "previous_hash": row["previous_hash"],
+            "event_hash": row["event_hash"], "created_at": row["created_at"],
+        } for row in rows]
+    finally:
+        conn.close()
 
 
 def enqueue(payload: dict[str, Any]) -> dict[str, Any]:
@@ -73,6 +150,10 @@ def enqueue(payload: dict[str, Any]) -> dict[str, Any]:
              json.dumps(payload["rationale"], allow_nan=False),
              json.dumps(payload["context"], sort_keys=True, allow_nan=False)),
         )
+        _append_event(conn, review_id, "created", "operator", {
+            "case_id": payload["case_id"], "priority": payload["priority"],
+            "prediction": payload["prediction"],
+        })
         conn.commit()
     except sqlite3.IntegrityError as exc:
         conn.rollback()
@@ -118,6 +199,7 @@ def claim_case(review_id: str, reviewer_id: str) -> dict[str, Any]:
         if cursor.rowcount != 1:
             conn.rollback()
             raise ValueError("review case is missing or no longer pending")
+        _append_event(conn, review_id, "claimed", reviewer_id, {})
         conn.commit()
     finally:
         conn.close()
@@ -138,6 +220,9 @@ def complete_case(review_id: str, reviewer_id: str, reviewer_note: str,
         if cursor.rowcount != 1:
             conn.rollback()
             raise ValueError("case must be claimed by this reviewer before completion")
+        _append_event(conn, review_id, "completed", reviewer_id, {
+            "final_prediction": final_prediction, "ground_truth_recorded": ground_truth is not None,
+        })
         conn.commit()
     finally:
         conn.close()

@@ -6,7 +6,8 @@ This guide is for a reproducible local research demonstration. It uses the Wine 
 
 1. Explain the pipeline: base prediction -> reliability estimate -> risk = estimated error probability x harm -> hard action/budget constraints -> recommendation or abstention.
 2. Show the React dashboard loading the feature schema from the running API.
-3. Click **Load example wine sample** to populate a real red-wine feature row from the benchmark, then set the harm score and remaining budget and evaluate.
+3. Point out the live capability panel and explain that unavailable human-review/evidence paths are deliberately disabled.
+4. Click **Load example wine sample** to populate a real red-wine feature row from the benchmark, then set the harm score and remaining budget and evaluate.
 4. Explain the prediction, confidence, estimated error probability, baseline risk, recommended action, and rationale.
 5. Change the budget or disable alternate-model availability to show how feasibility constraints change the recommendation.
 6. Point out that recommendations are not executed. Human review and evidence acquisition are not operational integrations.

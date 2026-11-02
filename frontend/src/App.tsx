@@ -7,6 +7,18 @@ type Schema = {
   artifact_version: number;
 };
 
+type AlternateRun = {
+  alternate_models: Array<{
+    model_index: number;
+    model_type: string;
+    prediction: string;
+    confidence: number;
+    latency_ms: number;
+  }>;
+  total_latency_ms: number;
+  execution_status: string;
+};
+
 type Decision = {
   prediction: string;
   confidence: number;
@@ -49,6 +61,9 @@ function App() {
   const [alternate, setAlternate] = useState(true);
   const [alternateCost, setAlternateCost] = useState("1");
   const [decision, setDecision] = useState<Decision | null>(null);
+  const [lastSample, setLastSample] = useState<Record<string, number> | null>(null);
+  const [alternateRun, setAlternateRun] = useState<AlternateRun | null>(null);
+  const [alternateLoading, setAlternateLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("Connecting to the decision API…");
   const [error, setError] = useState("");
@@ -94,6 +109,8 @@ function App() {
       if (Object.values(sample).some((value) => !Number.isFinite(value))) {
         throw new Error("Enter a valid number for every model feature.");
       }
+      setLastSample(sample);
+      setAlternateRun(null);
       const response = await fetch(`${API_BASE}/v1/reliability/decisions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -112,6 +129,28 @@ function App() {
       setError(reason instanceof Error ? reason.message : "Unable to obtain a recommendation.");
     } finally {
       setLoading(false);
+    }
+  }
+
+
+  async function runAlternateModels() {
+    if (!lastSample) return;
+    setAlternateLoading(true);
+    setError("");
+    setAlternateRun(null);
+    try {
+      const response = await fetch(`${API_BASE}/v1/actions/alternate-model/execute`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sample: lastSample }),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.detail || `API returned HTTP ${response.status}`);
+      setAlternateRun(body as AlternateRun);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Unable to run alternate models.");
+    } finally {
+      setAlternateLoading(false);
     }
   }
 
@@ -268,6 +307,25 @@ function App() {
                   <ul>{decision.rationale.map((item, index) => <li key={index}>{item}</li>)}</ul>
                 </div>
                 <div className="result-foot">Scored using {decision.base_model_count} base models and the fitted reliability estimator.</div>
+                <div className="alternate-action">
+                  <button type="button" onClick={runAlternateModels} disabled={alternateLoading || !lastSample}>
+                    {alternateLoading ? "Running alternate models…" : "Run alternate models"}
+                  </button>
+                  <span>Explicit local inference · measured latency · no automatic model switch</span>
+                </div>
+                {alternateRun && (
+                  <div className="alternate-results">
+                    <span className="result-label">ALTERNATE MODEL OUTPUTS</span>
+                    {alternateRun.alternate_models.map((item) => (
+                      <div className="alternate-model" key={item.model_index}>
+                        <div><strong>{item.model_type}</strong><span>Model {item.model_index}</span></div>
+                        <strong>{item.prediction}</strong>
+                        <span>{percent(item.confidence)} confidence · {item.latency_ms.toFixed(2)} ms</span>
+                      </div>
+                    ))}
+                    <p>Total alternate inference: {alternateRun.total_latency_ms.toFixed(2)} ms. Outputs are evidence for review, not an automatic replacement of the primary prediction.</p>
+                  </div>
+                )}
               </div>
             )}
             {error && schema && <p className="error-message">{error}</p>}

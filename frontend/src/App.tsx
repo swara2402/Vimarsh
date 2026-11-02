@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import ReviewQueue from "./ReviewQueue";
+import ReviewQueue, { type ReviewDraft } from "./ReviewQueue";
 
 type Schema = {
   feature_names: string[];
@@ -74,6 +74,7 @@ function App() {
   const [alternate, setAlternate] = useState(true);
   const [alternateCost, setAlternateCost] = useState("1");
   const [decision, setDecision] = useState<Decision | null>(null);
+  const [reviewDraft, setReviewDraft] = useState<ReviewDraft | null>(null);
   const [lastSample, setLastSample] = useState<Record<string, number> | null>(null);
   const [alternateRun, setAlternateRun] = useState<AlternateRun | null>(null);
   const [alternateLoading, setAlternateLoading] = useState(false);
@@ -125,6 +126,7 @@ function App() {
 
   function invalidateDecision() {
     setDecision(null);
+    setReviewDraft(null);
     setLastSample(null);
     setAlternateRun(null);
   }
@@ -371,6 +373,22 @@ function App() {
                   <ul>{decision.rationale.map((item, index) => <li key={index}>{item}</li>)}</ul>
                 </div>
                 <div className="result-foot">Scored using {decision.base_model_count} base models and the fitted reliability estimator.</div>
+                <button
+                  className="sample-button"
+                  type="button"
+                  onClick={() => setReviewDraft({
+                    caseId: `decision-${Date.now()}`,
+                    prediction: decision.prediction,
+                    rationale: decision.rationale,
+                    context: {
+                      confidence: decision.confidence,
+                      estimated_error_probability: decision.estimated_error_probability,
+                      baseline_risk: decision.baseline_risk,
+                    },
+                  })}
+                >
+                  Prepare this decision for human review
+                </button>
                 <div className="alternate-action">
                   <button
                     type="button"
@@ -407,7 +425,7 @@ function App() {
         </div>
       </section>
 
-      <ReviewQueue />
+      <ReviewQueue suggestedCase={reviewDraft} />
 
       <footer>
         <span>VIMARSH · RESEARCH BUILD 0.1</span>

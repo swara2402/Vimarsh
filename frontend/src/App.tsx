@@ -96,6 +96,13 @@ function App() {
     [values],
   );
 
+  function invalidateDecision() {
+    setDecision(null);
+    setLastSample(null);
+    setAlternateRun(null);
+  }
+
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!schema) return;
@@ -214,14 +221,17 @@ function App() {
                   <button
                     className="sample-button"
                     type="button"
-                    onClick={() => setValues((current) => ({
-                      ...current,
-                      ...Object.fromEntries(
-                        schema.feature_names
-                          .filter((name) => WINE_SAMPLE[name] !== undefined)
-                          .map((name) => [name, WINE_SAMPLE[name]]),
-                      ),
-                    }))}
+                    onClick={() => {
+                      setValues((current) => ({
+                        ...current,
+                        ...Object.fromEntries(
+                          schema.feature_names
+                            .filter((name) => WINE_SAMPLE[name] !== undefined)
+                            .map((name) => [name, WINE_SAMPLE[name]]),
+                        ),
+                      }));
+                      invalidateDecision();
+                    }}
                   >
                     Load example wine sample
                   </button>
@@ -235,7 +245,10 @@ function App() {
                         step="any"
                         required
                         value={values[name] ?? ""}
-                        onChange={(event) => setValues((current) => ({ ...current, [name]: event.target.value }))}
+                        onChange={(event) => {
+                          setValues((current) => ({ ...current, [name]: event.target.value }));
+                          invalidateDecision();
+                        }}
                         placeholder="Enter value"
                       />
                     </label>
@@ -248,23 +261,23 @@ function App() {
                 <div className="context-grid">
                   <label className="field">
                     <span>Impact / harm score <small>0 to 10</small></span>
-                    <input type="number" min="0" max="10" step="any" required value={harm} onChange={(event) => setHarm(event.target.value)} />
+                    <input type="number" min="0" max="10" step="any" required value={harm} onChange={(event) => { setHarm(event.target.value); invalidateDecision(); }} />
                   </label>
                   <label className="field">
                     <span>Remaining action budget</span>
-                    <input type="number" min="0" step="any" required value={budget} onChange={(event) => setBudget(event.target.value)} />
+                    <input type="number" min="0" step="any" required value={budget} onChange={(event) => { setBudget(event.target.value); invalidateDecision(); }} />
                   </label>
                 </div>
                 <div className="action-option">
                   <label className="toggle-label">
-                    <input type="checkbox" checked={alternate} onChange={(event) => setAlternate(event.target.checked)} />
+                    <input type="checkbox" checked={alternate} onChange={(event) => { setAlternate(event.target.checked); invalidateDecision(); }} />
                     <span className="toggle-ui" />
                     <span><strong>Alternate model available</strong><small>Recommendation only. No model action is executed.</small></span>
                   </label>
                   {alternate && (
                     <label className="cost-field">
                       <span>Estimated cost</span>
-                      <input type="number" min="0" step="any" required value={alternateCost} onChange={(event) => setAlternateCost(event.target.value)} />
+                      <input type="number" min="0" step="any" required value={alternateCost} onChange={(event) => { setAlternateCost(event.target.value); invalidateDecision(); }} />
                     </label>
                   )}
                 </div>

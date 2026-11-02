@@ -170,6 +170,23 @@ function App() {
             </div>
             {schema && (
               <>
+                <div className="sample-row">
+                  <span>Use a known benchmark example to populate the feature fields.</span>
+                  <button
+                    className="sample-button"
+                    type="button"
+                    onClick={() => setValues((current) => ({
+                      ...current,
+                      ...Object.fromEntries(
+                        schema.feature_names
+                          .filter((name) => WINE_SAMPLE[name] !== undefined)
+                          .map((name) => [name, WINE_SAMPLE[name]]),
+                      ),
+                    }))}
+                  >
+                    Load example wine sample
+                  </button>
+                </div>
                 <div className="feature-grid">
                   {schema.feature_names.map((name) => (
                     <label className="field" key={name}>

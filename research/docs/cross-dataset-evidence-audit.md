@@ -65,10 +65,17 @@ its scenario assumptions separately.
   of learned reliability under the declared scenario. Its positive-net-benefit
   operating policy also did not outperform confidence. This negative result is
   part of the evidence, not an implementation defect to conceal.
-- Wine's prior action-engine metrics were not a validation-selected matched
-  coverage comparison. Milestone 47 adds that diagnostic; the resulting
-  per-seed metrics must be read from the CI artifact before updating any
-  numeric conclusion in this document.
+- Wine's validation-selected nominal 75% acceptance diagnostic reports mean
+  test coverage of 75.96% (population SD 1.37 percentage points) and accepted
+  error of 17.75% (SD 1.52 pp) for reliability-driven selection, versus
+  75.17% coverage (SD 1.11 pp) and 16.72% accepted error (SD 2.28 pp) for
+  confidence-only. Reliability-driven selection does not improve accepted
+  error in this run.
+- MAGIC's validation-selected nominal 75% acceptance diagnostic reports mean
+  test coverage of 75.67% (SD 1.06 pp) and accepted error of 7.24% (SD 0.43 pp)
+  for reliability-driven selection, versus 74.53% coverage (SD 0.99 pp) and
+  7.04% accepted error (SD 0.36 pp) for confidence-only. The result is close
+  and does not show a clear error advantage.
 - Three seeds and population standard deviations provide descriptive
   repeatability evidence, not inferential confidence intervals or proof of
   statistical significance.

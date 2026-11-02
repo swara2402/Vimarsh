@@ -186,6 +186,15 @@ export default function ReviewQueue({ suggestedCase }: ReviewQueueProps) {
     }
   }
 
+  function resumeClaim(item: ReviewCase) {
+    if (!reviewer || item.reviewer_id !== reviewer) return;
+    setSelected(item);
+    setFinalPrediction(item.final_prediction || item.prediction);
+    setNote(item.reviewer_note || "");
+    setGroundTruth(item.ground_truth || "");
+    setStatus(`Resumed claimed case ${item.case_id}. Complete the adjudication when ready.`);
+  }
+
   async function resolveDoi() {
     if (!evidenceToken || !evidenceCaseId || !doi.trim()) {
       setStatus("Enter the evidence token, case ID, and DOI first.");
@@ -294,7 +303,7 @@ export default function ReviewQueue({ suggestedCase }: ReviewQueueProps) {
           {cases.length === 0 ? <p className="review-empty">No {queueStatus} cases loaded.</p> : cases.map((item) => (
             <div className="review-case" key={item.review_id}>
               <div><strong>{item.case_id}</strong><span>Priority {item.priority} · {item.prediction}</span></div>
-              <div className="review-case-actions">{item.status === "pending" && <button type="button" disabled={!reviewer || busy} onClick={() => claim(item)}>Claim</button>}{["pending", "claimed"].includes(item.status) && <button type="button" disabled={busy} onClick={() => { setSelected(null); setCancelTarget(item); setCancelReason(""); }}>Cancel</button>}<button type="button" disabled={busy} onClick={() => inspectHistory(item)}>History</button><button type="button" disabled={busy} onClick={() => inspectEvidence(item)}>Evidence</button></div>
+              <div className="review-case-actions">{item.status === "pending" && <button type="button" disabled={!reviewer || busy} onClick={() => claim(item)}>Claim</button>}{item.status === "claimed" && item.reviewer_id === reviewer && <button type="button" disabled={busy} onClick={() => resumeClaim(item)}>Resume review</button>}{["pending", "claimed"].includes(item.status) && <button type="button" disabled={busy} onClick={() => { setSelected(null); setCancelTarget(item); setCancelReason(""); }}>Cancel</button>}<button type="button" disabled={busy} onClick={() => inspectHistory(item)}>History</button><button type="button" disabled={busy} onClick={() => inspectEvidence(item)}>Evidence</button></div>
             </div>
           ))}
         </div>

@@ -16,7 +16,12 @@ type ReviewCase = {
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8000").replace(/\/$/, "");
 
 export default function ReviewQueue() {
-  const [token, setToken] = useState("");\n  const [evidenceToken, setEvidenceToken] = useState("");\n  const [evidenceSource, setEvidenceSource] = useState("");\n  const [evidenceReference, setEvidenceReference] = useState("");\n  const [evidenceText, setEvidenceText] = useState("");\n  const [evidenceCaseId, setEvidenceCaseId] = useState("");
+  const [token, setToken] = useState("");
+  const [evidenceToken, setEvidenceToken] = useState("");
+  const [evidenceSource, setEvidenceSource] = useState("");
+  const [evidenceReference, setEvidenceReference] = useState("");
+  const [evidenceText, setEvidenceText] = useState("");
+  const [evidenceCaseId, setEvidenceCaseId] = useState("");
   const [reviewer, setReviewer] = useState("");
   const [caseId, setCaseId] = useState("");
   const [prediction, setPrediction] = useState("");
@@ -64,7 +69,8 @@ export default function ReviewQueue() {
       await request("/v1/reviews", "POST", {
         case_id: caseId,
         prediction,
-        rationale: rationale.split("\n").map((item) => item.trim()).filter(Boolean),
+        rationale: rationale.split("
+").map((item) => item.trim()).filter(Boolean),
         context: {},
         priority: Number(priority),
       });
@@ -90,6 +96,35 @@ export default function ReviewQueue() {
       await refresh();
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Unable to claim case.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function submitEvidence(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    try {
+      const response = await fetch(`${API_BASE}/v1/evidence`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Vimarsh-Evidence-Token": evidenceToken,
+        },
+        body: JSON.stringify({
+          case_id: evidenceCaseId,
+          source_name: evidenceSource,
+          source_reference: evidenceReference,
+          evidence_text: evidenceText,
+          metadata: {},
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || `HTTP ${response.status}`);
+      setEvidenceText("");
+      setStatus(`Evidence recorded · SHA-256 ${data.content_sha256.slice(0, 16)}…`);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Unable to record evidence.");
     } finally {
       setBusy(false);
     }
@@ -152,7 +187,22 @@ export default function ReviewQueue() {
           ))}
         </div>
       </div>
-      <form className="review-card review-evidence" onSubmit={submitEvidence}>\n        <h3>Attach operator-submitted evidence</h3>\n        <p className="review-empty">Records a source reference and evidence text with a SHA-256 digest. It does not independently verify or fetch the source.</p>\n        <div className="review-connect">\n          <label><span>Evidence intake token</span><input type="password" autoComplete="off" value={evidenceToken} onChange={(e) => setEvidenceToken(e.target.value)} /></label>\n          <label><span>Case ID</span><input required value={evidenceCaseId} onChange={(e) => setEvidenceCaseId(e.target.value)} /></label>\n        </div>\n        <div className="review-connect">\n          <label><span>Source name</span><input required value={evidenceSource} onChange={(e) => setEvidenceSource(e.target.value)} placeholder="Source / provider" /></label>\n          <label><span>Source reference</span><input required value={evidenceReference} onChange={(e) => setEvidenceReference(e.target.value)} placeholder="URL or reference identifier" /></label>\n        </div>\n        <label><span>Evidence content</span><textarea required rows={4} maxLength={20000} value={evidenceText} onChange={(e) => setEvidenceText(e.target.value)} /></label>\n        <button type="submit" disabled={!evidenceToken || busy}>Record evidence</button>\n      </form>\n\n      {selected && (
+      <form className="review-card review-evidence" onSubmit={submitEvidence}>
+        <h3>Attach operator-submitted evidence</h3>
+        <p className="review-empty">Records a source reference and evidence text with a SHA-256 digest. It does not independently verify or fetch the source.</p>
+        <div className="review-connect">
+          <label><span>Evidence intake token</span><input type="password" autoComplete="off" value={evidenceToken} onChange={(e) => setEvidenceToken(e.target.value)} /></label>
+          <label><span>Case ID</span><input required value={evidenceCaseId} onChange={(e) => setEvidenceCaseId(e.target.value)} /></label>
+        </div>
+        <div className="review-connect">
+          <label><span>Source name</span><input required value={evidenceSource} onChange={(e) => setEvidenceSource(e.target.value)} placeholder="Source / provider" /></label>
+          <label><span>Source reference</span><input required value={evidenceReference} onChange={(e) => setEvidenceReference(e.target.value)} placeholder="URL or reference identifier" /></label>
+        </div>
+        <label><span>Evidence content</span><textarea required rows={4} maxLength={20000} value={evidenceText} onChange={(e) => setEvidenceText(e.target.value)} /></label>
+        <button type="submit" disabled={!evidenceToken || busy}>Record evidence</button>
+      </form>
+
+      {selected && (
         <form className="review-card review-completion" onSubmit={complete}>
           <h3>Complete review · {selected.case_id}</h3>
           <label><span>Final prediction</span><input required value={finalPrediction} onChange={(e) => setFinalPrediction(e.target.value)} /></label>

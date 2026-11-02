@@ -98,6 +98,16 @@ The FastAPI service in `backend/` exposes health, baseline decision, reliability
 
 Milestone 63 hardens the protected API boundary with finite-number checks, bounded feature/context maps, non-negative costs and capacities, and duplicate/malformed batch rejection. Milestone 66 adds append-only linked completion events for pending action outcomes, preserving the original execution record and inherited propensity. Milestone 70 adds an optional transactional SQLite ledger and a verified, resumable migration from JSONL. See [Milestone 66 outcome lifecycle](research/docs/milestone66-linked-outcome-completion.md). See [Milestone 62 implementation notes](research/docs/milestone62-protected-outcome-allocation-api.md) and [Milestone 63 validation notes](research/docs/milestone63-strict-api-validation.md). Human review and additional evidence still require operational providers and real outcome collection. The contextual benefit lower-bound is a diagnostic, not a guaranteed confidence bound or causal estimate. Milestone 68 adds a local Docker Compose deployment with API health gating and production-built dashboard containers. See [container demo instructions](deploy/container-demo.md), [Backend API](backend/README.md), [Dashboard](frontend/README.md), and [Demo-day runbook](docs/demo-day-runbook.md). Milestone 67 adds live capability discovery to the dashboard and disables unavailable action paths; Milestone 69 adds diagnostics that explain estimator abstentions without weakening the decision gate. The [research evidence summary](docs/research-evidence-summary-2026-11-02.md) consolidates the multi-dataset, multi-seed findings, including negative and mixed results, and the [five-minute presentation script](docs/demo-presentation-script.md) gives a defensible demo narrative.
 
+## Quick local demo
+
+On macOS/Linux with Python 3 and Docker Desktop installed, prepare the Wine Quality model bundle and launch the containerized dashboard with:
+
+```bash
+bash scripts/vimarsh-demo.sh demo
+```
+
+The first run downloads the benchmark data and trains the trusted bundle, so allow several minutes. The dashboard opens at http://localhost:8080. See the [demo-day runbook](docs/demo-day-runbook.md) for the manual setup, demo flow, troubleshooting, and research-claim boundaries.
+
 ## Getting started
 
 1. Install the dependencies listed in [research/requirements.txt](research/requirements.txt).

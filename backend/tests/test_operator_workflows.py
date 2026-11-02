@@ -193,6 +193,31 @@ def test_evidence_intake_is_append_only_and_digest_is_verified(monkeypatch, tmp_
             pass
 
 
+def test_operator_requests_reject_non_finite_context_and_metadata(monkeypatch, tmp_path):
+    configure_operator_workflows(monkeypatch, tmp_path)
+    review = client.post(
+        "/v1/reviews", headers=operator_headers(),
+        json={
+            "case_id": "nonfinite-review",
+            "prediction": "class-a",
+            "context": {"uncertainty": float("inf")},
+        },
+    )
+    assert review.status_code == 422
+
+    evidence = client.post(
+        "/v1/evidence", headers=evidence_headers(),
+        json={
+            "case_id": "nonfinite-evidence",
+            "source_name": "Example",
+            "source_reference": "manual",
+            "evidence_text": "Example text",
+            "metadata": {"score": float("nan")},
+        },
+    )
+    assert evidence.status_code == 422
+
+
 def test_operator_workflow_capabilities_reflect_server_configuration(monkeypatch, tmp_path):
     configure_operator_workflows(monkeypatch, tmp_path)
     response = client.get("/v1/actions/capabilities")

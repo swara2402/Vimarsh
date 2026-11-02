@@ -3,7 +3,7 @@
 ## Delivered implementation
 
 - Added strict request contracts for action outcomes, contextual benefit estimation, and batch allocation.
-- Exposed protected research endpoints for append-only outcome capture, aggregate ledger status, context-conditioned action-benefit estimation, and constrained allocation.
+- Exposed protected research endpoints for explicit alternate-model inference, append-only outcome capture, aggregate ledger status, context-conditioned action-benefit estimation, and constrained allocation.
 - Reused the existing tested research estimator, hash-chained outcome ledger, and SciPy MILP allocator rather than duplicating their algorithms.
 - Required a server-side research token; endpoints are disabled by default.
 - Kept retrospective ground truth inside the outcome ledger and out of policy context.
@@ -11,12 +11,12 @@
 
 ## Data flow
 
-1. An operator submits a real action outcome to the protected ledger after it is completed.
-2. The ledger validates action, status, propensity, assignment, context, costs, and retrospective truth rules, then appends a hash-chained record.
-3. The estimator reads only completed records with known propensities and compares outcomes near the requested policy-time context.
-4. The batch endpoint generates per-case/action diagnostics and passes only positive diagnostic candidates to the constrained allocator.
-5. The allocator applies one-action-per-case, shared-budget, and optional capacity constraints.
-6. The response is explicitly a research recommendation. No external action is executed.
+1. An operator may explicitly run non-primary models already present in the trusted local bundle. The API reports their predictions and measured inference latency, then records a pending outcome event.\n2. An operator submits a real action outcome to the protected ledger after it is completed.
+3. The ledger validates action, status, propensity, assignment, context, costs, and retrospective truth rules, then appends a hash-chained record.
+4. The estimator reads only completed records with known propensities and compares outcomes near the requested policy-time context.
+5. The batch endpoint generates per-case/action diagnostics and passes only positive diagnostic candidates to the constrained allocator.
+6. The allocator applies one-action-per-case, shared-budget, and optional capacity constraints.
+7. Allocation responses are research recommendations. Human review and evidence actions are not executed.
 
 ## Safety and interpretation
 

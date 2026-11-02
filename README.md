@@ -94,7 +94,9 @@ The integrated verification-engine workflow remains research-stage and runs on W
 
 ## Application implementation status
 
-The FastAPI service in `backend/` exposes health, baseline decision, reliability schema, and reliability-driven decision endpoints. The React + TypeScript dashboard in `frontend/` connects to the API and renders the model feature schema and recommendation results. Both are research-stage and recommendation-only. See [Backend API](backend/README.md), [Dashboard](frontend/README.md), and the [Demo-day runbook](docs/demo-day-runbook.md) for setup and presentation instructions.
+The FastAPI service in `backend/` exposes health, baseline decision, reliability schema, and reliability-driven decision endpoints. The React + TypeScript dashboard in `frontend/` connects to the API and renders the model feature schema and recommendation results. The reliability decision endpoint remains recommendation-only. The dashboard also supports an explicit local alternate-model inference action, showing each alternate prediction and measured inference latency without automatically replacing the primary prediction. The protected research API records validated action outcomes, estimates context-conditioned action benefit from completed propensity-logged records, and recommends batch allocations under shared budgets and action capacities. It is disabled until a server-side research token is configured; its allocation output never executes selected actions.
+
+Human review and additional evidence still require operational providers and real outcome collection. The contextual benefit lower-bound is a diagnostic, not a guaranteed confidence bound or causal estimate. See [Backend API](backend/README.md), [Dashboard](frontend/README.md), [Demo-day runbook](docs/demo-day-runbook.md), and [Milestone 62 implementation notes](research/docs/milestone62-protected-outcome-allocation-api.md).
 
 ## Getting started
 

@@ -13,6 +13,11 @@ from uuid import uuid4
 GENESIS_HASH = "0" * 64
 ALLOWED_ACTIONS = {"alternate_model", "human_review", "additional_evidence"}
 ALLOWED_STATUSES = {"pending", "completed", "failed", "not_applicable"}
+_COMPLETION_FIELDS = {
+    "event_id", "parent_event_id", "occurred_at", "status",
+    "final_prediction", "ground_truth", "observed_cost", "latency_ms",
+    "provider_version",
+}
 
 def _finite(value: Any, name: str, minimum: float | None = None) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
@@ -139,6 +144,9 @@ class ActionOutcomeLedger:
                 raise ValueError("parent_event_id does not reference an existing ledger event")
             if parent["status"] != "pending" or row["status"] != "completed":
                 raise ValueError("linked completion must reference a pending event and be completed")
+            for field, value in parent.items():
+                if field not in _COMPLETION_FIELDS and row.get(field) != value:
+                    raise ValueError("linked completion must preserve the original execution context")
             if any(item.get("parent_event_id") == parent_event_id for item in existing):
                 raise ValueError("parent event already has a completion record")
         previous = self._digest(existing[-1]) if existing else GENESIS_HASH

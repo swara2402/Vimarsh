@@ -132,6 +132,11 @@ def list_events(review_id: str) -> list[dict[str, Any]]:
         conn.execute("BEGIN")
         if not _verify_audit_chain(conn):
             raise ValueError("review audit chain integrity verification failed")
+        exists = conn.execute(
+            "SELECT 1 FROM review_cases WHERE review_id = ?", (review_id,)
+        ).fetchone()
+        if exists is None:
+            raise LookupError("review case not found")
         rows = conn.execute(
             "SELECT * FROM review_events WHERE review_id=? ORDER BY sequence ASC", (review_id,)
         ).fetchall()

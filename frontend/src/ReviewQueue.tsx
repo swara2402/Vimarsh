@@ -1,4 +1,13 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
+
+export type ReviewDraft = {
+  caseId: string;
+  prediction: string;
+  rationale: string[];
+  context: Record<string, number>;
+};
+
+type ReviewQueueProps = { suggestedCase?: ReviewDraft | null };
 
 type ReviewCase = {
   review_id: string;
@@ -18,7 +27,7 @@ type EvidenceItem = { evidence_id: string; source_name: string; source_reference
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8000").replace(/\/$/, "");
 
-export default function ReviewQueue() {
+export default function ReviewQueue({ suggestedCase }: ReviewQueueProps) {
   const [token, setToken] = useState("");
   const [evidenceToken, setEvidenceToken] = useState("");
   const [evidenceSource, setEvidenceSource] = useState("");
@@ -31,6 +40,7 @@ export default function ReviewQueue() {
   const [prediction, setPrediction] = useState("");
   const [rationale, setRationale] = useState("");
   const [priority, setPriority] = useState("2");
+  const [context, setContext] = useState<Record<string, number>>({});
   const [note, setNote] = useState("");
   const [finalPrediction, setFinalPrediction] = useState("");
   const [groundTruth, setGroundTruth] = useState("");
@@ -43,6 +53,15 @@ export default function ReviewQueue() {
   const [cancelReason, setCancelReason] = useState("");
   const [status, setStatus] = useState("Enter the reviewer token to connect.");
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!suggestedCase) return;
+    setCaseId(suggestedCase.caseId);
+    setPrediction(suggestedCase.prediction);
+    setRationale(suggestedCase.rationale.join(String.fromCharCode(10)));
+    setContext(suggestedCase.context);
+    setStatus("Decision prepared for review. Confirm the case details and submit it to the queue.");
+  }, [suggestedCase]);
 
   async function request(path: string, method = "GET", body?: unknown) {
     const response = await fetch(`${API_BASE}${path}`, {
@@ -135,7 +154,7 @@ export default function ReviewQueue() {
         case_id: caseId,
         prediction,
         rationale: rationale.split(String.fromCharCode(10)).map((item) => item.trim()).filter(Boolean),
-        context: {},
+        context,
         priority: Number(priority),
       });
       setCaseId("");

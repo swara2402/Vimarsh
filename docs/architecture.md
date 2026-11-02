@@ -43,7 +43,7 @@ When an operator configures `VIMARSH_RESEARCH_API_TOKEN`, protected endpoints su
 The React interface loads the runtime feature schema and live action capabilities, accepts a tabular sample and decision context, displays the recommendation and rationale, and can explicitly run local alternate models. The alternate-model control fails closed when capability discovery does not confirm an available local model. Human-review and additional-evidence paths are shown as unavailable until providers exist. It is a local research-preview interface, not a production decision console.
 
 ### 7. Local containerized demo
-Docker Compose builds a FastAPI container and a production React/Nginx dashboard. The dashboard starts after the API health check passes. A trusted model bundle is mounted read-only from the host, while the local outcome ledger uses a persistent named volume. This is a reproducible local demonstration, not a public production deployment.
+Docker Compose builds a FastAPI container and a production React/Nginx dashboard. The dashboard starts after the API health check passes. A trusted model bundle is mounted read-only from the host, while the local outcome ledger uses a persistent named volume. API and dashboard ports bind to loopback only. This is a reproducible local demonstration, not a public production deployment.
 
 ## Safety and evaluation invariants
 

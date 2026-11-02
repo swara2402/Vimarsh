@@ -75,7 +75,7 @@ class ReliabilityBundleRuntime:
         primary = self.base_models[self.primary_model_index]
         primary_probabilities = probability_matrices[self.primary_model_index][0]
         classes = getattr(primary, "classes_", np.arange(len(primary_probabilities)))
-        prediction = primary.classes_[int(np.argmax(primary_probabilities))]
+        prediction = classes[int(np.argmax(primary_probabilities))]
         return {
             "prediction": str(prediction),
             "confidence": float(np.max(primary_probabilities)),

@@ -132,6 +132,15 @@ class ActionOutcomeLedger:
         existing = self.read_verified()
         if any(item["event_id"] == row["event_id"] for item in existing):
             raise ValueError("event_id already exists")
+        parent_event_id = row.get("parent_event_id")
+        if parent_event_id is not None:
+            parent = next((item for item in existing if item["event_id"] == parent_event_id), None)
+            if parent is None:
+                raise ValueError("parent_event_id does not reference an existing ledger event")
+            if parent["status"] != "pending" or row["status"] != "completed":
+                raise ValueError("linked completion must reference a pending event and be completed")
+            if any(item.get("parent_event_id") == parent_event_id for item in existing):
+                raise ValueError("parent event already has a completion record")
         previous = self._digest(existing[-1]) if existing else GENESIS_HASH
         envelope = {"previous_hash": previous, "record_hash": self._digest(row), "record": row}
         encoded = (json.dumps(envelope, sort_keys=True, allow_nan=False) + "\n").encode("utf-8")

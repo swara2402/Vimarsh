@@ -97,3 +97,49 @@ def test_sqlite_ledger_preserves_pending_records_outside_analysis_set(tmp_path):
 
     assert len(ledger.read_verified()) == 1
     assert ledger.analysis_ready_records() == []
+
+
+def test_jsonl_to_sqlite_migration_verifies_and_is_resumable(tmp_path):
+    from src.verification.ledger_migration import migrate_jsonl_to_sqlite
+    from src.verification.action_outcome_ledger import ActionOutcomeLedger
+
+    source = ActionOutcomeLedger(tmp_path / "legacy.jsonl")
+    source.append(record(101))
+    source.append(record(102))
+    destination = tmp_path / "migrated.sqlite3"
+
+    first = migrate_jsonl_to_sqlite(source.path, destination)
+    second = migrate_jsonl_to_sqlite(source.path, destination)
+
+    assert first["migrated_records"] == 2
+    assert first["destination_integrity"] == "verified"
+    assert second["migrated_records"] == 0
+    assert second["already_present"] == 2
+    assert SQLiteActionOutcomeLedger(destination).read_verified() == source.read_verified()
+    assert source.path.exists()
+
+
+def test_jsonl_to_sqlite_migration_refuses_divergent_destination(tmp_path):
+    from src.verification.ledger_migration import migrate_jsonl_to_sqlite
+    from src.verification.action_outcome_ledger import ActionOutcomeLedger
+
+    source = ActionOutcomeLedger(tmp_path / "legacy.jsonl")
+    source.append(record(201))
+    destination = tmp_path / "migrated.sqlite3"
+    SQLiteActionOutcomeLedger(destination).append(record(999))
+
+    with pytest.raises(ValueError, match="exact prefix"):
+        migrate_jsonl_to_sqlite(source.path, destination)
+
+
+def test_jsonl_to_sqlite_migration_rejects_tampered_source(tmp_path):
+    from src.verification.ledger_migration import migrate_jsonl_to_sqlite
+    from src.verification.action_outcome_ledger import ActionOutcomeLedger
+
+    source_path = tmp_path / "legacy.jsonl"
+    source = ActionOutcomeLedger(source_path)
+    source.append(record(301))
+    source_path.write_text(source_path.read_text().replace('"uncertainty":0.4', '"uncertainty":0.9'))
+
+    with pytest.raises(ValueError, match="integrity"):
+        migrate_jsonl_to_sqlite(source_path, tmp_path / "migrated.sqlite3")

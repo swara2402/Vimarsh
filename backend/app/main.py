@@ -379,6 +379,8 @@ def get_review_events(review_id: str):
     """Return audit events after verifying the global hash chain."""
     try:
         return {"events": list_review_events(review_id), "integrity": "verified"}
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail="Review case not found") from exc
     except ValueError as exc:
         raise HTTPException(status_code=409, detail="Review audit integrity verification failed") from exc
 

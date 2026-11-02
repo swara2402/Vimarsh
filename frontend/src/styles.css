@@ -177,3 +177,9 @@ footer { min-height: 65px; border-top: 1px solid #e9e8f0; display: flex; align-i
 .review-evidence .review-connect label { min-width: 0; }
 .review-evidence .review-connect input { min-width: 0; }
 .review-evidence textarea { resize: vertical; }
+
+.review-card select { width: 100%; border: 1px solid #e5e2ec; border-radius: 6px; padding: 10px; background: #fff; color: #49455e; font: 11px Manrope, sans-serif; }
+.review-case-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.review-case-actions button { padding: 7px 9px; }
+.review-case code { color: #817b98; font-size: 9px; overflow-wrap: anywhere; }
+.review-case p { margin: 5px 0 0; color: #77738d; font-size: 10px; line-height: 1.5; }

@@ -160,7 +160,9 @@ export default function ReviewQueue({ suggestedCase }: ReviewQueueProps) {
       setCaseId("");
       setPrediction("");
       setRationale("");
-      await refresh();
+      setContext({});
+      setQueueStatus("pending");
+      await refresh("pending");
       setStatus("Case added to the protected review queue.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Unable to enqueue case.");

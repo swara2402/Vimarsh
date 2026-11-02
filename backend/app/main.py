@@ -3,7 +3,7 @@ import os
 from functools import lru_cache
 from uuid import uuid4
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from .policy import PolicyConfig, select_decision
@@ -116,3 +116,45 @@ def create_reliability_decision(request: ReliabilityDecisionRequest):
         eligible_actions=eligible,
         base_model_count=scored["base_model_count"],
     )
+
+
+@app.post("/v1/research/outcomes", dependencies=[Depends(require_research_token)])
+def create_research_outcome(request: OutcomeCreateRequest):
+    """Append a validated action outcome to the protected, hash-chained research ledger."""
+    try:
+        row = append_outcome(request.model_dump())
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {
+        "event_id": row["event_id"],
+        "status": row["status"],
+        "ledger": "append_only_hash_chained",
+        "ground_truth_stored": row["ground_truth"] is not None,
+    }
+
+
+@app.get("/v1/research/outcomes/summary", dependencies=[Depends(require_research_token)])
+def research_outcome_summary():
+    """Return aggregate ledger status without exposing individual retrospective labels."""
+    try:
+        return outcome_summary()
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail="Outcome ledger integrity verification failed") from exc
+
+
+@app.post("/v1/research/action-benefit", dependencies=[Depends(require_research_token)])
+def research_action_benefit(request: BenefitEstimateRequest):
+    """Estimate context-conditioned action benefit from completed propensity-logged outcomes."""
+    try:
+        return estimate_benefit(request.model_dump())
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.post("/v1/research/allocate", dependencies=[Depends(require_research_token)])
+def research_allocate(request: AllocationRequest):
+    """Recommend a batch allocation from observed action outcomes; never execute actions."""
+    try:
+        return allocate_cases(request.model_dump())
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc

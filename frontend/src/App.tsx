@@ -22,6 +22,21 @@ type Decision = {
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8000").replace(/\/$/, "");
 
+const WINE_SAMPLE: Record<string, string> = {
+  "fixed acidity": "7.4",
+  "volatile acidity": "0.70",
+  "citric acid": "0.00",
+  "residual sugar": "1.9",
+  chlorides: "0.076",
+  "free sulfur dioxide": "11",
+  "total sulfur dioxide": "34",
+  density: "0.9978",
+  pH: "3.51",
+  sulphates: "0.56",
+  alcohol: "9.4",
+  wine_type: "0",
+};
+
 function percent(value: number) {
   return `${(value * 100).toFixed(1)}%`;
 }
@@ -155,6 +170,23 @@ function App() {
             </div>
             {schema && (
               <>
+                <div className="sample-row">
+                  <span>Use a known benchmark example to populate the feature fields.</span>
+                  <button
+                    className="sample-button"
+                    type="button"
+                    onClick={() => setValues((current) => ({
+                      ...current,
+                      ...Object.fromEntries(
+                        schema.feature_names
+                          .filter((name) => WINE_SAMPLE[name] !== undefined)
+                          .map((name) => [name, WINE_SAMPLE[name]]),
+                      ),
+                    }))}
+                  >
+                    Load example wine sample
+                  </button>
+                </div>
                 <div className="feature-grid">
                   {schema.feature_names.map((name) => (
                     <label className="field" key={name}>

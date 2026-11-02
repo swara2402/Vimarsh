@@ -133,3 +133,6 @@ The review queue supports enqueue, claim, and completion. Manual evidence intake
 ## Optional operator-workflow demonstration
 
 Set `VIMARSH_REVIEWER_API_TOKEN` and `VIMARSH_EVIDENCE_API_TOKEN` in the API environment before starting the demo. Keep both API and dashboard bound to loopback. In the operator workspace, create a sample review case, claim it using a reviewer label, and complete or cancel it. Open its history and show the audit-chain verification result. Add a short manual evidence record, or resolve a known DOI using the Crossref lookup, then inspect the stored record and digest status. Do not use real personal or confidential data. Reviewer labels are not authenticated identities, and DOI metadata retrieval is not source-claim validation.
+
+
+The DAV section also opens with saved 975-row VIMARSH verification snapshots. Switch Conservative, Balanced, and Coverage-oriented to show coverage/error/abstention trade-offs, action mix, and covered-case confusion matrices. The figures are historical evaluation artefacts dated 31 October 2026, not freshly trained metrics. See [Milestone 74](milestone74-data-analysis-visualisation.md).

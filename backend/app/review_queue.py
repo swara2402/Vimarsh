@@ -206,6 +206,29 @@ def claim_case(review_id: str, reviewer_id: str) -> dict[str, Any]:
     return get_case(review_id)
 
 
+def cancel_case(review_id: str, actor: str, reason: str) -> dict[str, Any]:
+    """Cancel a pending or claimed case while preserving its audit history."""
+    conn = _connect()
+    try:
+        conn.execute("BEGIN IMMEDIATE")
+        row = conn.execute(
+            "SELECT status FROM review_cases WHERE review_id = ?", (review_id,)
+        ).fetchone()
+        if row is None or row["status"] not in {"pending", "claimed"}:
+            conn.rollback()
+            raise ValueError("only pending or claimed cases can be cancelled")
+        conn.execute(
+            """UPDATE review_cases SET status='cancelled', updated_at=CURRENT_TIMESTAMP
+               WHERE review_id=?""",
+            (review_id,),
+        )
+        _append_event(conn, review_id, "cancelled", actor, {"reason": reason})
+        conn.commit()
+    finally:
+        conn.close()
+    return get_case(review_id)
+
+
 def complete_case(review_id: str, reviewer_id: str, reviewer_note: str,
                   final_prediction: str, ground_truth: str | None) -> dict[str, Any]:
     conn = _connect()

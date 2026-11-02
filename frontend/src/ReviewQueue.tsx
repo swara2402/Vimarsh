@@ -22,6 +22,7 @@ export default function ReviewQueue() {
   const [token, setToken] = useState("");
   const [evidenceToken, setEvidenceToken] = useState("");
   const [evidenceSource, setEvidenceSource] = useState("");
+  const [doi, setDoi] = useState("");
   const [evidenceReference, setEvidenceReference] = useState("");
   const [evidenceText, setEvidenceText] = useState("");
   const [evidenceCaseId, setEvidenceCaseId] = useState("");
@@ -140,6 +141,32 @@ export default function ReviewQueue() {
     }
   }
 
+  async function resolveDoi() {
+    if (!evidenceToken || !evidenceCaseId || !doi.trim()) {
+      setStatus("Enter the evidence token, case ID, and DOI first.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const response = await fetch(`${API_BASE}/v1/evidence/resolve-doi`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Vimarsh-Evidence-Token": evidenceToken,
+        },
+        body: JSON.stringify({ case_id: evidenceCaseId, doi: doi.trim() }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || `HTTP ${response.status}`);
+      setStatus(`Crossref metadata recorded · ${data.content_sha256.slice(0, 16)}…`);
+      setDoi("");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Unable to resolve DOI metadata.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function submitEvidence(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
@@ -239,6 +266,10 @@ export default function ReviewQueue() {
           <label><span>Source reference</span><input required value={evidenceReference} onChange={(e) => setEvidenceReference(e.target.value)} placeholder="URL or reference identifier" /></label>
         </div>
         <label><span>Evidence content</span><textarea required rows={4} maxLength={20000} value={evidenceText} onChange={(e) => setEvidenceText(e.target.value)} /></label>
+        <div className="review-connect">
+          <label><span>Optional DOI lookup (Crossref metadata)</span><input value={doi} onChange={(e) => setDoi(e.target.value)} placeholder="10.xxxx/example" /></label>
+          <button type="button" disabled={!evidenceToken || busy} onClick={resolveDoi}>Retrieve DOI metadata</button>
+        </div>
         <button type="submit" disabled={!evidenceToken || busy}>Record evidence</button>
       </form>
 

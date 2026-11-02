@@ -18,7 +18,9 @@ def _finite(value: Any, name: str, minimum: float | None = None) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise ValueError(f"{name} must be a finite number")
     result = float(value)
-    if not math.isfinite(result) or (minimum is not None and result < minimum):
+    if not math.isfinite(result):
+        raise ValueError(f"{name} must be finite")
+    if minimum is not None and result < minimum:
         raise ValueError(f"{name} is outside its permitted range")
     return result
 

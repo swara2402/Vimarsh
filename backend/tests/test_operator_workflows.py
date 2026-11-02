@@ -201,6 +201,17 @@ def test_evidence_intake_is_append_only_and_digest_is_verified(monkeypatch, tmp_
             assert False, "append-only trigger should reject evidence updates"
         except sqlite3.DatabaseError:
             pass
+        connection.execute("DROP TRIGGER evidence_no_update")
+        connection.execute(
+            "UPDATE evidence_items SET evidence_text='tampered' WHERE evidence_id=?",
+            (created.json()["evidence_id"],),
+        )
+
+    tampered = client.get(
+        "/v1/evidence/evidence-case-1", headers=evidence_headers()
+    )
+    assert tampered.status_code == 200
+    assert tampered.json()["evidence"][0]["integrity_valid"] is False
 
 
 def test_operator_requests_reject_non_finite_context_and_metadata(monkeypatch, tmp_path):

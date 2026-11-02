@@ -13,6 +13,10 @@ This guide is for a reproducible local research demonstration. It uses the Wine 
 7. Point out that recommendations are not executed. Human review and evidence acquisition are not operational integrations.
 8. Use the [research evidence summary](research-evidence-summary-2026-11-02.md) for benchmark results and limitations.
 
+## Optional containerized startup
+
+If Docker is available, use the [containerized demo guide](../deploy/container-demo.md) to build and start the API and production dashboard with one Compose command. The trusted model bundle must still be generated locally first. This is a local demo stack, not a public production deployment.
+
 ## Prepare the model bundle
 
 From the repository root:

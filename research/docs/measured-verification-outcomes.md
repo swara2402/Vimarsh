@@ -24,6 +24,11 @@ alternate-model action.
 - Both models and all preprocessing are fitted on training data only.
 - Routing masks use predictions/probabilities only. Test labels are supplied
   only to the retrospective outcome auditor.
+- Both models are fitted on training data and predictions from both are
+  generated for every test row before the 15% action masks are evaluated.
+  Consequently this is an offline paired substitution/counterfactual benchmark,
+  not a compute-saving routing implementation. It does not measure the cost of
+  running the alternate model only on selected rows.
 
 ## Reported outcomes
 
@@ -41,8 +46,11 @@ model substitutions visible rather than counting only successful changes.
 ## Interpretation limits
 
 This is an offline, paired benchmark of an executed alternate classifier. The
-cost of 1.5 is a declared experiment unit, not measured currency or a validated
-operational cost. The random matched-budget policy is a reference, not a
+alternate model is run on all held-out test rows to construct the paired
+candidate predictions; the selected 15% mask is applied only for retrospective
+substitution accounting. Therefore the experiment does not establish reduced
+inference compute or latency. The cost of 1.5 is a declared experiment unit,
+not measured currency or a validated operational cost. The random matched-budget policy is a reference, not a
 deployable strategy. The experiment does not measure human review quality,
 additional-evidence value, reviewer latency, causal deployment impact, or
 safety. The existing ActionEffectiveness configuration remains a simulation

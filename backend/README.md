@@ -51,6 +51,7 @@ export VIMARSH_OUTCOME_LEDGER=research/data/action_outcomes.jsonl
 Send the token in the `X-Vimarsh-Research-Token` header. If the token is not configured, research endpoints return HTTP 503. Missing or incorrect tokens receive HTTP 401. Do not place this token in frontend code, commit it, or expose it in browser storage.
 
 - `POST /v1/research/execute/alternate-model`: explicitly run every non-primary model in the trusted local bundle, report each prediction/confidence and measured inference latency, and append a pending outcome record. This is an actual local inference action, not merely a recommendation. It does not estimate monetary/compute cost or choose a winning prediction.
+- `POST /v1/research/outcomes/{event_id}/complete`: append a completed child event for an existing pending execution. The original pending event is never edited; duplicate completion is rejected.
 - `GET /v1/research/outcomes/summary`: return aggregate counts after verifying the full ledger. It does not return individual records or labels.
 - `POST /v1/research/action-benefit`: estimate context-conditioned action benefit from completed, propensity-logged records.
 - `POST /v1/research/allocate`: estimate benefit for each requested case/action pair and pass only positive diagnostic candidates to the constrained allocator.
@@ -86,10 +87,14 @@ curl -X POST http://localhost:8000/v1/research/outcomes \
 
 Only submit a completed record after the outcome and retrospective label are genuinely observed and quality-checked. Do not fabricate propensity, randomization, provider, cost, or latency metadata.
 
+For an execution already recorded as pending, use the linked completion route. It appends a new child event, preserves the original pending record, and inherits the original propensity rather than allowing the completion request to invent one. See [Milestone 66](../research/docs/milestone66-linked-outcome-completion.md).
+
+To use transactional SQLite storage, set `VIMARSH_OUTCOME_LEDGER_BACKEND=sqlite` and configure `VIMARSH_OUTCOME_LEDGER=research/data/action_outcomes.sqlite3`. Migrate an existing JSONL history from the `research/` directory with `python -m src.verification.ledger_migration --source data/action_outcomes.jsonl --destination data/action_outcomes.sqlite3`. The migration verifies both histories, is resumable, and never deletes the source. See [Milestone 70](../research/docs/milestone70-transactional-outcome-ledger.md).
+
 ## Ledger and research limitations
 
-- The local JSONL ledger is append-only by application convention and tamper-evident through a SHA-256 hash chain. It is not a distributed database or a substitute for access-controlled backups.
-- Concurrent multi-process writers are not coordinated. Use a single API worker for this local ledger; use a transactional database before multi-worker deployment.
+- The default JSONL ledger is append-only by application convention and tamper-evident through a SHA-256 hash chain. Keep it to a single API worker.
+- An optional SQLite backend provides transactional local multi-process writes, unique event IDs and parent-completion linkage, append-only triggers, and the same hash-chain verification. Select it with `VIMARSH_OUTCOME_LEDGER_BACKEND=sqlite` and point `VIMARSH_OUTCOME_LEDGER` at a `.sqlite3` file. SQLite is not a distributed database or a substitute for access-controlled backups.
 - The contextual estimator's lower-bound output is a diagnostic, not a finite-sample guarantee or causal effect estimate.
 - Propensity adjustment does not remove unmeasured confounding or repair incorrect logging.
 - The dashboard's `/v1/actions/alternate-model/execute` route is an explicit local inference action. It runs only models already present in the trusted local bundle and returns outputs plus measured inference latency; it does not record ground truth or automatically select a final prediction. The protected `/v1/research/execute/alternate-model` route additionally appends a pending event. Submit a separate completed outcome record after a final result and ground truth are genuinely available. Reuse the returned `case_id`, baseline prediction, and `context_for_outcome_completion` values when recording that outcome. Do not invent a propensity. A deterministic/manual run without a defensible assignment propensity is not eligible for the propensity-adjusted estimator.

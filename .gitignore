@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 .venv/
+.venv-demo/
 venv/
 .env
 .env.*
@@ -23,6 +24,8 @@ datasets/
 artifacts/
 mlruns/
 *.parquet
+*.sqlite3
+*.db
 *.pkl
 *.joblib
 

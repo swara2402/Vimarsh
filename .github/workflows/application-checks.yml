@@ -5,6 +5,8 @@ on:
     paths:
       - "backend/**"
       - "frontend/**"
+      - "scripts/**"
+      - "research/requirements-demo.txt"
       - ".github/workflows/application-checks.yml"
   push:
     branches:
@@ -12,6 +14,8 @@ on:
     paths:
       - "backend/**"
       - "frontend/**"
+      - "scripts/**"
+      - "research/requirements-demo.txt"
       - ".github/workflows/application-checks.yml"
 
 jobs:
@@ -50,3 +54,12 @@ jobs:
         run: npm install
       - name: Type-check and build dashboard
         run: npm run build
+
+
+  demo-script-syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Validate demo helper syntax
+        run: bash -n scripts/vimarsh-demo.sh

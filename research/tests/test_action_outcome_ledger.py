@@ -64,3 +64,40 @@ def test_tampering_is_detected(tmp_path):
 def test_invalid_numeric_values_are_rejected(tmp_path):
     with pytest.raises(ValueError, match="finite"):
         ActionOutcomeLedger(tmp_path / "events.jsonl").append(record(latency_ms=float("nan")))
+
+
+
+def test_linked_completion_must_preserve_original_propensity_and_context(tmp_path):
+    ledger = ActionOutcomeLedger(tmp_path / "linked-events.jsonl")
+    parent = record(
+        event_id="pending-parent",
+        status="pending",
+        final_prediction=None,
+        ground_truth=None,
+        observed_cost=None,
+        latency_ms=None,
+        provider_version=None,
+    )
+    ledger.append(parent)
+
+    altered_child = record(
+        event_id="completed-child",
+        parent_event_id="pending-parent",
+        propensity=0.9,
+        final_prediction=1,
+        ground_truth=1,
+    )
+    with pytest.raises(ValueError, match="preserve the original execution context"):
+        ledger.append(altered_child)
+
+    valid_child = record(
+        event_id="valid-child",
+        parent_event_id="pending-parent",
+        final_prediction=1,
+        ground_truth=1,
+    )
+    ledger.append(valid_child)
+    rows = ledger.read_verified()
+    assert rows[0]["status"] == "pending"
+    assert rows[1]["parent_event_id"] == "pending-parent"
+    assert rows[1]["propensity"] == rows[0]["propensity"]

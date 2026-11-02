@@ -8,12 +8,13 @@ services:
       VIMARSH_RELIABILITY_BUNDLE: /app/research/models/reliability/wine_quality_reliability_bundle.joblib
       VIMARSH_CORS_ORIGINS: http://localhost:8080
       VIMARSH_RESEARCH_API_TOKEN: ${VIMARSH_RESEARCH_API_TOKEN:-}
-      VIMARSH_OUTCOME_LEDGER: /app/research/data/action_outcomes.jsonl
+      VIMARSH_OUTCOME_LEDGER_BACKEND: ${VIMARSH_OUTCOME_LEDGER_BACKEND:-jsonl}
+      VIMARSH_OUTCOME_LEDGER: ${VIMARSH_OUTCOME_LEDGER:-/app/research/data/action_outcomes.jsonl}
     volumes:
       - ${VIMARSH_MODEL_DIR:-./research/models/reliability}:/app/research/models/reliability:ro
       - vimarsh-outcomes:/app/research/data
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
       interval: 20s
@@ -32,7 +33,7 @@ services:
       api:
         condition: service_healthy
     ports:
-      - "8080:80"
+      - "127.0.0.1:8080:80"
 
 volumes:
   vimarsh-outcomes:

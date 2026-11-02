@@ -15,12 +15,12 @@ from .schemas import (
     ReliabilityDecisionResponse, DecisionAction,
 )
 from .research_schemas import (
-    OutcomeCreateRequest, BenefitEstimateRequest, AllocationRequest,
+    OutcomeCreateRequest, OutcomeCompletionRequest, BenefitEstimateRequest, AllocationRequest,
     AlternateModelExecutionRequest, AlternateModelRunRequest,
 )
 from .research_services import (
     require_research_token, append_outcome, outcome_summary,
-    estimate_benefit, allocate_cases,
+    estimate_benefit, allocate_cases, complete_pending_outcome,
 )
 
 app = FastAPI(
@@ -175,6 +175,23 @@ def create_research_outcome(request: OutcomeCreateRequest):
         "status": row["status"],
         "ledger": "append_only_hash_chained",
         "ground_truth_stored": row["ground_truth"] is not None,
+    }
+
+
+@app.post("/v1/research/outcomes/{event_id}/complete", dependencies=[Depends(require_research_token)])
+def complete_research_outcome(event_id: str, request: OutcomeCompletionRequest):
+    """Append a linked completed event without mutating its original pending execution."""
+    try:
+        row = complete_pending_outcome(event_id, request.model_dump())
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return {
+        "event_id": row["event_id"],
+        "parent_event_id": row["parent_event_id"],
+        "case_id": row["case_id"],
+        "status": row["status"],
+        "analysis_eligible": row["propensity"] is not None,
+        "ledger": "append_only_hash_chained",
     }
 
 

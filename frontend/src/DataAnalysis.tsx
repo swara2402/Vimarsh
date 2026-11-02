@@ -5,7 +5,7 @@ type Row = Record<string, Cell>;
 type NumericSummary = { name: string; count: number; missing: number; mean: number; median: number; min: number; max: number; std: number };
 
 function parseCSV(source: string): { headers: string[]; rows: Row[] } {
-  const records: string[][] = [];
+  source = source.replace(/^\\uFEFF/, "");\n  const records: string[][] = [];
   let row: string[] = [], cell = "", quoted = false;
   for (let i = 0; i < source.length; i += 1) {
     const ch = source[i];
@@ -44,7 +44,7 @@ function correlation(a: number[], b: number[]) {
   const numerator = a.slice(0, n).reduce((s, v, i) => s + (v - ma) * (b[i] - mb), 0);
   const da = Math.sqrt(a.slice(0, n).reduce((s, v) => s + (v - ma) ** 2, 0));
   const db = Math.sqrt(b.slice(0, n).reduce((s, v) => s + (v - mb) ** 2, 0));
-  return da && db ? numerator / (da * db) : 0;
+  return da && db ? numerator / (da * db) : null;
 }
 function fmt(value: number) { return Number.isFinite(value) ? value.toFixed(2) : "N/A"; }
 
@@ -158,7 +158,7 @@ export default function DataAnalysis() {
           <p className="dav-caption">Blank-cell count by column, sorted highest first.</p>
         </article>
         <article className="dav-card dav-wide"><div className="dav-card-head"><div><span className="eyebrow">04 · FEATURE RELATIONSHIPS</span><h3>Correlation matrix</h3></div></div>
-          {analysis.corrNames.length ? <div className="dav-correlation"><div className="dav-corr-row dav-corr-label" style={{ gridTemplateColumns: `95px repeat(${analysis.corrNames.length}, minmax(48px, 1fr))` }}><span />{analysis.corrNames.map((n) => <small key={n} title={n}>{n.slice(0, 9)}</small>)}</div>{analysis.corr.map((line, i) => <div className="dav-corr-row" key={analysis.corrNames[i]} style={{ gridTemplateColumns: `95px repeat(${analysis.corrNames.length}, minmax(48px, 1fr))` }}><small title={analysis.corrNames[i]}>{analysis.corrNames[i].slice(0, 12)}</small>{line.map((v, j) => <span key={j} title={`${analysis.corrNames[i]} × ${analysis.corrNames[j]}: ${v.toFixed(3)}`} className="dav-corr-cell" style={{ opacity: 0.18 + Math.abs(v) * 0.82, background: v >= 0 ? "#7769b4" : "#bd8c72" }}>{v.toFixed(2)}</span>)}</div>)}</div> : <p className="dav-muted">Correlation requires at least one numeric column.</p>}
+          {analysis.corrNames.length ? <div className="dav-correlation"><div className="dav-corr-row dav-corr-label" style={{ gridTemplateColumns: `95px repeat(${analysis.corrNames.length}, minmax(48px, 1fr))` }}><span />{analysis.corrNames.map((n) => <small key={n} title={n}>{n.slice(0, 9)}</small>)}</div>{analysis.corr.map((line, i) => <div className="dav-corr-row" key={analysis.corrNames[i]} style={{ gridTemplateColumns: `95px repeat(${analysis.corrNames.length}, minmax(48px, 1fr))` }}><small title={analysis.corrNames[i]}>{analysis.corrNames[i].slice(0, 12)}</small>{line.map((v, j) => <span key={j} title={`${analysis.corrNames[i]} × ${analysis.corrNames[j]}: ${v === null ? "undefined (constant or insufficient data)" : v.toFixed(3)}`} className="dav-corr-cell" style={{ opacity: v === null ? 0.35 : 0.18 + Math.abs(v) * 0.82, background: v === null ? "#8b8b8b" : v >= 0 ? "#7769b4" : "#bd8c72" }}>{v === null ? "N/A" : v.toFixed(2)}</span>)}</div>)}</div> : <p className="dav-muted">Correlation requires at least one numeric column.</p>}
           <p className="dav-caption">Pearson correlation on pairwise complete rows. Purple indicates positive, clay indicates negative correlation. Showing up to six numeric columns.</p>
         </article>
         <article className="dav-card dav-wide"><div className="dav-card-head"><div><span className="eyebrow">05 · DESCRIPTIVE STATISTICS</span><h3>Numerical summary</h3></div></div>

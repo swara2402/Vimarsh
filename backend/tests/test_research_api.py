@@ -293,3 +293,107 @@ def test_outcome_api_rejects_non_finite_context(monkeypatch, tmp_path):
         content=json.dumps(payload, allow_nan=True),
     )
     assert response.status_code == 422
+
+
+
+def test_pending_outcome_can_be_completed_as_a_linked_immutable_event(monkeypatch, tmp_path):
+    configure(monkeypatch, tmp_path)
+    pending = completed_payload(70)
+    pending.update({
+        "status": "pending",
+        "final_prediction": None,
+        "ground_truth": None,
+        "observed_cost": None,
+        "event_id": "pending-execution-70",
+    })
+    created = client.post("/v1/research/outcomes", headers=HEADERS, json=pending)
+    assert created.status_code == 200
+
+    completed = client.post(
+        "/v1/research/outcomes/pending-execution-70/complete",
+        headers=HEADERS,
+        json={
+            "final_prediction": 1,
+            "ground_truth": 1,
+            "observed_cost": 0.8,
+            "latency_ms": 15.0,
+            "provider_version": "reviewed-local-run-v1",
+        },
+    )
+    assert completed.status_code == 200
+    body = completed.json()
+    assert body["parent_event_id"] == "pending-execution-70"
+    assert body["status"] == "completed"
+    assert body["analysis_eligible"] is True
+
+    rows = __import__("app.research_services", fromlist=["get_ledger"]).get_ledger().read_verified()
+    original = next(row for row in rows if row["event_id"] == "pending-execution-70")
+    child = next(row for row in rows if row["event_id"] == body["event_id"])
+    assert original["status"] == "pending"
+    assert original["ground_truth"] is None
+    assert child["parent_event_id"] == original["event_id"]
+    assert child["status"] == "completed"
+    assert child["ground_truth"] == 1
+    summary = client.get("/v1/research/outcomes/summary", headers=HEADERS).json()
+    assert summary["total_records"] == 2
+    assert summary["completed_records"] == 1
+    assert summary["analysis_ready_records"] == 1
+
+
+def test_pending_outcome_completion_rejects_missing_non_pending_and_duplicate_events(monkeypatch, tmp_path):
+    configure(monkeypatch, tmp_path)
+    payload = completed_payload(71)
+    payload.update({"status": "pending", "final_prediction": None, "ground_truth": None})
+    client.post("/v1/research/outcomes", headers=HEADERS, json=payload)
+    completion = {
+        "final_prediction": 1,
+        "ground_truth": 1,
+        "observed_cost": 1.0,
+    }
+    first = client.post(
+        f"/v1/research/outcomes/{payload['event_id']}/complete",
+        headers=HEADERS,
+        json=completion,
+    )
+    second = client.post(
+        f"/v1/research/outcomes/{payload['event_id']}/complete",
+        headers=HEADERS,
+        json=completion,
+    )
+    missing = client.post(
+        "/v1/research/outcomes/not-a-real-event/complete",
+        headers=HEADERS,
+        json=completion,
+    )
+    assert first.status_code == 200
+    assert second.status_code == 409
+    assert missing.status_code == 409
+
+    completed = completed_payload(72)
+    client.post("/v1/research/outcomes", headers=HEADERS, json=completed)
+    not_pending = client.post(
+        f"/v1/research/outcomes/{completed['event_id']}/complete",
+        headers=HEADERS,
+        json=completion,
+    )
+    assert not_pending.status_code == 409
+
+
+
+def test_outcome_completion_rejects_non_scalar_retrospective_values(monkeypatch, tmp_path):
+    configure(monkeypatch, tmp_path)
+    pending = completed_payload(73)
+    pending.update({"status": "pending", "final_prediction": None, "ground_truth": None})
+    client.post("/v1/research/outcomes", headers=HEADERS, json=pending)
+    response = client.post(
+        f"/v1/research/outcomes/{pending['event_id']}/complete",
+        headers=HEADERS,
+        json={"final_prediction": {"class": 1}, "ground_truth": 1},
+    )
+    boolean_response = client.post(
+        f"/v1/research/outcomes/{pending['event_id']}/complete",
+        headers=HEADERS,
+        json={"final_prediction": True, "ground_truth": 1},
+    )
+    assert response.status_code == 422
+    assert boolean_response.status_code == 422

@@ -56,6 +56,10 @@ Be explicit:
 
 Next steps are to complete CI and integration review, connect the allocator behind a versioned policy interface, collect genuine action outcomes where ethically and operationally possible, and validate on additional domains.
 
+## Milestone 60 first-run result (important)
+
+The first three-seed CI artifact completed, but the contextual estimator recommended **zero** alternate-model actions across all 929 test cases in each seed. Therefore the matched-budget confidence-only and random baselines also selected zero cases. The conservative lower-bound/support gate abstained throughout; this is a valid negative/abstention result, not evidence that contextual selection outperformed the baselines. Present it honestly as a current limitation and say that estimator-support and threshold debugging is the next research task. Do not quote a positive action-benefit result from this run.
+
 ## Likely questions
 
 **Is VIMARSH another classifier?**  

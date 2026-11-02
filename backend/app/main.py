@@ -59,6 +59,19 @@ app.add_middleware(
     allow_headers=["Content-Type", "X-Vimarsh-Research-Token", "X-Vimarsh-Reviewer-Token", "X-Vimarsh-Evidence-Token"],
 )
 
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    """Apply conservative response headers to API and local operator workflows."""
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    if request.url.path.startswith("/v1/"):
+        response.headers["Cache-Control"] = "no-store"
+    return response
+
+
 
 def _json_safe_validation_detail(value):
     """Make rejected non-finite inputs safe to include in a JSON 422 response."""

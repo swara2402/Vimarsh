@@ -1,9 +1,10 @@
 # VIMARSH Backend
 
-FastAPI serves two deliberately separate surfaces:
+FastAPI serves three deliberately separate surfaces:
 
 1. **Decision API**: the demo-facing, recommendation-only reliability endpoint.
-2. **Protected research API**: offline outcome logging, contextual benefit estimation, and constrained batch-allocation recommendations.
+2. **Local alternate-model inference**: an explicit opt-in route that runs non-primary models from the trusted bundle and reports their outputs and latency.
+3. **Protected research API**: offline outcome logging, contextual benefit estimation, and constrained batch-allocation recommendations.
 
 Neither surface executes human review or evidence acquisition. The research API is disabled until an operator configures a private token.
 
@@ -29,7 +30,7 @@ Generate the bundle first by following [the demo-day runbook](../docs/demo-day-r
 
 ## Decision endpoints
 
-- `GET /health`: service health and operating mode.
+- `GET /health`: service health, `research_preview` mode, and the separate recommendation-only decision mode.
 - `POST /v1/decisions`: transparent baseline recommendation from supplied prediction metadata.
 - `GET /v1/reliability/schema`: feature schema from the configured trusted bundle.
 - `POST /v1/reliability/decisions`: score a sample with the fitted reliability bundle, then apply the transparent baseline policy.

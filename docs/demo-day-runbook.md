@@ -2,6 +2,16 @@
 
 This guide is for a reproducible local research demonstration. It uses the Wine Quality benchmark and a locally generated, trusted model bundle. It does not represent a production deployment or real-world validation.
 
+## Fastest preparation path
+
+On macOS/Linux, from the repository root run:
+
+```bash
+bash scripts/start_demo.sh
+```
+
+The script creates a dedicated `.venv-demo`, installs only the bundle-training dependencies, downloads the benchmark data through the existing loader if needed, trains the trusted model bundle, verifies the expected artifact exists, and launches the Docker Compose demo. Keep the terminal open while presenting. To prepare the model without starting Docker, run `bash scripts/start_demo.sh --prepare-only`. If Docker is unavailable, use the manual API and dashboard steps below.
+
 ## What to demonstrate
 
 1. Explain the pipeline: base prediction -> reliability estimate -> risk = estimated error probability x harm -> hard action/budget constraints -> recommendation or abstention.

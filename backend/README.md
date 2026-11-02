@@ -51,6 +51,7 @@ export VIMARSH_OUTCOME_LEDGER=research/data/action_outcomes.jsonl
 Send the token in the `X-Vimarsh-Research-Token` header. If the token is not configured, research endpoints return HTTP 503. Missing or incorrect tokens receive HTTP 401. Do not place this token in frontend code, commit it, or expose it in browser storage.
 
 - `POST /v1/research/execute/alternate-model`: explicitly run every non-primary model in the trusted local bundle, report each prediction/confidence and measured inference latency, and append a pending outcome record. This is an actual local inference action, not merely a recommendation. It does not estimate monetary/compute cost or choose a winning prediction.
+- `POST /v1/research/outcomes/{event_id}/complete`: append a completed child event for an existing pending execution. The original pending event is never edited; duplicate completion is rejected.
 - `GET /v1/research/outcomes/summary`: return aggregate counts after verifying the full ledger. It does not return individual records or labels.
 - `POST /v1/research/action-benefit`: estimate context-conditioned action benefit from completed, propensity-logged records.
 - `POST /v1/research/allocate`: estimate benefit for each requested case/action pair and pass only positive diagnostic candidates to the constrained allocator.
@@ -85,6 +86,8 @@ curl -X POST http://localhost:8000/v1/research/outcomes \
 ```
 
 Only submit a completed record after the outcome and retrospective label are genuinely observed and quality-checked. Do not fabricate propensity, randomization, provider, cost, or latency metadata.
+
+For an execution already recorded as pending, use the linked completion route. It appends a new child event, preserves the original pending record, and inherits the original propensity rather than allowing the completion request to invent one. See [Milestone 66](../research/docs/milestone66-linked-outcome-completion.md).
 
 ## Ledger and research limitations
 

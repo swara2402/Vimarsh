@@ -72,7 +72,7 @@ Use [the 2 November evidence summary](research-evidence-summary-2026-11-02.md) f
 
 ## Milestone 60 first-run result (important)
 
-The first three-seed CI artifact completed, but the contextual estimator recommended **zero** alternate-model actions across all 929 test cases in each seed. Therefore the matched-budget confidence-only and random baselines also selected zero cases. The conservative lower-bound/support gate abstained throughout; this is a valid negative/abstention result, not evidence that contextual selection outperformed the baselines. Milestone 69 adds per-query abstention-reason and diagnostic-distribution reporting; it does not relax the selection rule. Present the all-abstain result honestly and do not quote a positive action-benefit result from this run.
+The three-seed CI artifact recommended **zero** alternate-model actions across all 929 test cases in each seed. Follow-up diagnostics show the reason was not insufficient sample support: effective sample sizes averaged about 427–441, but weighted mean benefit was near zero (about -0.006 to 0.002) against an uncertainty penalty of about 0.117–0.119. The conservative lower-bound diagnostic therefore remained negative for every query. Matched-budget confidence-only and random baselines also selected zero, so that comparison is non-informative. This is a valid negative result, not evidence that contextual selection outperformed the baselines. Do not weaken the gate just to force non-zero actions.
 
 ## Likely questions
 

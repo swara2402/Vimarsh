@@ -69,7 +69,7 @@ docker compose -f compose.yaml down -v
 
 ## Operational boundaries
 
-- The stack binds ports on the local host; do not expose it publicly without a security review.
+- The Compose ports bind to 127.0.0.1 only. Do not change them to public interfaces without a security review.
 - No TLS, identity provider, role management, rate limiting, or production secret manager is included.
 - The JSONL research ledger remains single-writer local research storage.
 - Human review and additional-evidence providers remain unavailable.

@@ -1,0 +1,25 @@
+name: Container build
+
+on:
+  pull_request:
+    paths:
+      - "backend/**"
+      - "frontend/**"
+      - "research/**"
+      - "deploy/**"
+      - "compose.yaml"
+      - ".dockerignore"
+      - ".github/workflows/container-build.yml"
+
+jobs:
+  container-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Validate Compose configuration
+        run: docker compose -f compose.yaml config --quiet
+      - name: Build API image
+        run: docker build -f backend/Dockerfile -t vimarsh-api:ci .
+      - name: Build dashboard image
+        run: docker build -f frontend/Dockerfile --build-arg VITE_API_BASE_URL=http://localhost:8000 -t vimarsh-dashboard:ci .

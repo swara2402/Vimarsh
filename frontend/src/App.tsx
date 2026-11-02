@@ -308,8 +308,8 @@ function App() {
                 </div>
                 <div className="result-foot">Scored using {decision.base_model_count} base models and the fitted reliability estimator.</div>
                 <div className="alternate-action">
-                  <button type="button" onClick={runAlternateModels} disabled={alternateLoading || !lastSample}>
-                    {alternateLoading ? "Running alternate models…" : "Run alternate models"}
+                  <button type="button" onClick={runAlternateModels} disabled={alternateLoading || !lastSample || decision.base_model_count < 2}>
+                    {alternateLoading ? "Running alternate models…" : decision.base_model_count < 2 ? "No alternate model configured" : "Run alternate models"}
                   </button>
                   <span>Explicit local inference · measured latency · no automatic model switch</span>
                 </div>

@@ -158,3 +158,53 @@ def research_allocate(request: AllocationRequest):
         return allocate_cases(request.model_dump())
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.post("/v1/research/execute/alternate-model", dependencies=[Depends(require_research_token)])
+def execute_alternate_model(request: AlternateModelExecutionRequest):
+    """Explicitly run non-primary models from the trusted local bundle and log a pending outcome."""
+    try:
+        runtime = get_reliability_runtime()
+    except (FileNotFoundError, ValueError, OSError) as exc:
+        raise HTTPException(status_code=503, detail="Trusted reliability bundle is unavailable") from exc
+    try:
+        primary = runtime.score_one(request.sample)
+        alternate_result = runtime.run_alternate_models(request.sample)
+    except (ValueError, TypeError, KeyError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    if not alternate_result["executed"]:
+        raise HTTPException(status_code=409, detail="No alternate model is present in the configured bundle")
+    context = {
+        "estimated_error_probability": primary["estimated_error_probability"],
+        "confidence": primary["confidence"],
+        "harm": request.harm,
+    }
+    try:
+        pending = append_outcome({
+            "case_id": request.case_id,
+            "action": "alternate_model",
+            "policy_version": "manual-alternate-model-execution-v1",
+            "model_version": "trusted-bundle-artifact-v2",
+            "baseline_prediction": primary["prediction"],
+            "status": "pending",
+            "estimated_action_cost": request.estimated_action_cost,
+            "context": context,
+            "action_result": alternate_result["alternate_models"],
+            "latency_ms": alternate_result["total_latency_ms"],
+            "provider_version": "trusted-local-model-bundle",
+        })
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {
+        "case_id": request.case_id,
+        "event_id": pending["event_id"],
+        "baseline_prediction": primary["prediction"],
+        "confidence": primary["confidence"],
+        "estimated_error_probability": primary["estimated_error_probability"],
+        "context_for_outcome_completion": context,
+        "alternate_models": alternate_result["alternate_models"],
+        "total_latency_ms": alternate_result["total_latency_ms"],
+        "execution_status": "executed",
+        "ground_truth_status": "pending_retrospective_evaluation",
+        "note": "Complete a separate outcome record after ground truth is genuinely observed; this execution alone is not eligible for benefit estimation.",
+    }

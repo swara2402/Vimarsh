@@ -397,3 +397,59 @@ def test_outcome_completion_rejects_non_scalar_retrospective_values(monkeypatch,
     )
     assert response.status_code == 422
     assert boolean_response.status_code == 422
+
+
+def test_protected_research_api_supports_transactional_sqlite_ledger(monkeypatch, tmp_path):
+    configure(monkeypatch, tmp_path)
+    monkeypatch.setenv("VIMARSH_OUTCOME_LEDGER_BACKEND", "sqlite")
+    monkeypatch.setenv("VIMARSH_OUTCOME_LEDGER", str(tmp_path / "outcomes.sqlite3"))
+
+    first = client.post(
+        "/v1/research/outcomes", headers=HEADERS, json=completed_payload(501)
+    )
+    second = client.post(
+        "/v1/research/outcomes", headers=HEADERS, json=completed_payload(502)
+    )
+    summary = client.get("/v1/research/outcomes/summary", headers=HEADERS)
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert summary.status_code == 200
+    assert summary.json()["total_records"] == 2
+    assert summary.json()["analysis_ready_records"] == 2
+    assert summary.json()["ledger_integrity"] == "verified"
+
+
+def test_pending_outcome_completion_works_with_sqlite_ledger(monkeypatch, tmp_path):
+    configure(monkeypatch, tmp_path)
+    monkeypatch.setenv("VIMARSH_OUTCOME_LEDGER_BACKEND", "sqlite")
+    monkeypatch.setenv("VIMARSH_OUTCOME_LEDGER", str(tmp_path / "outcomes.sqlite3"))
+    pending = completed_payload(503)
+    pending.update({
+        "status": "pending",
+        "final_prediction": None,
+        "ground_truth": None,
+        "observed_cost": None,
+        "event_id": "sqlite-pending-event",
+    })
+    created = client.post("/v1/research/outcomes", headers=HEADERS, json=pending)
+    assert created.status_code == 200
+
+    completed = client.post(
+        "/v1/research/outcomes/sqlite-pending-event/complete",
+        headers=HEADERS,
+        json={"final_prediction": 1, "ground_truth": 1, "observed_cost": 0.8},
+    )
+    assert completed.status_code == 200
+    assert completed.json()["parent_event_id"] == "sqlite-pending-event"
+    summary = client.get("/v1/research/outcomes/summary", headers=HEADERS).json()
+    assert summary["total_records"] == 2
+    assert summary["completed_records"] == 1
+    assert summary["analysis_ready_records"] == 1
+
+
+def test_research_ledger_backend_rejects_unknown_configuration(monkeypatch, tmp_path):
+    configure(monkeypatch, tmp_path)
+    monkeypatch.setenv("VIMARSH_OUTCOME_LEDGER_BACKEND", "remote")
+    response = client.get("/v1/research/outcomes/summary", headers=HEADERS)
+    assert response.status_code == 503

@@ -7,6 +7,17 @@ type Schema = {
   artifact_version: number;
 };
 
+type ActionCapability = {
+  available: boolean;
+  mode: string;
+  reason?: string;
+};
+
+type Capabilities = {
+  actions: Record<string, ActionCapability>;
+  execution_boundary: string;
+};
+
 type AlternateRun = {
   alternate_models: Array<{
     model_index: number;
@@ -55,6 +66,7 @@ function percent(value: number) {
 
 function App() {
   const [schema, setSchema] = useState<Schema | null>(null);
+  const [capabilities, setCapabilities] = useState<Capabilities | null>(null);
   const [values, setValues] = useState<Record<string, string>>({});
   const [harm, setHarm] = useState("2");
   const [budget, setBudget] = useState("2");
@@ -70,6 +82,20 @@ function App() {
 
   useEffect(() => {
     let active = true;
+    fetch(`${API_BASE}/v1/actions/capabilities`)
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`Capabilities API returned HTTP ${response.status}`);
+        return response.json() as Promise<Capabilities>;
+      })
+      .then((data) => {
+        if (!active) return;
+        setCapabilities(data);
+        if (!data.actions.alternate_model?.available) setAlternate(false);
+      })
+      .catch(() => {
+        // Capability discovery is informative; the main schema request owns connection status.
+      });
+
     fetch(`${API_BASE}/v1/reliability/schema`)
       .then(async (response) => {
         if (!response.ok) throw new Error(response.status === 503
@@ -124,8 +150,8 @@ function App() {
         body: JSON.stringify({
           sample,
           harm: Number(harm),
-          available_actions: alternate ? ["alternate_model"] : [],
-          estimated_action_costs: alternate ? { alternate_model: Number(alternateCost) } : {},
+          available_actions: alternate && capabilities?.actions.alternate_model?.available !== false ? ["alternate_model"] : [],
+          estimated_action_costs: alternate && capabilities?.actions.alternate_model?.available !== false ? { alternate_model: Number(alternateCost) } : {},
           remaining_budget: Number(budget),
         }),
       });
@@ -208,6 +234,30 @@ function App() {
           </div>
         )}
 
+        {capabilities && (
+          <section className="capability-panel" aria-label="Configured action capabilities">
+            <div className="capability-heading">
+              <span className="eyebrow">AVAILABLE VERIFICATION PATHS</span>
+              <span className="muted">Live API capability discovery</span>
+            </div>
+            <div className="capability-list">
+              {Object.entries(capabilities.actions).map(([name, capability]) => (
+                <div className="capability-item" key={name}>
+                  <span className={capability.available ? "capability-indicator available" : "capability-indicator"} />
+                  <div>
+                    <strong>{name.replace(/_/g, " ")}</strong>
+                    <small>{capability.available ? capability.mode.replace(/_/g, " ") : capability.reason || "Not configured"}</small>
+                  </div>
+                  <span className={capability.available ? "capability-state available" : "capability-state"}>
+                    {capability.available ? "Available" : "Unavailable"}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <p className="capability-boundary">{capabilities.execution_boundary}</p>
+          </section>
+        )}
+
         <div className="workspace-grid">
           <form className="input-panel" onSubmit={submit}>
             <div className="panel-title">
@@ -270,7 +320,7 @@ function App() {
                 </div>
                 <div className="action-option">
                   <label className="toggle-label">
-                    <input type="checkbox" checked={alternate} onChange={(event) => { setAlternate(event.target.checked); invalidateDecision(); }} />
+                    <input type="checkbox" checked={alternate && capabilities?.actions.alternate_model?.available !== false} disabled={capabilities?.actions.alternate_model?.available === false} onChange={(event) => { setAlternate(event.target.checked); invalidateDecision(); }} />
                     <span className="toggle-ui" />
                     <span><strong>Alternate model available</strong><small>Recommendation only. No model action is executed.</small></span>
                   </label>

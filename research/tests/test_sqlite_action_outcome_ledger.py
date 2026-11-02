@@ -201,6 +201,48 @@ def test_sqlite_ledger_rejects_duplicate_completion_and_context_changes(tmp_path
         ledger.append(altered)
 
 
+
+def test_sqlite_ledger_allows_only_one_concurrent_completion_for_a_pending_event(tmp_path):
+    path = tmp_path / "concurrent-completion.sqlite3"
+    ledger = SQLiteActionOutcomeLedger(path)
+    parent = pending_record(88)
+    ledger.append(parent)
+
+    def complete(index):
+        try:
+            SQLiteActionOutcomeLedger(path).append(
+                completed_child(parent, event_id=f"concurrent-child-{index}")
+            )
+            return True
+        except ValueError:
+            return False
+
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        outcomes = list(executor.map(complete, range(8)))
+
+    rows = SQLiteActionOutcomeLedger(path).read_verified()
+    children = [row for row in rows if row.get("parent_event_id") == parent.event_id]
+    assert sum(outcomes) == 1
+    assert len(children) == 1
+    assert children[0]["status"] == "completed"
+
+
+def test_jsonl_to_sqlite_migration_preserves_linked_completion_history(tmp_path):
+    source = ActionOutcomeLedger(tmp_path / "linked-legacy.jsonl")
+    parent = pending_record(89)
+    source.append(parent)
+    source.append(completed_child(parent, event_id="linked-completed-child"))
+
+    destination = tmp_path / "linked-migrated.sqlite3"
+    result = migrate_jsonl_to_sqlite(source.path, destination)
+    migrated = SQLiteActionOutcomeLedger(destination).read_verified()
+
+    assert result["destination_integrity"] == "verified"
+    assert len(migrated) == 2
+    assert migrated[0]["status"] == "pending"
+    assert migrated[1]["parent_event_id"] == migrated[0]["event_id"]
+    assert migrated[1]["status"] == "completed"
+
 def test_sqlite_ledger_rejects_updates_and_deletes(tmp_path):
     path = tmp_path / "append-only.sqlite3"
     ledger = SQLiteActionOutcomeLedger(path)

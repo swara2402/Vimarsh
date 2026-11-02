@@ -87,6 +87,48 @@ def test_review_queue_claim_completion_and_audit_chain(monkeypatch, tmp_path):
     assert completed_list.json()["cases"][0]["case_id"] == "review-case-1"
 
 
+def test_review_cancellation_is_audited_and_terminal(monkeypatch, tmp_path):
+    configure_operator_workflows(monkeypatch, tmp_path)
+    created = client.post(
+        "/v1/reviews", headers=operator_headers(),
+        json={"case_id": "cancel-case", "prediction": "class-a", "priority": 1},
+    )
+    review_id = created.json()["review_id"]
+    cancelled = client.post(
+        f"/v1/reviews/{review_id}/cancel", headers=operator_headers(),
+        json={"actor": "operator-01", "reason": "Duplicate submission"},
+    )
+    assert cancelled.status_code == 200
+    assert cancelled.json()["status"] == "cancelled"
+    events = client.get(
+        f"/v1/reviews/{review_id}/events", headers=operator_headers()
+    ).json()["events"]
+    assert [event["event_type"] for event in events] == ["created", "cancelled"]
+    repeated = client.post(
+        f"/v1/reviews/{review_id}/cancel", headers=operator_headers(),
+        json={"actor": "operator-01", "reason": "Retry"},
+    )
+    assert repeated.status_code == 409
+
+
+def test_review_audit_chain_detects_database_tampering(monkeypatch, tmp_path):
+    configure_operator_workflows(monkeypatch, tmp_path)
+    created = client.post(
+        "/v1/reviews", headers=operator_headers(),
+        json={"case_id": "tamper-case", "prediction": "class-a", "priority": 1},
+    )
+    review_id = created.json()["review_id"]
+    with sqlite3.connect(tmp_path / "reviews.sqlite3") as connection:
+        connection.execute("DROP TRIGGER review_events_no_update")
+        connection.execute(
+            "UPDATE review_events SET actor='tampered' WHERE review_id=?", (review_id,)
+        )
+    response = client.get(
+        f"/v1/reviews/{review_id}/events", headers=operator_headers()
+    )
+    assert response.status_code == 409
+
+
 def test_evidence_intake_is_append_only_and_digest_is_verified(monkeypatch, tmp_path):
     configure_operator_workflows(monkeypatch, tmp_path)
     payload = {

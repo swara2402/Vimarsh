@@ -2,9 +2,9 @@
 
 ## 0:00–0:40 | Problem
 
-Machine-learning systems often return a prediction with a confidence score, but confidence alone does not tell us whether a prediction is reliable enough for a consequential decision. VIMARSH explores a second question: when should a prediction be accepted, checked further, or withheld?
+Machine-learning systems often return a prediction with a confidence score, but confidence alone does not tell us whether a prediction is reliable enough for a consequential decision. VIMARSH explores a second question: when should a prediction be accepted, checked further, sent into a controlled review workflow, or withheld?
 
-## 0:40–1:30 | Proposed approach
+## 0:40–1:20 | Proposed approach
 
 Walk through the architecture:
 
@@ -13,50 +13,49 @@ Walk through the architecture:
 3. The estimated error probability is combined with a supplied harm score to form a baseline risk estimate.
 4. A transparent policy applies hard availability and budget constraints.
 5. The system recommends acceptance, an eligible alternate-model check, or abstention.
+6. Where an operator explicitly chooses to do so, a decision can be prepared as a human-review case. The handoff is not automatic.
 
-Emphasize that the current API is recommendation-only. It does not execute the recommended action.
+Emphasize that the main decision API is recommendation-only. It does not execute the recommended action.
 
-## 1:30–3:30 | Live dashboard
+## 1:20–3:30 | Live dashboard
 
 1. Open the React dashboard and wait for the model schema to load.
 2. Explain that the feature fields are retrieved from the trained bundle, not hard-coded into the page.
-3. Point out the live capability panel: the dashboard reports which action paths are configured and marks human review/evidence acquisition unavailable rather than pretending they are integrated.
-4. Click **Load example wine sample** to populate a complete red-wine benchmark row. Point out that the UI maps the sample by the feature names returned from the trained bundle.
-5. Set harm to 8, keep the remaining budget at 2, and leave the alternate-model option enabled with its default estimated cost of 1. This illustrates how the supplied harm weight affects baseline risk and how the budget constrains the recommendation.
-6. Select **Evaluate reliability**.
-7. Explain the output in this order:
-   - primary-model prediction and confidence;
-   - estimated error probability from the reliability estimator;
-   - baseline risk, calculated as estimated error probability multiplied by harm;
-   - recommended action and the policy rationale.
-8. If the capability panel reports an alternate model as available, click **Run alternate models**. Explain that this is an explicit local inference action and its predictions/latency are shown as additional evidence; VIMARSH does not automatically replace the primary prediction.
-9. Change the remaining budget so the alternate-model action is no longer affordable, then evaluate again. If estimated risk is above the acceptance threshold, the policy should abstain rather than recommend an infeasible action.
-10. Disable alternate-model availability and repeat to show the same hard-constraint behavior.
+3. Point out the live capability panel and explain that unavailable actions fail closed rather than being presented as active.
+4. Click **Load example wine sample** to populate a complete red-wine benchmark row.
+5. Set harm to 8, keep the remaining budget at 2, and leave the alternate-model option enabled with its default estimated cost of 1.
+6. Select **Evaluate reliability**. Explain the primary prediction, confidence, estimated error probability, baseline risk (error probability multiplied by harm), recommendation, and rationale.
+7. If the capability panel reports an alternate model as available, click **Run alternate models**. Explain that this is an explicit local inference action; the primary prediction is not automatically replaced.
+8. Change the remaining budget so the alternate-model action is no longer affordable, then evaluate again. If risk is above the acceptance threshold, the policy should abstain rather than recommend an infeasible action.
+9. Show **Prepare this decision for human review**. Explain that it pre-fills a case with the prediction, rationale, confidence, estimated error probability, and baseline risk. The operator must explicitly submit it.
+10. If reviewer and evidence tokens have been configured, open the operator workspace. Enqueue the case, claim it using a reviewer label, complete or cancel it, and inspect the hash-chained event history. Add a short manual evidence record or resolve a DOI through Crossref, then inspect the stored digest status. If tokens are not configured, explain that the workspace is protected and show the documented setup rather than entering credentials during the presentation.
 
-## 3:30–4:20 | Research contributions
+## 3:30–4:20 | Research and engineering contributions
 
-Summarize the research progression without presenting unfinished work as production functionality:
-
-- Reliability estimation and calibration experiments.
-- Group-aware data splitting and held-out evaluation.
-- An append-only, hash-chained ledger for paired action outcomes.
+- Reliability estimation, calibration, and held-out evaluation.
+- Group-aware data splitting and out-of-fold reliability features.
+- Append-only linked outcome records and a transactional SQLite ledger.
 - Context-conditioned, propensity-adjusted action-benefit estimation.
-- A constrained allocator that respects total budget, per-action capacity and one-action-per-case rules.
-- An offline paired benchmark comparing contextual selection with matched-budget baselines.
+- A constrained allocator that respects total budget, per-action capacity, and one-action-per-case rules.
+- A protected operator review queue with atomic claim, completion, and cancellation transitions.
+- Hash-chained review audit history and append-only evidence storage with SHA-256 digest checks.
+- A Crossref DOI metadata adapter that records bibliographic metadata without claiming to validate scientific findings.
 
-The action-outcome ledger, contextual benefit estimator and constrained allocator are implemented as protected research APIs and offline research components. The allocator is not yet the live serving policy.
+The contextual estimator and constrained allocator remain research-stage components, not the live serving policy. The local operator queue is a controlled prototype, not a production identity or reviewer-provider integration.
 
 ## 4:20–5:00 | Limitations and next steps
 
 Be explicit:
 
-- Current live API policy is a transparent baseline, not yet the learned contextual allocator.
-- Human review and additional-evidence providers are not operational integrations.
+- The live API uses a transparent baseline policy, not the learned contextual allocator.
+- Reviewer IDs are operator-provided labels behind a shared token, not individually authenticated identities or production RBAC.
+- Crossref lookup retrieves bibliographic metadata only; it does not fetch full text or verify scientific claims.
+- Evidence submitted manually is stored and digest-checked, not independently validated.
 - Offline benchmark outcomes are not real-world causal evidence.
-- Cost values in the live demo are supplied estimates, not measured monetary or latency costs.
 - The system is not validated for clinical, financial, or other safety-critical deployment.
+- GitHub Actions checks for the current integration PRs are pending; do not describe the code as CI-verified or merged until those checks pass.
 
-Next steps are to complete CI and integration review, connect the allocator behind a versioned policy interface, collect genuine action outcomes where ethically and operationally possible, and validate on additional domains.
+Next steps are to complete CI and integration review, connect the allocator behind a versioned policy interface, establish real identity and provider integrations, collect genuine action outcomes where ethically and operationally possible, and validate on additional domains.
 
 ## Earlier paired alternate-model benchmark (Milestone 53)
 
@@ -71,9 +70,9 @@ Use [the 2 November evidence summary](research-evidence-summary-2026-11-02.md) f
 - On HTRU2, under hypothetical review-cost and harm assumptions, confidence and entropy outperformed reliability at exact matched capacity.
 - In a separate 15% paired alternate-model substitution experiment, model-disagreement routing produced a mean 29.7 net corrections across three seeds, versus 16.3 for low-confidence routing and 7.0 for random routing. This is offline benchmark evidence, not human review or causal deployment evidence.
 
-## Milestone 60 first-run result (important)
+## Milestone 60 first-run result
 
-The three-seed CI artifact recommended **zero** alternate-model actions across all 929 test cases in each seed. Follow-up diagnostics show the reason was not insufficient sample support: effective sample sizes averaged about 427–441, but weighted mean benefit was near zero (about -0.006 to 0.002) against an uncertainty penalty of about 0.117–0.119. The conservative lower-bound diagnostic therefore remained negative for every query. Matched-budget confidence-only and random baselines also selected zero, so that comparison is non-informative. This is a valid negative result, not evidence that contextual selection outperformed the baselines. Do not weaken the gate just to force non-zero actions.
+The three-seed experiment recommended **zero** alternate-model actions across all 929 test cases in each seed. Follow-up diagnostics showed that effective sample sizes averaged about 427–441, but weighted mean benefit was near zero (about -0.006 to 0.002) against an uncertainty penalty of about 0.117–0.119. The conservative lower-bound diagnostic therefore remained negative for every query. Matched-budget confidence-only and random baselines also selected zero, so that comparison is non-informative. This is a valid negative result, not evidence that contextual selection outperformed the baselines. Do not weaken the gate just to force non-zero actions.
 
 ## Likely questions
 
@@ -84,13 +83,16 @@ No. It is a reliability and verification-decision layer designed to sit around a
 The current baseline computes estimated risk as the reliability estimator's error probability multiplied by a supplied harm score.
 
 **Does the system actually send a case to a human reviewer?**  
-No. Human review is explicitly excluded until a real reviewer workflow exists. The API returns a recommendation only.
+It can create a protected local review case after an operator explicitly submits the handoff. A reviewer can claim and complete or cancel the case, and the system records an auditable event history. Reviewer labels are not authenticated identities, and this is not an external reviewer service or production RBAC.
+
+**Does the evidence connector verify sources?**  
+No. Manual evidence is stored with a digest, and Crossref resolves DOI bibliographic metadata. Neither independently validates source claims.
 
 **How do you prevent label leakage?**  
 Inference endpoints reject unknown fields, including labels. Test labels are reserved for retrospective evaluation after policy decisions have been fixed. The research pipeline uses grouped splits and out-of-fold predictions for reliability training.
 
 **What is the novelty?**  
-Describe the research hypothesis, not a proven novelty claim: contextual action-benefit estimation combined with explicit safety, budget and capacity constraints. Patentability or novelty requires a completed prior-art and legal review.
+Describe the research hypothesis, not a proven novelty claim: contextual action-benefit estimation combined with explicit safety, budget, and capacity constraints. Patentability or novelty requires a completed prior-art and legal review.
 
 **What is the current limitation?**  
-The live API still uses a transparent baseline decision policy. The contextual estimator and constrained allocator are being validated offline before they are integrated into the serving path.
+The live serving policy remains a transparent baseline. The contextual estimator and constrained allocator are validated offline before integration into the serving path, while the new operator workflows still need production identity, provider integrations, and operational controls.

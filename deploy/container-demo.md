@@ -2,6 +2,8 @@
 
 This deployment runs the FastAPI service and production-built React dashboard locally. It is a reproducible demo stack, not a public production deployment.
 
+For a one-command macOS/Linux preparation and launch, run `bash scripts/vimarsh-demo.sh demo` from the repository root. The helper trains and verifies the local model bundle, validates Compose, starts both containers, and checks readiness. The `prepare` and `up` subcommands can also be run separately; see the [demo-day runbook](../docs/demo-day-runbook.md).
+
 ## 1. Generate the trusted model bundle
 
 Follow [the demo-day runbook](../docs/demo-day-runbook.md) to install research dependencies and run:

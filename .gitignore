@@ -23,6 +23,8 @@ datasets/
 artifacts/
 mlruns/
 *.parquet
+*.sqlite3
+*.db
 *.pkl
 *.joblib
 

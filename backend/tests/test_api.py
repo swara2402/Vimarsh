@@ -101,3 +101,15 @@ def test_invalid_probability_and_negative_cost_are_rejected():
     )
     assert bad_probability.status_code == 422
     assert bad_cost.status_code == 422
+
+
+def test_action_capabilities_do_not_claim_unconfigured_providers(monkeypatch):
+    monkeypatch.delenv("VIMARSH_RELIABILITY_BUNDLE", raising=False)
+    response = client.get("/v1/actions/capabilities")
+    assert response.status_code == 200
+    actions = response.json()["actions"]
+    assert actions["accept"]["available"] is True
+    assert actions["alternate_model"]["available"] is False
+    assert actions["human_review"]["available"] is False
+    assert actions["additional_evidence"]["available"] is False
+    assert actions["abstain"]["available"] is True

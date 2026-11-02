@@ -9,6 +9,7 @@
 - Kept the same record validation, SHA-256 hash-chain verification, and completed propensity-logged analysis filter.
 - Added concurrent-writer, duplicate-event, tamper-detection, pending-record, and protected-API integration tests.
 - Added `VIMARSH_OUTCOME_LEDGER_BACKEND=jsonl|sqlite` configuration and operator documentation.
+- Added a verified, resumable JSONL-to-SQLite migration command. It verifies the source chain, accepts only an exact destination prefix, preserves the source file, and verifies the complete destination after migration.
 
 ## Configuration
 
@@ -40,3 +41,13 @@ The database file should be kept outside version control and included in an oper
 ## Scope and limitations
 
 SQLite provides transactional coordination for a single host and local filesystem. It is not a distributed database, does not provide identity/role management, and does not replace encrypted backups, retention controls, or production operations. The estimator remains observational and its lower-bound diagnostic is not a causal guarantee. Human review and additional-evidence providers remain unavailable until real integrations and outcome collection exist.
+
+## Migrating existing data
+
+Run from the repository's `research/` directory after installing the research dependencies:
+
+```bash
+python -m src.verification.ledger_migration --source data/action_outcomes.jsonl --destination data/action_outcomes.sqlite3
+```
+
+The migration is non-destructive and resumable. It never overwrites or deletes the source JSONL file. Re-running it against the same destination verifies the existing prefix and adds only missing records. A divergent or tampered source/destination is rejected.

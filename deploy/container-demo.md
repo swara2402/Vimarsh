@@ -29,7 +29,7 @@ From the repository root:
 cp deploy/.env.example .env
 ```
 
-For the ordinary demo, leave `VIMARSH_RESEARCH_API_TOKEN` blank. If protected research endpoints are required, set a strong random token in this server-side environment file. Never add it to Vite variables or browser code.
+For the ordinary demo, leave `VIMARSH_RESEARCH_API_TOKEN` blank. If protected research endpoints are required, set a strong random token in this server-side environment file. Never add it to Vite variables or browser code. JSONL remains the default outcome ledger. To use transactional local SQLite storage in the container, set `VIMARSH_OUTCOME_LEDGER_BACKEND=sqlite` and `VIMARSH_OUTCOME_LEDGER=/app/research/data/action_outcomes.sqlite3` in `.env` before startup.
 
 ## 3. Build and start
 

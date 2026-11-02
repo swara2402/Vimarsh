@@ -1,42 +1,49 @@
-# Backend
+# VIMARSH FastAPI backend
 
-The planned backend is a Python service, with FastAPI as the initial API framework.
+The repository includes a research-stage FastAPI service in `backend/app/`.
 
-## Proposed responsibilities
+## Run locally
 
-- Accept model predictions and associated metadata.
-- Validate reliability-signal inputs.
-- Run reliability and risk estimators.
-- Apply hard safety and resource constraints.
-- Evaluate feasible verification actions.
-- Record decisions, outcomes, and measured costs.
-- Expose experiment and evaluation summaries.
+From the repository root:
 
-## Initial module proposal
-
-```text
-backend/
-├── app/
-│   ├── api/
-│   ├── core/
-│   ├── schemas/
-│   ├── services/
-│   └── main.py
-├── tests/
-├── pyproject.toml
-└── README.md
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+export VIMARSH_RELIABILITY_BUNDLE="$(cd ../research && pwd)/models/reliability/wine_quality_reliability_bundle.joblib"
+uvicorn app.main:app --reload
 ```
 
-This is a proposed layout, not implemented code yet.
+Generate the bundle first by following [the demo runbook](../docs/demo-day-runbook.md). The API listens on `http://localhost:8000`; OpenAPI docs are at `/docs`.
 
-## Engineering requirements
+## Endpoints
 
-- Validate all incoming data with explicit schemas.
-- Keep model inference separate from policy selection.
-- Enforce safety constraints independently of learned scores.
-- Log action, policy version, signal values, outcome status, and cost.
-- Do not log secrets or unnecessary personal data.
-- Make simulation mode explicit in API responses and stored records.
-- Add tests for invalid inputs, unavailable actions, and abstention behavior.
+- `GET /health`: service status and recommendation-only mode.
+- `POST /v1/decisions`: accepts an externally supplied prediction, confidence, estimated error probability and decision constraints.
+- `GET /v1/reliability/schema`: returns the feature contract from the configured version-2 bundle.
+- `POST /v1/reliability/decisions`: runs the trusted local bundle on raw feature values, estimates error probability and returns a constrained recommendation.
 
-Implementation should begin after the first baseline experiment and research interfaces are sufficiently specified.
+## Current behavior and limitations
+
+- The decision policy is a transparent baseline: estimated risk is `estimated_error_probability * harm`.
+- The default acceptance threshold is configurable with `VIMARSH_MAX_ACCEPTABLE_RISK`.
+- The only candidate action currently eligible for recommendation is an alternate model, and only when it is listed as available and its supplied estimated cost fits the remaining budget.
+- Human review and additional evidence are explicitly excluded until real operational integrations exist.
+- The service returns recommendations only. It does not execute actions, collect ground truth, or establish deployment safety.
+- The bundle is a trusted local joblib artifact. Never load arbitrary user-uploaded joblib files.
+
+## Configuration
+
+- `VIMARSH_RELIABILITY_BUNDLE`: path to the trusted inference bundle.
+- `VIMARSH_MAX_ACCEPTABLE_RISK`: non-negative risk threshold (default `0.5`).
+- `VIMARSH_CORS_ORIGINS`: comma-separated exact browser origins (default `http://localhost:5173`). Wildcard origins are rejected.
+
+## Tests
+
+```bash
+python -m pip install -r requirements.txt
+python -m pytest -q
+```
+
+The API/runtime tests are also run by the Application checks GitHub Actions workflow.

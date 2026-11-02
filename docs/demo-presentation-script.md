@@ -20,7 +20,7 @@ Emphasize that the current API is recommendation-only. It does not execute the r
 
 1. Open the React dashboard and wait for the model schema to load.
 2. Explain that the feature fields are retrieved from the trained bundle, not hard-coded into the page.
-3. Enter one complete Wine Quality sample.
+3. Click **Load example wine sample** to populate a complete red-wine benchmark row. Point out that the UI maps the sample by the feature names returned from the trained bundle.
 4. Set a harm score and leave the alternate model enabled with an affordable estimated cost.
 5. Select **Evaluate reliability**.
 6. Explain the output in this order:

@@ -47,7 +47,7 @@ export VIMARSH_OUTCOME_LEDGER=research/data/action_outcomes.jsonl
 
 Send the token in the `X-Vimarsh-Research-Token` header. If the token is not configured, research endpoints return HTTP 503. Missing or incorrect tokens receive HTTP 401. Do not place this token in frontend code, commit it, or expose it in browser storage.
 
-- `POST /v1/research/outcomes`: append a validated event to the hash-chained JSONL ledger. Completed records require retrospective ground truth; incomplete records cannot contain it. Policy context rejects label-like keys.
+- `POST /v1/research/execute/alternate-model`: explicitly run every non-primary model in the trusted local bundle, report each prediction/confidence and measured inference latency, and append a pending outcome record. This is an actual local inference action, not merely a recommendation. It does not estimate monetary/compute cost or choose a winning prediction.
 - `GET /v1/research/outcomes/summary`: return aggregate counts after verifying the full ledger. It does not return individual records or labels.
 - `POST /v1/research/action-benefit`: estimate context-conditioned action benefit from completed, propensity-logged records.
 - `POST /v1/research/allocate`: estimate benefit for each requested case/action pair and pass only positive diagnostic candidates to the constrained allocator.
@@ -89,7 +89,9 @@ Only submit a completed record after the outcome and retrospective label are gen
 - Concurrent multi-process writers are not coordinated. Use a single API worker for this local ledger; use a transactional database before multi-worker deployment.
 - The contextual estimator's lower-bound output is a diagnostic, not a finite-sample guarantee or causal effect estimate.
 - Propensity adjustment does not remove unmeasured confounding or repair incorrect logging.
-- The allocator recommends allocations; it does not execute selected actions.
+- The alternate-model execution route is an explicit, token-protected exception to the recommendation-only decision API. It runs only models already present in the trusted local bundle. It logs a pending event; submit a separate completed outcome record after a final result and ground truth are genuinely available. Reuse the returned `case_id`, baseline prediction, and `context_for_outcome_completion` values when recording that outcome. Do not invent a propensity. A deterministic/manual run without a defensible assignment propensity is not eligible for the propensity-adjusted estimator.
+
+The allocator recommends allocations; it does not execute selected actions.
 - Human review and additional evidence remain non-operational without real providers and measured outcomes.
 
 ## Tests

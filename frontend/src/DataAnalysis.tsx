@@ -85,7 +85,7 @@ export default function DataAnalysis() {
     const missing = headers.map((name) => ({ name, count: rows.filter((r) => r[name] === "").length })).sort((a, b) => b.count - a.count);
     const selected = numeric.find((n) => n === focus) || numeric[0] || "";
     const values = selected ? rows.map((r) => Number(r[selected])).filter(Number.isFinite) : [];
-    const min = Math.min(...values), max = Math.max(...values);
+    const min = values.reduce((current, value) => Math.min(current, value), Number.POSITIVE_INFINITY);\n    const max = values.reduce((current, value) => Math.max(current, value), Number.NEGATIVE_INFINITY);
     const bins = Array.from({ length: 10 }, (_, i) => ({ label: i + 1, count: 0 }));
     values.forEach((v) => { const index = max === min ? 0 : Math.min(9, Math.floor(((v - min) / (max - min)) * 10)); bins[index].count += 1; });
     const categories = target ? rows.reduce<Record<string, number>>((acc, r) => { const value = r[target] || "(missing)"; acc[value] = (acc[value] || 0) + 1; return acc; }, {}) : {};

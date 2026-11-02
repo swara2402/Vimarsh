@@ -264,3 +264,67 @@ def test_crossref_doi_provider_rejects_invalid_doi_without_network(monkeypatch, 
         json={"case_id": "doi-case-invalid", "doi": "not-a-doi"},
     )
     assert response.status_code == 422
+
+
+def test_crossref_adapter_normalizes_doi_url_and_parses_metadata(monkeypatch):
+    from app import evidence_providers
+
+    class FakeResponse:
+        status_code = 200
+
+        @staticmethod
+        def json():
+            return {"message": {
+                "DOI": "10.1234/example",
+                "title": ["A Research Paper"],
+                "author": [{"given": "Ada", "family": "Lovelace"}],
+                "publisher": "Example Press",
+                "published-online": {"date-parts": [[2024, 5, 1]]},
+                "type": "journal-article",
+                "container-title": ["Example Journal"],
+            }}
+
+    def fake_get(url, **kwargs):
+        assert url.endswith("/10.1234/example")
+        assert kwargs["timeout"] == 8.0
+        return FakeResponse()
+
+    monkeypatch.setattr(evidence_providers.httpx, "get", fake_get)
+    result = evidence_providers.resolve_crossref_doi("https://doi.org/10.1234/example")
+    assert result["doi"] == "10.1234/example"
+    assert result["title"] == "A Research Paper"
+    assert result["authors"] == ["Ada Lovelace"]
+    assert result["year"] == 2024
+    assert result["metadata_only"] is True
+
+
+def test_crossref_adapter_rejects_malformed_provider_payload(monkeypatch):
+    from app import evidence_providers
+
+    class FakeResponse:
+        status_code = 200
+
+        @staticmethod
+        def json():
+            return {"message": []}
+
+    monkeypatch.setattr(evidence_providers.httpx, "get", lambda *args, **kwargs: FakeResponse())
+    try:
+        evidence_providers.resolve_crossref_doi("10.1234/example")
+        assert False, "malformed Crossref payload should fail closed"
+    except RuntimeError as exc:
+        assert "invalid metadata" in str(exc)
+
+
+def test_crossref_adapter_maps_missing_doi(monkeypatch):
+    from app import evidence_providers
+
+    class FakeResponse:
+        status_code = 404
+
+    monkeypatch.setattr(evidence_providers.httpx, "get", lambda *args, **kwargs: FakeResponse())
+    try:
+        evidence_providers.resolve_crossref_doi("10.1234/missing")
+        assert False, "missing DOI should raise LookupError"
+    except LookupError as exc:
+        assert "not found" in str(exc)

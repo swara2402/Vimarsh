@@ -36,6 +36,21 @@ def top_budget_mask(scores, count):
     return selected
 
 
+def build_policy_context(primary_probabilities, harm=1.0):
+    """Build pre-action context without reading the alternate action's output."""
+    if not np.isfinite(float(harm)) or float(harm) <= 0:
+        raise ValueError("harm must be positive and finite")
+    probabilities = np.asarray(primary_probabilities, dtype=float)
+    if probabilities.ndim != 2 or not np.isfinite(probabilities).all():
+        raise ValueError("primary_probabilities must be a finite 2D array")
+    if np.any(probabilities < 0) or np.any(probabilities > 1):
+        raise ValueError("probabilities must be in [0, 1]")
+    return [
+        {"uncertainty": float(1.0 - row.max()), "harm": float(harm)}
+        for row in probabilities
+    ]
+
+
 def summarize_selection(mask, baseline, alternate, truth):
     mask = np.asarray(mask, dtype=bool)
     if not (len(mask) == len(baseline) == len(alternate) == len(truth)):
@@ -81,14 +96,10 @@ def run(seed: int, action_fraction: float = 0.5, min_effective_samples: float = 
     test_primary = primary.predict(X_test)
     test_alternate = alternate.predict(X_test)
 
-    val_contexts = [
-        {"uncertainty": float(1.0 - p.max()), "disagreement": float(a != p_label), "harm": 1.0}
-        for p, p_label, a in zip(val_primary_prob, val_primary, val_alternate)
-    ]
-    test_contexts = [
-        {"uncertainty": float(1.0 - p.max()), "disagreement": float(a != p_label), "harm": 1.0}
-        for p, p_label, a in zip(test_primary_prob, test_primary, test_alternate)
-    ]
+    # Policy-time context deliberately excludes alternate-model outputs:
+    # the alternate is the action being evaluated and must not leak into selection.
+    val_contexts = build_policy_context(val_primary_prob, harm=1.0)
+    test_contexts = build_policy_context(test_primary_prob, harm=1.0)
 
     rng = np.random.default_rng(seed + 100_003)
     assigned = rng.random(len(X_val)) < action_fraction

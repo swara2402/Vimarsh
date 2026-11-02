@@ -149,3 +149,17 @@ def test_explicit_alternate_model_endpoint_executes_without_accepting_labels(mon
         json={"sample": {"x": 1.0, "y": 2.0}, "ground_truth": "class_b"},
     )
     assert invalid.status_code == 422
+
+
+def test_research_token_header_is_allowed_by_cors_preflight():
+    response = client.options(
+        "/v1/research/outcomes",
+        headers={
+            "Origin": "http://localhost:5173",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type,x-vimarsh-research-token",
+        },
+    )
+    assert response.status_code == 200
+    allowed = response.headers.get("access-control-allow-headers", "").lower()
+    assert "x-vimarsh-research-token" in allowed

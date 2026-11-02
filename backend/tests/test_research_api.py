@@ -293,3 +293,31 @@ def test_outcome_api_rejects_non_finite_context(monkeypatch, tmp_path):
         content=json.dumps(payload, allow_nan=True),
     )
     assert response.status_code == 422
+
+
+def test_protected_research_api_supports_transactional_sqlite_ledger(monkeypatch, tmp_path):
+    configure(monkeypatch, tmp_path)
+    monkeypatch.setenv("VIMARSH_OUTCOME_LEDGER_BACKEND", "sqlite")
+    monkeypatch.setenv("VIMARSH_OUTCOME_LEDGER", str(tmp_path / "outcomes.sqlite3"))
+
+    first = client.post(
+        "/v1/research/outcomes", headers=HEADERS, json=completed_payload(501)
+    )
+    second = client.post(
+        "/v1/research/outcomes", headers=HEADERS, json=completed_payload(502)
+    )
+    summary = client.get("/v1/research/outcomes/summary", headers=HEADERS)
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert summary.status_code == 200
+    assert summary.json()["total_records"] == 2
+    assert summary.json()["analysis_ready_records"] == 2
+    assert summary.json()["ledger_integrity"] == "verified"
+
+
+def test_research_ledger_backend_rejects_unknown_configuration(monkeypatch, tmp_path):
+    configure(monkeypatch, tmp_path)
+    monkeypatch.setenv("VIMARSH_OUTCOME_LEDGER_BACKEND", "remote")
+    response = client.get("/v1/research/outcomes/summary", headers=HEADERS)
+    assert response.status_code == 500

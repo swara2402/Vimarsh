@@ -117,3 +117,10 @@ Open the local URL printed by Vite, normally http://localhost:5173. The default 
 - The action-outcome ledger, contextual benefit estimator, and constrained allocator are research-stage. Offline measured alternate-model substitution and simulated review assumptions must be described as such.
 - The contextual action-benefit experiment abstained on all held-out cases in its reported run. This is a negative result and a current limitation, not evidence of superiority.
 - Do not claim causal real-world risk reduction, operational human review, evidence-provider integration, production readiness, or patentability from this prototype.
+
+
+## Optional operator workflows
+
+The dashboard includes a protected local review queue and manual evidence intake panel. To enable them, copy `deploy/.env.example` to `.env`, then set distinct strong random values for `VIMARSH_REVIEWER_API_TOKEN` and `VIMARSH_EVIDENCE_API_TOKEN`. Restart Compose after changing environment values. Tokens are entered into the dashboard when an operator uses the corresponding panel and are held only in page memory.
+
+The review queue supports enqueue, claim, and completion. Manual evidence intake stores the submitted source name, reference, text, metadata, and SHA-256 digest. It does not fetch or validate the external source. Reviewer IDs are operator-provided labels, not individual authenticated identities. Keep the services bound to loopback and do not use these local workflows for consequential decisions without a security and operational review.

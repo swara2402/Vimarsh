@@ -150,8 +150,8 @@ function App() {
         body: JSON.stringify({
           sample,
           harm: Number(harm),
-          available_actions: alternate && capabilities?.actions.alternate_model?.available !== false ? ["alternate_model"] : [],
-          estimated_action_costs: alternate && capabilities?.actions.alternate_model?.available !== false ? { alternate_model: Number(alternateCost) } : {},
+          available_actions: alternate && capabilities?.actions.alternate_model?.available === true ? ["alternate_model"] : [],
+          estimated_action_costs: alternate && capabilities?.actions.alternate_model?.available === true ? { alternate_model: Number(alternateCost) } : {},
           remaining_budget: Number(budget),
         }),
       });
@@ -320,7 +320,7 @@ function App() {
                 </div>
                 <div className="action-option">
                   <label className="toggle-label">
-                    <input type="checkbox" checked={alternate && capabilities?.actions.alternate_model?.available !== false} disabled={capabilities?.actions.alternate_model?.available === false} onChange={(event) => { setAlternate(event.target.checked); invalidateDecision(); }} />
+                    <input type="checkbox" checked={alternate && capabilities?.actions.alternate_model?.available === true} disabled={capabilities?.actions.alternate_model?.available !== true} onChange={(event) => { setAlternate(event.target.checked); invalidateDecision(); }} />
                     <span className="toggle-ui" />
                     <span><strong>Alternate model available</strong><small>Recommendation only. No model action is executed.</small></span>
                   </label>

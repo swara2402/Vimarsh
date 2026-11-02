@@ -5,7 +5,8 @@ type Row = Record<string, Cell>;
 type NumericSummary = { name: string; count: number; missing: number; mean: number; median: number; min: number; max: number; std: number };
 
 function parseCSV(source: string): { headers: string[]; rows: Row[] } {
-  source = source.replace(/^\\uFEFF/, "");\n  const records: string[][] = [];
+  source = source.replace(/^\uFEFF/, "");
+  const records: string[][] = [];
   let row: string[] = [], cell = "", quoted = false;
   for (let i = 0; i < source.length; i += 1) {
     const ch = source[i];
@@ -20,17 +21,20 @@ function parseCSV(source: string): { headers: string[]; rows: Row[] } {
       row = [];
     } else cell += ch;
   }
+  if (quoted) throw new Error("The CSV contains an unclosed quoted field.");
   row.push(cell.trim());
   if (row.some((v) => v !== "")) records.push(row);
   if (records.length < 2) throw new Error("The CSV needs a header row and at least one data row.");
   const headers = records[0].map((h, i) => h || `column_${i + 1}`);
   if (new Set(headers).size !== headers.length) throw new Error("Column names must be unique.");
-  const rows = records.slice(1).filter((r) => r.some((v) => v !== "")).map((r) =>
+  const dataRecords = records.slice(1).filter((r) => r.some((v) => v !== ""));
+  const extraWidth = dataRecords.findIndex((r) => r.length > headers.length);
+  if (extraWidth >= 0) throw new Error(`Row ${extraWidth + 2} has more fields than the header.`);
+  const rows = dataRecords.map((r) =>
     Object.fromEntries(headers.map((h, i) => [h, r[i] ?? ""])) as Row
   );
   return { headers, rows };
 }
-
 function median(values: number[]) {
   const sorted = [...values].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);

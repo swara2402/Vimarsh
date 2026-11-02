@@ -32,7 +32,9 @@ Generate the bundle first by following [the demo-day runbook](../docs/demo-day-r
 - `GET /health`: service health and operating mode.
 - `POST /v1/decisions`: transparent baseline recommendation from supplied prediction metadata.
 - `GET /v1/reliability/schema`: feature schema from the configured trusted bundle.
-- `POST /v1/reliability/decisions`: score a sample with the fitted reliability bundle, then apply the transparent baseline policy.\n- `GET /v1/actions/capabilities`: report which action paths are actually configured.\n- `POST /v1/actions/alternate-model/execute`: explicitly run all non-primary models in the trusted bundle and return their predictions/confidence plus measured inference latency. It accepts no labels and does not automatically replace the primary prediction.
+- `POST /v1/reliability/decisions`: score a sample with the fitted reliability bundle, then apply the transparent baseline policy.
+- `GET /v1/actions/capabilities`: report which action paths are actually configured.
+- `POST /v1/actions/alternate-model/execute`: explicitly run all non-primary models in the trusted bundle and return their predictions/confidence plus measured inference latency. It accepts no labels and does not automatically replace the primary prediction.
 
 The decision API reports recommendations only. The current serving policy does not invoke the alternate model, route a human review, acquire evidence, or update the research ledger.
 

@@ -17,6 +17,26 @@ This guide is for a reproducible local research demonstration. It uses the Wine 
 
 If Docker is available, use the [containerized demo guide](../deploy/container-demo.md) to build and start the API and production dashboard with one Compose command. The trusted model bundle must still be generated locally first. This is a local demo stack, not a public production deployment.
 
+## One-command container demo
+
+After the trusted model bundle has been generated, start the local demo stack from the repository root:
+
+```bash
+bash scripts/vimarsh-demo.sh up
+```
+
+The helper checks Docker Compose and the bundle path, validates the Compose configuration, builds and starts both containers, then waits for the API model schema and dashboard to respond. It prints recent container logs if startup fails.
+
+Useful follow-up commands:
+
+```bash
+bash scripts/vimarsh-demo.sh status
+bash scripts/vimarsh-demo.sh logs
+bash scripts/vimarsh-demo.sh down
+```
+
+The equivalent manual steps are documented in [the container demo guide](../deploy/container-demo.md).
+
 ## Prepare the model bundle
 
 From the repository root:

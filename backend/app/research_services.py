@@ -28,7 +28,7 @@ def require_research_token(x_vimarsh_research_token: str | None = Header(default
 def get_ledger() -> ActionOutcomeLedger | SQLiteActionOutcomeLedger:
     backend = os.getenv("VIMARSH_OUTCOME_LEDGER_BACKEND", "jsonl").strip().lower()
     if backend not in {"jsonl", "sqlite"}:
-        raise ValueError("VIMARSH_OUTCOME_LEDGER_BACKEND must be jsonl or sqlite")
+        raise HTTPException(status_code=503, detail="VIMARSH_OUTCOME_LEDGER_BACKEND must be jsonl or sqlite")
     default_path = "research/data/action_outcomes.sqlite3" if backend == "sqlite" else "research/data/action_outcomes.jsonl"
     configured = os.getenv("VIMARSH_OUTCOME_LEDGER", default_path)
     path = Path(configured).expanduser()

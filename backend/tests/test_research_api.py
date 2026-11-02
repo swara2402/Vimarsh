@@ -115,3 +115,50 @@ def test_policy_context_rejects_ground_truth_leakage(monkeypatch, tmp_path):
     payload["context"] = {"uncertainty": 0.4, "harm": 1.0, "ground_truth": 1.0}
     response = client.post("/v1/research/outcomes", headers=HEADERS, json=payload)
     assert response.status_code == 422
+
+
+def test_explicit_alternate_model_execution_logs_pending_outcome(monkeypatch, tmp_path):
+    from app import main
+
+    configure(monkeypatch, tmp_path)
+
+    class FakeRuntime:
+        def score_one(self, sample):
+            return {
+                "prediction": "primary-class",
+                "confidence": 0.82,
+                "estimated_error_probability": 0.24,
+            }
+
+        def run_alternate_models(self, sample):
+            return {
+                "alternate_models": [{
+                    "model_index": 0,
+                    "model_type": "FakeAlternate",
+                    "prediction": "alternate-class",
+                    "confidence": 0.91,
+                    "latency_ms": 3.2,
+                }],
+                "total_latency_ms": 3.2,
+                "executed": True,
+            }
+
+    monkeypatch.setattr(main, "get_reliability_runtime", lambda: FakeRuntime())
+    response = client.post(
+        "/v1/research/execute/alternate-model",
+        headers=HEADERS,
+        json={
+            "case_id": "execution-case-1",
+            "sample": {"x": 1.0, "y": 2.0},
+            "harm": 2.0,
+            "estimated_action_cost": 0.5,
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["execution_status"] == "executed"
+    assert body["ground_truth_status"] == "pending_retrospective_evaluation"
+    assert body["alternate_models"][0]["prediction"] == "alternate-class"
+    summary = client.get("/v1/research/outcomes/summary", headers=HEADERS).json()
+    assert summary["total_records"] == 1
+    assert summary["analysis_ready_records"] == 0

@@ -72,3 +72,12 @@ def test_runtime_rejects_invalid_model_probabilities():
     instance.base_models[0] = InvalidModel()
     with pytest.raises(ValueError, match="sum to one"):
         instance.score_one({"x": 1.0, "y": 2.0})
+
+
+def test_runtime_executes_non_primary_models_and_reports_latency():
+    result = runtime().run_alternate_models({"x": 1.0, "y": 2.0})
+    assert result["executed"] is True
+    assert len(result["alternate_models"]) == 2
+    assert all(item["prediction"] == "positive" for item in result["alternate_models"])
+    assert all(item["latency_ms"] >= 0 for item in result["alternate_models"])
+    assert result["total_latency_ms"] >= 0

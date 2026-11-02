@@ -320,4 +320,4 @@ def test_research_ledger_backend_rejects_unknown_configuration(monkeypatch, tmp_
     configure(monkeypatch, tmp_path)
     monkeypatch.setenv("VIMARSH_OUTCOME_LEDGER_BACKEND", "remote")
     response = client.get("/v1/research/outcomes/summary", headers=HEADERS)
-    assert response.status_code == 409
+    assert response.status_code == 503

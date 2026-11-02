@@ -13,6 +13,9 @@ type ReviewCase = {
   ground_truth?: string | null;
 };
 
+type AuditEvent = { event_id: string; event_type: string; actor: string; created_at: string; payload: Record<string, unknown>; event_hash: string };
+type EvidenceItem = { evidence_id: string; source_name: string; source_reference: string; evidence_text: string; content_sha256: string; integrity_valid: boolean; created_at: string };
+
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8000").replace(/\/$/, "");
 
 export default function ReviewQueue() {
@@ -31,6 +34,9 @@ export default function ReviewQueue() {
   const [finalPrediction, setFinalPrediction] = useState("");
   const [groundTruth, setGroundTruth] = useState("");
   const [cases, setCases] = useState<ReviewCase[]>([]);
+  const [queueStatus, setQueueStatus] = useState("pending");
+  const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
+  const [evidenceItems, setEvidenceItems] = useState<EvidenceItem[]>([]);
   const [selected, setSelected] = useState<ReviewCase | null>(null);
   const [status, setStatus] = useState("Enter the reviewer token to connect.");
   const [busy, setBusy] = useState(false);
@@ -52,11 +58,45 @@ export default function ReviewQueue() {
   async function refresh() {
     setBusy(true);
     try {
-      const data = await request("/v1/reviews?status=pending&limit=100");
+      const data = await request(`/v1/reviews?status=${queueStatus}&limit=100`);
       setCases(data.cases);
       setStatus(`Connected · ${data.cases.length} pending case(s)`);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Unable to load review queue.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function inspectHistory(item: ReviewCase) {
+    setBusy(true);
+    try {
+      const data = await request(`/v1/reviews/${item.review_id}/events`);
+      setAuditEvents(data.events);
+      setStatus(`Audit chain verified · ${data.events.length} event(s) for ${item.case_id}`);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Unable to load audit history.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function inspectEvidence(item: ReviewCase) {
+    if (!evidenceToken) {
+      setStatus("Enter the evidence intake token before viewing evidence.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const response = await fetch(`${API_BASE}/v1/evidence/${encodeURIComponent(item.case_id)}`, {
+        headers: { "X-Vimarsh-Evidence-Token": evidenceToken },
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || `HTTP ${response.status}`);
+      setEvidenceItems(data.evidence);
+      setStatus(`${data.evidence.length} evidence item(s) for ${item.case_id}`);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Unable to load evidence.");
     } finally {
       setBusy(false);
     }
@@ -178,11 +218,12 @@ export default function ReviewQueue() {
           <button type="submit" disabled={!token || busy}>Queue for human review</button>
         </form>
         <div className="review-card">
-          <div className="review-card-title"><h3>Pending cases</h3><button type="button" disabled={!token || busy} onClick={refresh}>Refresh</button></div>
+          <div className="review-card-title"><h3>Review cases</h3><button type="button" disabled={!token || busy} onClick={refresh}>Refresh</button></div>
+          <label><span>Queue status</span><select value={queueStatus} onChange={(e) => setQueueStatus(e.target.value)}><option value="pending">Pending</option><option value="claimed">Claimed</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></label>
           {cases.length === 0 ? <p className="review-empty">No pending cases loaded.</p> : cases.map((item) => (
             <div className="review-case" key={item.review_id}>
               <div><strong>{item.case_id}</strong><span>Priority {item.priority} · {item.prediction}</span></div>
-              <button type="button" disabled={!reviewer || busy} onClick={() => claim(item)}>Claim</button>
+              <div className="review-case-actions">{item.status === "pending" && <button type="button" disabled={!reviewer || busy} onClick={() => claim(item)}>Claim</button>}<button type="button" disabled={busy} onClick={() => inspectHistory(item)}>History</button><button type="button" disabled={busy} onClick={() => inspectEvidence(item)}>Evidence</button></div>
             </div>
           ))}
         </div>
@@ -202,6 +243,18 @@ export default function ReviewQueue() {
         <button type="submit" disabled={!evidenceToken || busy}>Record evidence</button>
       </form>
 
+      {auditEvents.length > 0 && (
+        <div className="review-card">
+          <h3>Verified review audit history</h3>
+          {auditEvents.map((event) => <div className="review-case" key={event.event_id}><div><strong>{event.event_type}</strong><span>{event.actor} · {event.created_at}</span></div><code>{event.event_hash.slice(0, 18)}…</code></div>)}
+        </div>
+      )}
+      {evidenceItems.length > 0 && (
+        <div className="review-card">
+          <h3>Evidence records</h3>
+          {evidenceItems.map((item) => <div className="review-case" key={item.evidence_id}><div><strong>{item.source_name}</strong><span>{item.source_reference} · {item.integrity_valid ? "Digest verified" : "Digest mismatch"}</span><p>{item.evidence_text}</p></div><code>{item.content_sha256.slice(0, 18)}…</code></div>)}
+        </div>
+      )}
       {selected && (
         <form className="review-card review-completion" onSubmit={complete}>
           <h3>Complete review · {selected.case_id}</h3>

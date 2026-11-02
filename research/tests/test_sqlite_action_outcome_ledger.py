@@ -71,6 +71,7 @@ def test_sqlite_ledger_detects_record_tampering(tmp_path):
     ledger.append(record(1))
 
     with sqlite3.connect(path) as connection:
+        connection.execute("DROP TRIGGER action_outcomes_no_update")
         connection.execute(
             "UPDATE action_outcomes SET record_json = ? WHERE event_id = ?",
             ('{"event_id":"event-1","status":"completed"}', "event-1"),
@@ -143,3 +144,23 @@ def test_jsonl_to_sqlite_migration_rejects_tampered_source(tmp_path):
 
     with pytest.raises(ValueError, match="integrity"):
         migrate_jsonl_to_sqlite(source_path, tmp_path / "migrated.sqlite3")
+
+
+def test_sqlite_ledger_rejects_updates_and_deletes(tmp_path):
+    path = tmp_path / "append-only.sqlite3"
+    ledger = SQLiteActionOutcomeLedger(path)
+    ledger.append(record(401))
+
+    with sqlite3.connect(path) as connection:
+        with pytest.raises(sqlite3.IntegrityError, match="append-only"):
+            connection.execute(
+                "UPDATE action_outcomes SET record_json = ? WHERE event_id = ?",
+                ("{}", "event-401"),
+            )
+        with pytest.raises(sqlite3.IntegrityError, match="append-only"):
+            connection.execute(
+                "DELETE FROM action_outcomes WHERE event_id = ?",
+                ("event-401",),
+            )
+
+    assert len(ledger.read_verified()) == 1

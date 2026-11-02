@@ -36,3 +36,16 @@ Do not commit sensitive data, credentials, or large datasets without checking li
 - Baseline metrics and calibration metrics.
 - Results saved with experiment configuration.
 - Clear distinction between measured, simulated, and illustrative values.
+
+## Action-outcome ledger storage
+
+The protected research API retains the append-only JSONL ledger by default for compatibility. An optional SQLite backend provides transactional local multi-process writes while preserving record validation, unique event IDs, SHA-256 hash-chain verification, and the completed propensity-logged analysis filter.
+
+Configure with:
+
+```bash
+VIMARSH_OUTCOME_LEDGER_BACKEND=sqlite
+VIMARSH_OUTCOME_LEDGER=research/data/action_outcomes.sqlite3
+```
+
+See [Milestone 66: Transactional outcome ledger](docs/milestone66-transactional-outcome-ledger.md) for the storage guarantees and limitations. SQLite is local transactional storage, not a distributed database.

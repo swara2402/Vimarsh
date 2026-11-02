@@ -247,3 +247,26 @@ def test_jsonl_to_sqlite_migration_rejects_tampered_source(tmp_path):
     source_path.write_text(source_path.read_text().replace('"uncertainty":0.4', '"uncertainty":0.9'))
     with pytest.raises(ValueError, match="integrity"):
         migrate_jsonl_to_sqlite(source_path, tmp_path / "migrated.sqlite3")
+
+
+def test_jsonl_migration_accepts_legacy_records_without_parent_event_id(tmp_path):
+    import json
+    from src.verification.action_outcome_ledger import GENESIS_HASH
+
+    source_path = tmp_path / "legacy-pre-linkage.jsonl"
+    legacy_row = record(601).validated()
+    legacy_row.pop("parent_event_id", None)
+    envelope = {
+        "previous_hash": GENESIS_HASH,
+        "record_hash": ActionOutcomeLedger._digest(legacy_row),
+        "record": legacy_row,
+    }
+    source_path.write_text(json.dumps(envelope, sort_keys=True) + "\\n")
+
+    destination = tmp_path / "legacy-migrated.sqlite3"
+    result = migrate_jsonl_to_sqlite(source_path, destination)
+    migrated = SQLiteActionOutcomeLedger(destination).read_verified()
+
+    assert result["migrated_records"] == 1
+    assert migrated[0]["event_id"] == legacy_row["event_id"]
+    assert migrated[0]["parent_event_id"] is None

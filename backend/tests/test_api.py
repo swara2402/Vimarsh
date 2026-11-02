@@ -101,3 +101,48 @@ def test_invalid_probability_and_negative_cost_are_rejected():
     )
     assert bad_probability.status_code == 422
     assert bad_cost.status_code == 422
+
+
+def test_action_capabilities_do_not_claim_unconfigured_providers(monkeypatch):
+    monkeypatch.delenv("VIMARSH_RELIABILITY_BUNDLE", raising=False)
+    response = client.get("/v1/actions/capabilities")
+    assert response.status_code == 200
+    actions = response.json()["actions"]
+    assert actions["accept"]["available"] is True
+    assert actions["alternate_model"]["available"] is False\n    assert actions["alternate_model"]["requires_research_token"] is False\n    assert actions["alternate_model"]["research_logging_requires_token"] is True
+    assert actions["human_review"]["available"] is False
+    assert actions["additional_evidence"]["available"] is False
+    assert actions["abstain"]["available"] is True
+
+
+def test_explicit_alternate_model_endpoint_executes_without_accepting_labels(monkeypatch):
+    from app import main
+
+    class FakeRuntime:
+        def run_alternate_models(self, sample):
+            assert sample == {"x": 1.0, "y": 2.0}
+            return {
+                "alternate_models": [{
+                    "model_index": 2,
+                    "model_type": "RandomForestClassifier",
+                    "prediction": "class_b",
+                    "confidence": 0.87,
+                    "latency_ms": 4.5,
+                }],
+                "total_latency_ms": 4.5,
+                "executed": True,
+            }
+
+    monkeypatch.setattr(main, "get_reliability_runtime", lambda: FakeRuntime())
+    response = client.post(
+        "/v1/actions/alternate-model/execute",
+        json={"sample": {"x": 1.0, "y": 2.0}},
+    )
+    assert response.status_code == 200
+    assert response.json()["execution_status"] == "executed"
+    assert response.json()["alternate_models"][0]["prediction"] == "class_b"
+    invalid = client.post(
+        "/v1/actions/alternate-model/execute",
+        json={"sample": {"x": 1.0, "y": 2.0}, "ground_truth": "class_b"},
+    )
+    assert invalid.status_code == 422

@@ -91,6 +91,10 @@ npm run dev
 
 Open the local URL printed by Vite, normally http://localhost:5173. The default API origin is http://localhost:8000; override it with `VITE_API_BASE_URL` if required.
 
+## Data analysis and visualisation walkthrough
+
+After the decision workspace is ready, scroll to **Data Analysis & Visualisation** and upload a CSV export of a benchmark dataset. The file needs a header row with unique column names and must be 15 MB or smaller. Change the selected numeric feature to update the ten-bin histogram, select the target/category column to inspect class balance, and show missing-cell counts, the correlation matrix, and descriptive-statistics table. This explorer runs locally in the browser; the uploaded CSV is not sent to the API. See [Milestone 74](milestone74-data-analysis-visualisation.md) for its supported inputs and interpretation limits.
+
 ## Demo checks
 
 - `GET /health` returns `status: ok`.
@@ -129,3 +133,6 @@ The review queue supports enqueue, claim, and completion. Manual evidence intake
 ## Optional operator-workflow demonstration
 
 Set `VIMARSH_REVIEWER_API_TOKEN` and `VIMARSH_EVIDENCE_API_TOKEN` in the API environment before starting the demo. Keep both API and dashboard bound to loopback. In the operator workspace, create a sample review case, claim it using a reviewer label, and complete or cancel it. Open its history and show the audit-chain verification result. Add a short manual evidence record, or resolve a known DOI using the Crossref lookup, then inspect the stored record and digest status. Do not use real personal or confidential data. Reviewer labels are not authenticated identities, and DOI metadata retrieval is not source-claim validation.
+
+
+The DAV section also opens with saved 975-row VIMARSH verification snapshots. Switch Conservative, Balanced, and Coverage-oriented to show coverage/error/abstention trade-offs, action mix, and covered-case confusion matrices. The figures are historical evaluation artefacts dated 31 October 2026, not freshly trained metrics. See [Milestone 74](milestone74-data-analysis-visualisation.md).

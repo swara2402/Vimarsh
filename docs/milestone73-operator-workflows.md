@@ -8,6 +8,7 @@ The API provides a token-protected local SQLite queue for cases that need an ope
 - `GET /v1/reviews?status=pending&limit=50` lists cases by priority and creation time.
 - `POST /v1/reviews/{review_id}/claim` atomically assigns a pending case to an operator-supplied reviewer ID.
 - `POST /v1/reviews/{review_id}/complete` records the adjudication and optional retrospective ground truth.
+- `POST /v1/reviews/{review_id}/cancel` cancels a pending or claimed case with an audit reason.
 - `GET /v1/reviews/{review_id}/events` returns lifecycle events after verifying the global SHA-256 hash chain.
 
 Set `VIMARSH_REVIEWER_API_TOKEN` to enable the queue. Set `VIMARSH_REVIEW_QUEUE_DB` to select the SQLite database path. The default path is under `research/data/`.
@@ -28,7 +29,7 @@ The Crossref adapter validates DOI syntax and only contacts the fixed Crossref A
 
 ## Dashboard
 
-The React dashboard includes separate in-memory token fields for the reviewer and evidence APIs, pending/claimed/completed queue filters, claim and completion forms, audit-history inspection, manual evidence submission, DOI metadata lookup, and evidence retrieval with digest status.
+The React dashboard includes separate in-memory token fields for the reviewer and evidence APIs, pending/claimed/completed queue filters, claim, completion and cancellation actions, audit-history inspection, manual evidence submission, DOI metadata lookup, and evidence retrieval with digest status.
 
 Tokens are not written to local storage. Keep the API and dashboard bound to loopback for local demonstrations. Do not expose these shared-token endpoints publicly.
 

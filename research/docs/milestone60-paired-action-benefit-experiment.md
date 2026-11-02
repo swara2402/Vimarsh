@@ -4,7 +4,7 @@
 - Train a primary Logistic Regression model and an alternate Random Forest model on the training partition only.
 - On the validation partition, randomly assign alternate-model execution with a recorded known propensity.
 - Record completed paired baseline/alternate outcomes in the action-outcome ledger. The ledger is used only to fit the contextual benefit estimator.
-- Query the estimator on test-time reliability context only. Test labels are withheld until retrospective evaluation.
+- Query the estimator using primary-model uncertainty and harm only. The alternate-model output is excluded from policy-time context because it is the action being evaluated. Test labels are withheld until retrospective evaluation.
 - Compare the proposed selection mask against confidence-only and random baselines at the same realized action count.
 
 ## Metrics

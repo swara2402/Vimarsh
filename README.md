@@ -100,7 +100,7 @@ Milestone 63 hardens the protected API boundary with finite-number checks, bound
 
 ## Quick local demo
 
-On macOS/Linux with Python 3 and Docker Desktop installed, prepare the Wine Quality model bundle and launch the containerized dashboard with:
+On macOS/Linux with Python 3.10+ and Docker Desktop installed, prepare the Wine Quality model bundle and launch the containerized dashboard with:
 
 ```bash
 bash scripts/vimarsh-demo.sh demo

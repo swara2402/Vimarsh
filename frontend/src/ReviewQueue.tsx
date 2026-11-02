@@ -56,14 +56,32 @@ export default function ReviewQueue() {
     return data;
   }
 
-  async function refresh() {
+  async function refresh(statusOverride = queueStatus) {
     setBusy(true);
     try {
-      const data = await request(`/v1/reviews?status=${queueStatus}&limit=100`);
+      const data = await request(`/v1/reviews?status=${statusOverride}&limit=100`);
       setCases(data.cases);
-      setStatus(`Connected · ${data.cases.length} ${queueStatus} case(s)`);
+      setStatus(`Connected · ${data.cases.length} ${statusOverride} case(s)`);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Unable to load review queue.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function cancel(item: ReviewCase) {
+    const reason = window.prompt("Why is this review being cancelled?");
+    if (!reason?.trim()) return;
+    setBusy(true);
+    try {
+      await request(`/v1/reviews/${item.review_id}/cancel`, "POST", {
+        actor: reviewer || "operator",
+        reason: reason.trim(),
+      });
+      setStatus(`Cancelled ${item.case_id}`);
+      await refresh();
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Unable to cancel review.");
     } finally {
       setBusy(false);
     }
@@ -245,11 +263,11 @@ export default function ReviewQueue() {
         </form>
         <div className="review-card">
           <div className="review-card-title"><h3>Review cases</h3><button type="button" disabled={!token || busy} onClick={refresh}>Refresh</button></div>
-          <label><span>Queue status</span><select value={queueStatus} onChange={(e) => setQueueStatus(e.target.value)}><option value="pending">Pending</option><option value="claimed">Claimed</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></label>
-          {cases.length === 0 ? <p className="review-empty">No pending cases loaded.</p> : cases.map((item) => (
+          <label><span>Queue status</span><select value={queueStatus} onChange={(e) => { setQueueStatus(e.target.value); void refresh(e.target.value); }}><option value="pending">Pending</option><option value="claimed">Claimed</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></label>
+          {cases.length === 0 ? <p className="review-empty">No {queueStatus} cases loaded.</p> : cases.map((item) => (
             <div className="review-case" key={item.review_id}>
               <div><strong>{item.case_id}</strong><span>Priority {item.priority} · {item.prediction}</span></div>
-              <div className="review-case-actions">{item.status === "pending" && <button type="button" disabled={!reviewer || busy} onClick={() => claim(item)}>Claim</button>}<button type="button" disabled={busy} onClick={() => inspectHistory(item)}>History</button><button type="button" disabled={busy} onClick={() => inspectEvidence(item)}>Evidence</button></div>
+              <div className="review-case-actions">{item.status === "pending" && <button type="button" disabled={!reviewer || busy} onClick={() => claim(item)}>Claim</button>}{["pending", "claimed"].includes(item.status) && <button type="button" disabled={busy} onClick={() => cancel(item)}>Cancel</button>}<button type="button" disabled={busy} onClick={() => inspectHistory(item)}>History</button><button type="button" disabled={busy} onClick={() => inspectEvidence(item)}>Evidence</button></div>
             </div>
           ))}
         </div>

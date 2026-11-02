@@ -5,33 +5,59 @@ type Row = Record<string, Cell>;
 type NumericSummary = { name: string; count: number; missing: number; mean: number; median: number; min: number; max: number; std: number };
 
 function parseCSV(source: string): { headers: string[]; rows: Row[] } {
-  source = source.replace(/^\uFEFF/, "");
+  source = source.replace(/^\\uFEFF/, "");
   const records: string[][] = [];
-  let row: string[] = [], cell = "", quoted = false;
+  let row: string[] = [], cell = "", quoted = false, afterQuote = false;
+  const finishCell = () => { row.push(cell.trim()); cell = ""; afterQuote = false; };
+  const finishRecord = () => {
+    finishCell();
+    if (row.some((value) => value !== "")) records.push(row);
+    row = [];
+  };
+
   for (let i = 0; i < source.length; i += 1) {
     const ch = source[i];
+    if (quoted) {
+      if (ch === '"') {
+        if (source[i + 1] === '"') { cell += '"'; i += 1; }
+        else { quoted = false; afterQuote = true; }
+      } else cell += ch;
+      continue;
+    }
+
+    if (afterQuote) {
+      if (ch === ",") finishCell();
+      else if (ch === "\\n" || ch === "\\r") {
+        if (ch === "\\r" && source[i + 1] === "\\n") i += 1;
+        finishRecord();
+      } else if (ch !== " " && ch !== "\\t") {
+        throw new Error("The CSV has unexpected characters after a closing quote.");
+      }
+      continue;
+    }
+
     if (ch === '"') {
-      if (quoted && source[i + 1] === '"') { cell += '"'; i += 1; }
-      else quoted = !quoted;
-    } else if (ch === "," && !quoted) { row.push(cell.trim()); cell = ""; }
-    else if ((ch === "\n" || ch === "\r") && !quoted) {
-      if (ch === "\r" && source[i + 1] === "\n") i += 1;
-      row.push(cell.trim()); cell = "";
-      if (row.some((v) => v !== "")) records.push(row);
-      row = [];
+      if (cell.length > 0) throw new Error("A quoted CSV field must begin with a quote at the start of the field.");
+      quoted = true;
+    } else if (ch === ",") finishCell();
+    else if (ch === "\\n" || ch === "\\r") {
+      if (ch === "\\r" && source[i + 1] === "\\n") i += 1;
+      finishRecord();
     } else cell += ch;
   }
+
   if (quoted) throw new Error("The CSV contains an unclosed quoted field.");
-  row.push(cell.trim());
-  if (row.some((v) => v !== "")) records.push(row);
+  finishCell();
+  if (row.some((value) => value !== "")) records.push(row);
   if (records.length < 2) throw new Error("The CSV needs a header row and at least one data row.");
-  const headers = records[0].map((h, i) => h || `column_${i + 1}`);
+
+  const headers = records[0].map((header, index) => header || `column_${index + 1}`);
   if (new Set(headers).size !== headers.length) throw new Error("Column names must be unique.");
-  const dataRecords = records.slice(1).filter((r) => r.some((v) => v !== ""));
-  const extraWidth = dataRecords.findIndex((r) => r.length > headers.length);
+  const dataRecords = records.slice(1).filter((record) => record.some((value) => value !== ""));
+  const extraWidth = dataRecords.findIndex((record) => record.length > headers.length);
   if (extraWidth >= 0) throw new Error(`Row ${extraWidth + 2} has more fields than the header.`);
-  const rows = dataRecords.map((r) =>
-    Object.fromEntries(headers.map((h, i) => [h, r[i] ?? ""])) as Row
+  const rows = dataRecords.map((record) =>
+    Object.fromEntries(headers.map((header, index) => [header, record[index] ?? ""])) as Row
   );
   return { headers, rows };
 }

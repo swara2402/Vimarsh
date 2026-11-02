@@ -53,7 +53,13 @@ app.add_middleware(
 
 @app.get("/health")
 def health():
-    return {\n        "status": "ok",\n        "service": "vimarsh-api",\n        "mode": "research_preview",\n        "decision_mode": "recommendation_only",\n        "alternate_model_execution": "explicit_opt_in",\n    }
+    return {
+        "status": "ok",
+        "service": "vimarsh-api",
+        "mode": "research_preview",
+        "decision_mode": "recommendation_only",
+        "alternate_model_execution": "explicit_opt_in",
+    }
 
 
 @app.post("/v1/decisions", response_model=DecisionResponse)

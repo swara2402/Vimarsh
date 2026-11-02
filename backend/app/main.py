@@ -233,8 +233,9 @@ def action_capabilities():
             "alternate_model": {
                 "available": alternate_available,
                 "mode": "explicit_local_inference" if alternate_available else "unavailable",
-                "execution_endpoint": "/v1/research/execute/alternate-model" if alternate_available else None,
-                "requires_research_token": False,\n                "research_logging_requires_token": True,
+                "execution_endpoint": "/v1/actions/alternate-model/execute" if alternate_available else None,
+                "requires_research_token": False,
+                "research_logging_requires_token": True,
             },
             "human_review": {
                 "available": False,

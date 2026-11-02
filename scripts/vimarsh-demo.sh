@@ -28,6 +28,7 @@ prepare_bundle() {
     exit 1
   fi
   command -v "$python_bin" >/dev/null 2>&1 || { echo "Python 3 is required." >&2; exit 1; }
+  "$python_bin" -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)' || { echo "Python 3.10 or newer is required." >&2; exit 1; }
   if [[ ! -x "$venv_dir/bin/python" ]]; then
     "$python_bin" -m venv "$venv_dir"
   fi

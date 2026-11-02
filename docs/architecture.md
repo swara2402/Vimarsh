@@ -70,3 +70,9 @@ Docker Compose builds a FastAPI container and a production React/Nginx dashboard
 ## Further work
 
 Production use would require, at minimum, durable transactional storage, identity and role management, audit and retention policies, real provider integrations, deployment hardening, monitoring, independent external validation, and domain-specific safety review.
+
+## Milestone 73: operator workflows
+
+The optional protected operator layer adds a persistent SQLite human-review queue and an append-only manual evidence register. Review cases can be enqueued, atomically claimed, and completed by the reviewer ID that owns the claim. Operator-submitted evidence stores provenance fields and a SHA-256 digest. Separate tokens gate review and evidence routes, and capability discovery reports these paths only when their server-side tokens are configured. The dashboard includes ephemeral-token forms for queue management and evidence submission.
+
+These capabilities are deliberately described as **operator-managed local workflows**, not external integrations. Reviewer IDs are not authenticated accounts; the shared token is not RBAC. Evidence source references are recorded but not independently retrieved or verified. Neither workflow is suitable for public or safety-critical deployment without identity, authorization, rate limiting, audit/retention controls, secure secret management, and independent validation.

@@ -24,9 +24,9 @@ from .research_services import (
 )
 from .review_queue import (
     require_reviewer_token, enqueue as enqueue_review, list_cases as list_review_cases,
-    claim_case as claim_review_case, complete_case as complete_review_case, list_events as list_review_events,
+    claim_case as claim_review_case, complete_case as complete_review_case, cancel_case as cancel_review_case, list_events as list_review_events,
 )
-from .review_schemas import ReviewEnqueueRequest, ReviewClaimRequest, ReviewCompletionRequest
+from .review_schemas import ReviewEnqueueRequest, ReviewClaimRequest, ReviewCompletionRequest, ReviewCancelRequest
 from .evidence_register import require_evidence_token, add_evidence, list_evidence
 from .evidence_schemas import EvidenceCreateRequest, EvidenceResolveDOIRequest
 from .evidence_providers import resolve_crossref_doi
@@ -361,6 +361,15 @@ def complete_review(review_id: str, request: ReviewCompletionRequest):
     """Record a reviewer adjudication after the case has been claimed."""
     try:
         return complete_review_case(review_id, request.reviewer_id, request.reviewer_note, request.final_prediction, request.ground_truth)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@app.post("/v1/reviews/{review_id}/cancel", dependencies=[Depends(require_reviewer_token)])
+def cancel_review(review_id: str, request: ReviewCancelRequest):
+    """Cancel a pending or claimed review case and append an audit event."""
+    try:
+        return cancel_review_case(review_id, request.actor, request.reason)
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
 

@@ -283,10 +283,17 @@ def test_jsonl_to_sqlite_migration_refuses_divergent_destination(tmp_path):
 
 
 def test_jsonl_to_sqlite_migration_rejects_tampered_source(tmp_path):
+    import json
+
     source_path = tmp_path / "legacy.jsonl"
     source = ActionOutcomeLedger(source_path)
     source.append(record(301))
-    source_path.write_text(source_path.read_text().replace('"uncertainty":0.4', '"uncertainty":0.9'))
+
+    # Mutate the parsed payload rather than relying on JSON whitespace formatting.
+    envelope = json.loads(source_path.read_text(encoding="utf-8"))
+    envelope["record"]["context"]["uncertainty"] = 0.9
+    source_path.write_text(json.dumps(envelope, sort_keys=True) + "\n", encoding="utf-8")
+
     with pytest.raises(ValueError, match="integrity"):
         migrate_jsonl_to_sqlite(source_path, tmp_path / "migrated.sqlite3")
 

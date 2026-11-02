@@ -190,3 +190,11 @@ Compare all variants on the same data splits and conditions.
 ## 17. Research integrity
 
 This plan is a starting specification. It does not establish novelty, superiority, safety, or patentability. Those require evidence, reproducible experiments, claim-specific prior-art analysis, and, for IP decisions, professional advice.
+
+## 18. Milestone 56: prior-art and IP review
+
+A preliminary prior-art landscape review is maintained in [milestone56-prior-art-ip-landscape.md](../research/docs/milestone56-prior-art-ip-landscape.md). The scan identifies substantial existing work and patent disclosures covering model-disagreement reliability estimation, selective prediction/abstention, learning to defer, verification-based model qualification, cost-aware model selection, and budgeted evidence-driven verification.
+
+Accordingly, broad claims around "reliability-aware prediction verification under a budget" are not treated as novel. A narrower research hypothesis for future testing is outcome-grounded, action-conditioned verification allocation using paired observed action outcomes, conservative benefit estimates, hard resource constraints, and explicit abstention. This is not yet a novelty finding.
+
+Before any patent filing, the project requires real operational action-outcome data, a precise algorithmic formulation, matched-budget comparisons against established baselines, external validation, and claim-focused professional patent review. This desk review is not legal advice, a patentability opinion, or a freedom-to-operate assessment.

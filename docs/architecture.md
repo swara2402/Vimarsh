@@ -40,7 +40,7 @@ The dashboard can request local alternate-model predictions after a user action.
 When an operator configures `VIMARSH_RESEARCH_API_TOKEN`, protected endpoints support append-only hash-chained outcome recording, aggregate ledger summaries, context-conditioned action-benefit diagnostics, and constrained allocation recommendations. Completed propensity-logged records are required for estimation. The estimator's conservative lower-bound diagnostic is not a formal guaranteed confidence bound and does not establish causal benefit.
 
 ### 6. Research dashboard
-The React interface loads the runtime feature schema and live action capabilities, accepts a tabular sample and decision context, displays the recommendation and rationale, and can explicitly run local alternate models. The alternate-model control fails closed when capability discovery does not confirm an available local model. Human-review and additional-evidence paths are shown as unavailable until providers exist. It is a local research-preview interface, not a production decision console.
+The React interface loads the runtime feature schema and live action capabilities, accepts a tabular sample and decision context, displays the recommendation and rationale, and can explicitly run local alternate models. The alternate-model control fails closed when capability discovery does not confirm an available local model. When configured, the dashboard also exposes a protected local review queue, review-history inspection, cancellation and completion, manual evidence intake, Crossref DOI metadata lookup, and evidence-digest inspection. These are operator-managed local workflows, not external identity or scientific-claim verification providers. It remains a local research-preview interface, not a production decision console.
 
 ### 7. Local containerized demo
 Docker Compose builds a FastAPI container and a production React/Nginx dashboard. The dashboard starts after the API health check passes. A trusted model bundle is mounted read-only from the host, while the local outcome ledger uses a persistent named volume. API and dashboard ports bind to loopback only. This is a reproducible local demonstration, not a public production deployment.
@@ -52,7 +52,7 @@ Docker Compose builds a FastAPI container and a production React/Nginx dashboard
 - Hard availability and budget constraints cannot be overridden by learned action-benefit estimates.
 - Abstention is a valid outcome and must be reported with coverage.
 - Alternate-model inference requires an explicit request; there is no automatic model switching.
-- Human review and additional evidence are marked unavailable until real providers are implemented and validated.
+- Human review and evidence intake are available only when their separate server-side tokens are configured; Crossref supplies bibliographic metadata only, not independent scientific-claim verification.
 - Research allocation recommends actions but does not execute them.
 - Simulated, measured, and unavailable capabilities must be labelled distinctly.
 - A positive offline estimate is not proof of real-world risk reduction or causal benefit.
@@ -64,9 +64,15 @@ Docker Compose builds a FastAPI container and a production React/Nginx dashboard
 - Protected research endpoints: disabled unless a server-side token is configured.
 - Outcome ledger: append-only hash-chained JSONL by default for compatibility; optional SQLite storage adds transactional local multi-process writes and unique parent-completion linkage. Neither is a distributed database or a substitute for backups and access controls.
 - Local deployment: Docker Compose is available for reproducible demos; TLS, identity/roles, rate limiting, production secrets, monitoring, and public exposure hardening are not included.
-- Human review and additional-evidence integrations: not implemented.
+- Local human-review queue and operator evidence register: implemented behind separate shared tokens; individual identity, RBAC, external reviewer providers, full-text evidence acquisition, and claim verification are not implemented.
 - Public deployment and production security review: not established by the repository's CI checks.
 
 ## Further work
 
 Production use would require, at minimum, durable transactional storage, identity and role management, audit and retention policies, real provider integrations, deployment hardening, monitoring, independent external validation, and domain-specific safety review.
+
+## Milestone 73: operator workflows
+
+The optional protected operator layer adds a persistent SQLite human-review queue and an append-only evidence register. Review cases can be enqueued, atomically claimed, completed by the reviewer ID that owns the claim, or cancelled while pending/claimed. Lifecycle events are stored in a hash-chained audit log and verified when history is retrieved. Operator-submitted evidence stores provenance fields and a SHA-256 digest that is recomputed on retrieval. A fixed-host Crossref DOI adapter can retrieve bibliographic metadata and append it to the evidence register. Separate tokens gate review and evidence routes, and capability discovery reports these paths only when their server-side tokens are configured. The dashboard includes ephemeral-token forms for queue management, audit inspection, evidence submission, DOI lookup, and evidence inspection.
+
+These capabilities are deliberately described as **operator-managed local workflows**, not external integrations. Reviewer IDs are not authenticated accounts; the shared token is not RBAC. Manual evidence source references are recorded but not independently verified. Crossref DOI lookup retrieves bibliographic metadata only and does not fetch full text or verify scientific claims. Neither workflow is suitable for public or safety-critical deployment without identity, authorization, rate limiting, audit/retention controls, secure secret management, and independent validation.

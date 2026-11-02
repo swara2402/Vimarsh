@@ -22,14 +22,23 @@ from .research_services import (
     require_research_token, append_outcome, outcome_summary,
     estimate_benefit, allocate_cases, complete_pending_outcome,
 )
+from .review_queue import (
+    require_reviewer_token, enqueue as enqueue_review, list_cases as list_review_cases,
+    claim_case as claim_review_case, complete_case as complete_review_case, cancel_case as cancel_review_case, list_events as list_review_events,
+)
+from .review_schemas import ReviewEnqueueRequest, ReviewClaimRequest, ReviewCompletionRequest, ReviewCancelRequest
+from .evidence_register import require_evidence_token, add_evidence, list_evidence
+from .evidence_schemas import EvidenceCreateRequest, EvidenceResolveDOIRequest
+from .evidence_providers import resolve_crossref_doi
 
 app = FastAPI(
     title="VIMARSH Decision API",
     version="0.2.0",
     description=(
         "Research-stage API: decision endpoints return recommendations, an explicit endpoint "
-        "runs trusted local alternate models, and protected research endpoints support "
-        "outcome logging and offline allocation. Human review and evidence actions are not executed."
+        "runs trusted local alternate models, protected research endpoints support outcome logging "
+        "and offline allocation, and separately token-protected operator endpoints support manual "
+        "review and evidence intake. Decision requests do not automatically trigger operator actions."
     ),
 )
 
@@ -49,8 +58,21 @@ app.add_middleware(
     allow_origins=cors_origins,
     allow_credentials=False,
     allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type", "X-Vimarsh-Research-Token"],
+    allow_headers=["Content-Type", "X-Vimarsh-Research-Token", "X-Vimarsh-Reviewer-Token", "X-Vimarsh-Evidence-Token"],
 )
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    """Apply conservative response headers to API and local operator workflows."""
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    if request.url.path.startswith("/v1/"):
+        response.headers["Cache-Control"] = "no-store"
+    return response
+
 
 
 def _json_safe_validation_detail(value):
@@ -292,20 +314,120 @@ def action_capabilities():
                 "research_logging_requires_token": True,
             },
             "human_review": {
-                "available": False,
-                "mode": "not_configured",
-                "reason": "No operational reviewer queue or provider is configured.",
+                "available": bool(os.getenv("VIMARSH_REVIEWER_API_TOKEN")),
+                "mode": "operator_managed_queue" if os.getenv("VIMARSH_REVIEWER_API_TOKEN") else "not_configured",
+                "endpoint": "/v1/reviews",
+                "reason": None if os.getenv("VIMARSH_REVIEWER_API_TOKEN") else "Set VIMARSH_REVIEWER_API_TOKEN to enable the local operator queue.",
             },
             "additional_evidence": {
-                "available": False,
-                "mode": "not_configured",
-                "reason": "No operational evidence source or acquisition provider is configured.",
+                "available": bool(os.getenv("VIMARSH_EVIDENCE_API_TOKEN")),
+                "mode": "operator_submitted_evidence" if os.getenv("VIMARSH_EVIDENCE_API_TOKEN") else "not_configured",
+                "endpoint": "/v1/evidence",
+                "reason": None if os.getenv("VIMARSH_EVIDENCE_API_TOKEN") else "Set VIMARSH_EVIDENCE_API_TOKEN to enable manual intake and Crossref DOI metadata lookup; bibliographic retrieval does not verify scientific claims.",
             },
             "abstain": {"available": True, "mode": "decision_only"},
         },
         "execution_boundary": "The explicit local alternate-model endpoint runs trusted bundle inference; the protected research variant also logs a pending outcome. Allocation recommendations never execute actions.",
     }
 
+
+
+@app.post("/v1/reviews", dependencies=[Depends(require_reviewer_token)])
+def create_review_case(request: ReviewEnqueueRequest):
+    """Queue a case for a human operator; this does not imply a reviewer is online."""
+    try:
+        return enqueue_review(request.model_dump())
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+@app.get("/v1/reviews", dependencies=[Depends(require_reviewer_token)])
+def get_review_cases(status: str = "pending", limit: int = 50):
+    """List queued cases without exposing the outcome research ledger."""
+    if status not in {"pending", "claimed", "completed", "cancelled"}:
+        raise HTTPException(status_code=422, detail="Unsupported review status")
+    if not 1 <= limit <= 200:
+        raise HTTPException(status_code=422, detail="limit must be between 1 and 200")
+    return {"cases": list_review_cases(status=status, limit=limit)}
+
+@app.post("/v1/reviews/{review_id}/claim", dependencies=[Depends(require_reviewer_token)])
+def claim_review(review_id: str, request: ReviewClaimRequest):
+    """Atomically claim one pending case for a reviewer."""
+    try:
+        return claim_review_case(review_id, request.reviewer_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+@app.post("/v1/reviews/{review_id}/complete", dependencies=[Depends(require_reviewer_token)])
+def complete_review(review_id: str, request: ReviewCompletionRequest):
+    """Record a reviewer adjudication after the case has been claimed."""
+    try:
+        return complete_review_case(review_id, request.reviewer_id, request.reviewer_note, request.final_prediction, request.ground_truth)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@app.post("/v1/reviews/{review_id}/cancel", dependencies=[Depends(require_reviewer_token)])
+def cancel_review(review_id: str, request: ReviewCancelRequest):
+    """Cancel a pending or claimed review case and append an audit event."""
+    try:
+        return cancel_review_case(review_id, request.actor, request.reason)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@app.get("/v1/reviews/{review_id}/events", dependencies=[Depends(require_reviewer_token)])
+def get_review_events(review_id: str):
+    """Return audit events after verifying the global hash chain."""
+    try:
+        return {"events": list_review_events(review_id), "integrity": "verified"}
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail="Review case not found") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail="Review audit integrity verification failed") from exc
+
+
+@app.post("/v1/evidence", dependencies=[Depends(require_evidence_token)])
+def submit_evidence(request: EvidenceCreateRequest):
+    """Append operator-submitted evidence with source metadata and a content digest."""
+    try:
+        return add_evidence(request.model_dump())
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(status_code=422, detail="Evidence record is invalid") from exc
+
+@app.post("/v1/evidence/resolve-doi", dependencies=[Depends(require_evidence_token)])
+def resolve_doi_evidence(request: EvidenceResolveDOIRequest):
+    """Retrieve public bibliographic metadata from Crossref and append it to the evidence register."""
+    import json
+
+    try:
+        source = resolve_crossref_doi(request.doi)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    record = add_evidence({
+        "case_id": request.case_id,
+        "source_name": "Crossref DOI metadata",
+        "source_reference": source["url"],
+        "evidence_text": json.dumps(source, sort_keys=True, ensure_ascii=False),
+        "metadata": {
+            "provider": "crossref",
+            "doi": source["doi"],
+            "work_type": source["work_type"],
+            "metadata_only": True,
+        },
+    })
+    return {**record, "provider": "crossref", "claim_verification": "not_performed"}
+
+
+@app.get("/v1/evidence/{case_id}", dependencies=[Depends(require_evidence_token)])
+def get_case_evidence(case_id: str, limit: int = 50):
+    if not 1 <= limit <= 200:
+        raise HTTPException(status_code=422, detail="limit must be between 1 and 200")
+    return {"case_id": case_id, "evidence": list_evidence(case_id, limit)}
 
 @app.post("/v1/actions/alternate-model/execute")
 def run_alternate_model_action(request: AlternateModelRunRequest):

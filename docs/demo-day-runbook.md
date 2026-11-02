@@ -6,7 +6,7 @@ This is a reproducible local research demonstration using the Wine Quality bench
 
 1. Explain the flow: base prediction -> reliability estimate -> risk = estimated error probability x harm -> hard action/budget constraints -> recommendation or abstention.
 2. Show the React dashboard loading the model feature schema and live action capabilities from FastAPI.
-3. Click **Load example wine sample**, then set the harm score and remaining budget and evaluate.
+3. Click **Load example wine sample**, set harm to 8 and remaining budget to 2, then evaluate. This makes the risk calculation and feasible alternate-model option easier to demonstrate when the estimated error probability is above the configured acceptance threshold.
 4. Explain the primary prediction, confidence, estimated error probability, baseline risk, recommended action, and rationale.
 5. Change the budget to demonstrate how feasibility constraints affect the recommendation.
 6. Point out that the capability panel marks human review and additional evidence as unavailable. Alternate-model inference requires a separate explicit action.
@@ -15,7 +15,7 @@ This is a reproducible local research demonstration using the Wine Quality bench
 
 ## Fastest startup: one command
 
-Requirements: macOS/Linux, Python 3, Docker Desktop with Docker Compose v2, and an internet connection for the first-time dataset download.
+Requirements: macOS/Linux, Python 3.10 or newer, Docker Desktop with Docker Compose v2, and an internet connection for the first-time dataset download.
 
 From the repository root:
 

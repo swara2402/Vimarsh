@@ -45,11 +45,16 @@ prepare_bundle() {
   echo "Trusted model bundle prepared successfully."
 }
 
+if [[ $# -gt 1 ]]; then
+  usage >&2
+  exit 2
+fi
+
 command_name="${1:-up}"
 case "$command_name" in
   demo)
-    "$0" prepare
-    "$0" up
+    bash "$0" prepare
+    bash "$0" up
     ;;
   prepare)
     prepare_bundle

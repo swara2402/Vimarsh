@@ -59,7 +59,7 @@ Next steps are to complete CI and integration review, connect the allocator behi
 
 ## Earlier paired alternate-model benchmark (Milestone 53)
 
-A separate held-out Wine Quality experiment compared which 15% of cases should receive an alternate Random Forest prediction instead of the primary Logistic Regression prediction. Across three seeds (17, 42, 73), model-disagreement routing produced 23, 25, and 41 net corrections (mean 29.7); low-primary-confidence routing produced 7, 11, and 31 (mean 16.3); and a random matched-budget baseline produced 4, 6, and 11 (mean 7.0). Each policy used 139 of 929 test cases per seed. This is an offline paired benchmark of two models, not a live verification service, human review, or causal deployment result. The assumed action-cost units are experimental rather than measured monetary or latency costs.
+A separate held-out Wine Quality experiment compared which 15% of cases should receive an alternate Random Forest prediction instead of the primary Logistic Regression prediction. Across three seeds (17, 42, 73), model-disagreement routing produced 23, 25, and 41 net corrections (mean 29.7); low-primary-confidence routing produced 7, 11, and 31 (mean 16.3); and a random matched-budget baseline produced 4, 6, and 11 (mean 7.0). Each policy selected 139 of 929 test cases per seed, but predictions from both models were generated for every test row before applying the selection mask. This is an offline paired substitution comparison, not a compute-saving router, live verification service, human review, or causal deployment result. The assumed action-cost units are experimental rather than measured monetary or latency costs.
 
 ## Consolidated research evidence
 

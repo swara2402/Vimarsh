@@ -25,3 +25,6 @@ See [Milestone 67 capability-aware dashboard notes](../research/docs/milestone67
 The dashboard includes a browser-local CSV explorer. Upload a comma-separated UTF-8 file (header row, unique column names, up to 15 MB) in the **Data Analysis & Visualisation** section to inspect dataset dimensions, missingness, numeric histograms, category/class balance, a Pearson correlation matrix, and descriptive statistics. Feature and category selectors update the charts interactively. The file is analyzed in browser memory and is not uploaded to the API or used to train a model.
 
 This is exploratory data analysis, not model evaluation. It does not produce confusion matrices, classification scores, ROC curves, calibration plots, or drift metrics without aligned predictions, labels, or reference data. See [Milestone 74 documentation](../docs/milestone74-data-analysis-visualisation.md).
+
+
+The DAV workspace also visualises committed verification policy evaluation snapshots (Conservative, Balanced, Coverage-oriented), including coverage, error among covered cases, abstention/action distribution, and confusion matrices for covered predictions. These are historical result artefacts, not fresh training metrics; see [Milestone 74](../docs/milestone74-data-analysis-visualisation.md).

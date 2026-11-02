@@ -170,3 +170,10 @@ footer { min-height: 65px; border-top: 1px solid #e9e8f0; display: flex; align-i
 .review-case span, .review-empty { color: #918da2; font-size: 10px; }
 .review-completion { margin-top: 15px; max-width: 650px; }
 @media (max-width: 760px) { .review-columns { grid-template-columns: 1fr; } .review-connect { align-items: stretch; flex-direction: column; } .review-heading { align-items: flex-start; flex-direction: column; } .review-status { text-align: left; } }
+
+.review-evidence { margin-top: 15px; }
+.review-evidence > p { margin: -4px 0 2px; }
+.review-evidence .review-connect { margin: 0; }
+.review-evidence .review-connect label { min-width: 0; }
+.review-evidence .review-connect input { min-width: 0; }
+.review-evidence textarea { resize: vertical; }

@@ -38,6 +38,23 @@ class SQLiteActionOutcomeLedger:
                 )
                 """
             )
+            connection.execute(
+                """
+                CREATE TRIGGER IF NOT EXISTS action_outcomes_no_update
+                BEFORE UPDATE ON action_outcomes
+                BEGIN
+                    SELECT RAISE(ABORT, 'outcome ledger is append-only');
+                END
+                """
+            )
+            connection.execute(
+                """
+                CREATE TRIGGER IF NOT EXISTS action_outcomes_no_delete
+                BEFORE DELETE ON action_outcomes
+                BEGIN
+                    SELECT RAISE(ABORT, 'outcome ledger is append-only');
+                END
+            )
         finally:
             connection.close()
 

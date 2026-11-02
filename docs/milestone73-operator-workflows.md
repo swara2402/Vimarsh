@@ -13,6 +13,14 @@ The API provides a token-protected local SQLite queue for cases that need an ope
 
 Set `VIMARSH_REVIEWER_API_TOKEN` to enable the queue. Set `VIMARSH_REVIEW_QUEUE_DB` to select the SQLite database path. The default path is under `research/data/`.
 
+Generate separate high-entropy local demo tokens rather than reusing passwords:
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+```
+
+Place one generated value in `VIMARSH_REVIEWER_API_TOKEN` and a different generated value in `VIMARSH_EVIDENCE_API_TOKEN`. Keep the environment file private and do not commit real tokens.
+
 Reviewer IDs are labels, not authenticated accounts. The shared token is not individual identity, MFA, or role-based access control. The queue is suitable only for a local controlled demo until a proper identity provider and authorization policy are configured.
 
 ## Evidence register

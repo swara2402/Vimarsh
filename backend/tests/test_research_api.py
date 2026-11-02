@@ -1,3 +1,4 @@
+import json
 import pytest
 from fastapi.testclient import TestClient
 
@@ -63,7 +64,10 @@ def test_completed_outcome_requires_retrospective_truth(monkeypatch, tmp_path):
     configure(monkeypatch, tmp_path)
     payload = completed_payload(2)
     payload["ground_truth"] = None
-    response = client.post("/v1/research/outcomes", headers=HEADERS, json=payload)
+    response = client.post(
+        "/v1/research/outcomes", headers={**HEADERS, "Content-Type": "application/json"},
+        content=json.dumps(payload, allow_nan=True),
+    )
     assert response.status_code == 422
 
 
@@ -196,18 +200,18 @@ def test_batch_allocator_excludes_actions_without_operational_providers(monkeypa
 @pytest.mark.parametrize("bad_number", [float("nan"), float("inf"), float("-inf")])
 def test_research_api_rejects_non_finite_allocation_context(monkeypatch, tmp_path, bad_number):
     configure(monkeypatch, tmp_path)
+    payload = {
+        "cases": [{
+            "case_id": "finite-check",
+            "context": {"uncertainty": bad_number},
+            "available_actions": ["alternate_model"],
+            "estimated_action_costs": {"alternate_model": 1.0},
+        }],
+        "total_budget": 1.0,
+    }
     response = client.post(
-        "/v1/research/allocate",
-        headers=HEADERS,
-        json={
-            "cases": [{
-                "case_id": "finite-check",
-                "context": {"uncertainty": bad_number},
-                "available_actions": ["alternate_model"],
-                "estimated_action_costs": {"alternate_model": 1.0},
-            }],
-            "total_budget": 1.0,
-        },
+        "/v1/research/allocate", headers={**HEADERS, "Content-Type": "application/json"},
+        content=json.dumps(payload, allow_nan=True),
     )
     assert response.status_code == 422
 
@@ -215,18 +219,18 @@ def test_research_api_rejects_non_finite_allocation_context(monkeypatch, tmp_pat
 @pytest.mark.parametrize("bad_cost", [-0.01, float("nan"), float("inf")])
 def test_allocation_rejects_negative_or_non_finite_action_cost(monkeypatch, tmp_path, bad_cost):
     configure(monkeypatch, tmp_path)
+    payload = {
+        "cases": [{
+            "case_id": "bad-cost",
+            "context": {"uncertainty": 0.4},
+            "available_actions": ["alternate_model"],
+            "estimated_action_costs": {"alternate_model": bad_cost},
+        }],
+        "total_budget": 1.0,
+    }
     response = client.post(
-        "/v1/research/allocate",
-        headers=HEADERS,
-        json={
-            "cases": [{
-                "case_id": "bad-cost",
-                "context": {"uncertainty": 0.4},
-                "available_actions": ["alternate_model"],
-                "estimated_action_costs": {"alternate_model": bad_cost},
-            }],
-            "total_budget": 1.0,
-        },
+        "/v1/research/allocate", headers={**HEADERS, "Content-Type": "application/json"},
+        content=json.dumps(payload, allow_nan=True),
     )
     assert response.status_code == 422
 

@@ -51,6 +51,7 @@ class ActionOutcomeRecord:
     latency_ms: float | None = None
     provider_version: str | None = None
     event_id: str | None = None
+    parent_event_id: str | None = None
     occurred_at: str | None = None
 
     def validated(self) -> dict[str, Any]:
@@ -62,6 +63,8 @@ class ActionOutcomeRecord:
             raise ValueError("completed outcomes require final_prediction and retrospective ground_truth")
         if self.status != "completed" and self.ground_truth is not None:
             raise ValueError("ground_truth is only permitted for completed outcomes")
+        if self.parent_event_id is not None and (not isinstance(self.parent_event_id, str) or not self.parent_event_id.strip()):
+            raise ValueError("parent_event_id must be a non-empty string when supplied")
         if self.randomized_assignment and not self.assignment_id:
             raise ValueError("randomized assignment requires assignment_id")
         propensity = None if self.propensity is None else _finite(self.propensity, "propensity", 0.0)
@@ -129,6 +132,15 @@ class ActionOutcomeLedger:
         existing = self.read_verified()
         if any(item["event_id"] == row["event_id"] for item in existing):
             raise ValueError("event_id already exists")
+        parent_event_id = row.get("parent_event_id")
+        if parent_event_id is not None:
+            parent = next((item for item in existing if item["event_id"] == parent_event_id), None)
+            if parent is None:
+                raise ValueError("parent_event_id does not reference an existing ledger event")
+            if parent["status"] != "pending" or row["status"] != "completed":
+                raise ValueError("linked completion must reference a pending event and be completed")
+            if any(item.get("parent_event_id") == parent_event_id for item in existing):
+                raise ValueError("parent event already has a completion record")
         previous = self._digest(existing[-1]) if existing else GENESIS_HASH
         envelope = {"previous_hash": previous, "record_hash": self._digest(row), "record": row}
         encoded = (json.dumps(envelope, sort_keys=True, allow_nan=False) + "\n").encode("utf-8")

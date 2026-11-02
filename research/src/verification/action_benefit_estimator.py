@@ -104,7 +104,12 @@ def estimate_action_benefit(
     variance = sum(w * (b - mean_benefit) ** 2 for w, b in zip(weights, benefits)) / total_weight
     standard_error = sqrt(max(variance, 0.0) / effective_n)
     z_value = NormalDist().inv_cdf(confidence)
-    lower_bound = mean_benefit - z_value * standard_error
+    # A bounded-outcome penalty prevents zero observed variance from implying
+    # zero uncertainty. This remains a diagnostic under adaptive/kernel weights.
+    max_harm = max(item[4] for item in eligible)
+    hoeffding_style_penalty = 2.0 * max_harm * sqrt(log(1.0 / (1.0 - confidence)) / (2.0 * effective_n))
+    uncertainty_penalty = max(z_value * standard_error, hoeffding_style_penalty)
+    lower_bound = mean_benefit - uncertainty_penalty
     return {
         "action": action,
         "status": "recommend_for_further_evaluation" if lower_bound > 0 else "abstain",
@@ -113,6 +118,7 @@ def estimate_action_benefit(
         "effective_sample_size": round(effective_n, 6),
         "weighted_mean_benefit": round(mean_benefit, 8),
         "standard_error": round(standard_error, 8),
+        "uncertainty_penalty": round(uncertainty_penalty, 8),
         "lower_bound_diagnostic": round(lower_bound, 8),
         "confidence_level": confidence,
         "propensity_adjusted": True,

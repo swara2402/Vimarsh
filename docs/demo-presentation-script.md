@@ -28,11 +28,11 @@ Emphasize that the main decision API is recommendation-only. It does not execute
 7. If the capability panel reports an alternate model as available, click **Run alternate models**. Explain that this is an explicit local inference action; the primary prediction is not automatically replaced.
 8. Change the remaining budget so the alternate-model action is no longer affordable, then evaluate again. If risk is above the acceptance threshold, the policy should abstain rather than recommend an infeasible action.
 9. Show **Prepare this decision for human review**. Explain that it pre-fills a case with the prediction, rationale, confidence, estimated error probability, and baseline risk. The operator must explicitly submit it.
-10. If reviewer and evidence tokens have been configured, open the operator workspace. Enqueue the case, claim it using a reviewer label, complete or cancel it, and inspect the hash-chained event history. Add a short manual evidence record or resolve a DOI through Crossref, then inspect the stored digest status. If tokens are not configured, explain that the workspace is protected and show the documented setup rather than entering credentials during the presentation.
+10. Scroll to **Data Analysis & Visualisation** and upload a benchmark CSV. Change the histogram feature and target/category column, then point out dataset dimensions, missing-value analysis, class balance, Pearson correlations, and descriptive statistics. Explain that the CSV is analyzed locally in the browser and is not sent to the API.\n11. If reviewer and evidence tokens have been configured, open the operator workspace. Enqueue the case, claim it using a reviewer label, complete or cancel it, and inspect the hash-chained event history. Add a short manual evidence record or resolve a DOI through Crossref, then inspect the stored digest status. If tokens are not configured, explain that the workspace is protected and show the documented setup rather than entering credentials during the presentation.
 
 ## 3:30–4:20 | Research and engineering contributions
 
-- Reliability estimation, calibration, and held-out evaluation.
+- Reliability estimation, calibration, and held-out evaluation.\n- Interactive CSV-based exploratory data analysis: histograms, category balance, missingness, correlation matrix, and descriptive statistics.
 - Group-aware data splitting and out-of-fold reliability features.
 - Append-only linked outcome records and a transactional SQLite ledger.
 - Context-conditioned, propensity-adjusted action-benefit estimation.
@@ -52,7 +52,7 @@ Be explicit:
 - Crossref lookup retrieves bibliographic metadata only; it does not fetch full text or verify scientific claims.
 - Evidence submitted manually is stored and digest-checked, not independently validated.
 - Offline benchmark outcomes are not real-world causal evidence.
-- The system is not validated for clinical, financial, or other safety-critical deployment.
+- The system is not validated for clinical, financial, or other safety-critical deployment.\n- The new CSV explorer is descriptive EDA; it does not itself calculate confusion matrices, classification metrics, calibration plots, or drift without the required aligned predictions, labels, and reference data.
 - GitHub Actions checks for the current integration PRs are pending; do not describe the code as CI-verified or merged until those checks pass.
 
 Next steps are to complete CI and integration review, connect the allocator behind a versioned policy interface, establish real identity and provider integrations, collect genuine action outcomes where ethically and operationally possible, and validate on additional domains.

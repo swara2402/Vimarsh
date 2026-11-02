@@ -87,11 +87,24 @@ def list_evidence(case_id: str, limit: int = 50) -> list[dict[str, Any]]:
     try:
         rows = conn.execute("""SELECT * FROM evidence_items WHERE case_id=?
             ORDER BY created_at DESC LIMIT ?""", (case_id, limit)).fetchall()
-        return [{
-            "evidence_id": row["evidence_id"], "case_id": row["case_id"],
-            "source_name": row["source_name"], "source_reference": row["source_reference"],
-            "evidence_text": row["evidence_text"], "metadata": json.loads(row["metadata_json"]),
-            "content_sha256": row["content_sha256"], "created_at": row["created_at"],
-        } for row in rows]
+        items = []
+        for row in rows:
+            metadata = json.loads(row["metadata_json"])
+            canonical = json.dumps(
+                {"case_id": row["case_id"], "source_name": row["source_name"],
+                 "source_reference": row["source_reference"], "evidence_text": row["evidence_text"],
+                 "metadata": metadata},
+                sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False,
+            )
+            actual_digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+            items.append({
+                "evidence_id": row["evidence_id"], "case_id": row["case_id"],
+                "source_name": row["source_name"], "source_reference": row["source_reference"],
+                "evidence_text": row["evidence_text"], "metadata": metadata,
+                "content_sha256": row["content_sha256"],
+                "integrity_valid": secrets.compare_digest(row["content_sha256"], actual_digest),
+                "created_at": row["created_at"],
+            })
+        return items
     finally:
         conn.close()

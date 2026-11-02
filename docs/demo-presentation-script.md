@@ -99,3 +99,7 @@ Describe the research hypothesis, not a proven novelty claim: contextual action-
 
 **What is the current limitation?**  
 The live serving policy remains a transparent baseline. The contextual estimator and constrained allocator are validated offline before integration into the serving path, while the new operator workflows still need production identity, provider integrations, and operational controls.
+
+
+### Saved policy analytics
+In the DAV section, first demonstrate the saved 975-row policy comparison (Conservative, Balanced, Coverage-oriented). Switch the selector to show coverage, error among covered cases, abstentions, action distribution and the confusion matrix for covered predictions. Explain the trade-off: conservative coverage is 6.87% with 16.42% error among covered, balanced is 29.44% with 23.00% error, and coverage-oriented is 100% with 22.46% error and 12 introduced errors. These are historical evaluation snapshots, not fresh training or causal proof.

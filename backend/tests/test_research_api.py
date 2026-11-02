@@ -162,3 +162,32 @@ def test_explicit_alternate_model_execution_logs_pending_outcome(monkeypatch, tm
     summary = client.get("/v1/research/outcomes/summary", headers=HEADERS).json()
     assert summary["total_records"] == 1
     assert summary["analysis_ready_records"] == 0
+
+
+def test_batch_allocator_excludes_actions_without_operational_providers(monkeypatch, tmp_path):
+    configure(monkeypatch, tmp_path)
+    for index in range(12):
+        client.post("/v1/research/outcomes", headers=HEADERS, json=completed_payload(index))
+    response = client.post(
+        "/v1/research/allocate",
+        headers=HEADERS,
+        json={
+            "cases": [{
+                "case_id": "provider-check",
+                "context": {"uncertainty": 0.4, "harm": 1.0},
+                "available_actions": ["alternate_model", "human_review", "additional_evidence"],
+                "estimated_action_costs": {
+                    "alternate_model": 1.0,
+                    "human_review": 0.5,
+                    "additional_evidence": 0.25,
+                },
+            }],
+            "total_budget": 2.0,
+            "min_effective_samples": 10,
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert all(item["action"] == "alternate_model" for item in body["allocation"]["selected"])
+    excluded = [item for item in body["diagnostics"] if item.get("status") == "excluded"]
+    assert {item["action"] for item in excluded} == {"human_review", "additional_evidence"}

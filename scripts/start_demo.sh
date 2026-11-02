@@ -4,6 +4,11 @@ set -Eeuo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 VENV_DIR="${VIMARSH_DEMO_VENV:-$ROOT_DIR/.venv-demo}"
+
+if [[ $# -gt 1 || ( $# -eq 1 && "$1" != "--prepare-only" ) ]]; then
+  echo "Usage: bash scripts/start_demo.sh [--prepare-only]" >&2
+  exit 2
+fi
 BUNDLE="$ROOT_DIR/research/models/reliability/wine_quality_reliability_bundle.joblib"
 
 if ! command -v "$PYTHON_BIN" >/dev/null 2>&1; then

@@ -11,6 +11,17 @@ on:
       - "scripts/**"
       - ".dockerignore"
       - ".github/workflows/container-build.yml"
+  push:
+    branches: [faculty-demo]
+    paths:
+      - "backend/**"
+      - "frontend/**"
+      - "research/**"
+      - "deploy/**"
+      - "compose.yaml"
+      - "scripts/**"
+      - ".dockerignore"
+      - ".github/workflows/container-build.yml"
 
 jobs:
   container-build:

@@ -286,7 +286,7 @@ export default function ReviewQueue({ suggestedCase }: ReviewQueueProps) {
       <div className="review-connect">
         <label><span>Reviewer API token</span><input type="password" value={token} onChange={(e) => setToken(e.target.value)} autoComplete="off" placeholder="Enter server-side reviewer token" /></label>
         <label><span>Reviewer ID</span><input value={reviewer} onChange={(e) => setReviewer(e.target.value)} placeholder="e.g. reviewer-01" /></label>
-        <button type="button" disabled={!token || busy} onClick={refresh}>Connect / refresh queue</button>
+        <button type="button" disabled={!token || busy} onClick={() => void refresh()}>Connect / refresh queue</button>
       </div>
       <div className="review-columns">
         <form className="review-card" onSubmit={submitCase}>
@@ -298,7 +298,7 @@ export default function ReviewQueue({ suggestedCase }: ReviewQueueProps) {
           <button type="submit" disabled={!token || busy}>Queue for human review</button>
         </form>
         <div className="review-card">
-          <div className="review-card-title"><h3>Review cases</h3><button type="button" disabled={!token || busy} onClick={refresh}>Refresh</button></div>
+          <div className="review-card-title"><h3>Review cases</h3><button type="button" disabled={!token || busy} onClick={() => void refresh()}>Refresh</button></div>
           <label><span>Queue status</span><select value={queueStatus} onChange={(e) => { setQueueStatus(e.target.value); void refresh(e.target.value); }}><option value="pending">Pending</option><option value="claimed">Claimed</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></label>
           {cases.length === 0 ? <p className="review-empty">No {queueStatus} cases loaded.</p> : cases.map((item) => (
             <div className="review-case" key={item.review_id}>

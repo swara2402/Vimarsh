@@ -11,6 +11,7 @@ on:
       - main
       - milestone32-review-accounting-fixes
       - milestone4-reliability-integration
+      - faculty-demo
     paths:
       - "research/**"
       - ".github/workflows/research-tests.yml"

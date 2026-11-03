@@ -11,6 +11,7 @@ on:
   push:
     branches:
       - main
+      - faculty-demo
     paths:
       - "backend/**"
       - "frontend/**"

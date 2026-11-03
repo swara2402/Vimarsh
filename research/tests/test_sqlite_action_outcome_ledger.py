@@ -286,7 +286,12 @@ def test_jsonl_to_sqlite_migration_rejects_tampered_source(tmp_path):
     source_path = tmp_path / "legacy.jsonl"
     source = ActionOutcomeLedger(source_path)
     source.append(record(301))
-    source_path.write_text(source_path.read_text().replace('"uncertainty":0.4', '"uncertainty":0.9'))
+    import json
+    lines = source_path.read_text().splitlines()
+    envelope = json.loads(lines[0])
+    envelope["record"]["context"]["uncertainty"] = 0.9
+    lines[0] = json.dumps(envelope, sort_keys=True)
+    source_path.write_text("\\n".join(lines) + "\\n")
     with pytest.raises(ValueError, match="integrity"):
         migrate_jsonl_to_sqlite(source_path, tmp_path / "migrated.sqlite3")
 

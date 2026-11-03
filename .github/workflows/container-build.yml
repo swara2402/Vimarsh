@@ -37,3 +37,27 @@ jobs:
         run: docker build -f backend/Dockerfile -t vimarsh-api:ci .
       - name: Build dashboard image
         run: docker build -f frontend/Dockerfile --build-arg VITE_API_BASE_URL=http://localhost:8000 -t vimarsh-dashboard:ci .
+      - name: Launch the real API and dashboard containers
+        run: |
+          set -euo pipefail
+          cleanup() { docker compose -f compose.yaml down --volumes --remove-orphans; }
+          trap cleanup EXIT
+          docker compose -f compose.yaml up -d --build
+          ready=false
+          for attempt in $(seq 1 45); do
+            if curl --silent --show-error --fail http://localhost:8000/health >/dev/null 2>&1 \
+              && curl --silent --show-error --fail http://localhost:8080/ >/dev/null 2>&1; then
+              ready=true
+              break
+            fi
+            sleep 2
+          done
+          if [ "$ready" != true ]; then
+            docker compose -f compose.yaml ps
+            docker compose -f compose.yaml logs --tail=100
+            exit 1
+          fi
+          curl --fail --silent http://localhost:8000/health | python -c 'import json,sys; d=json.load(sys.stdin); assert d["status"] == "ok" and d["service"] == "vimarsh-api"'
+          curl --fail --silent http://localhost:8000/v1/actions/capabilities | python -c 'import json,sys; d=json.load(sys.stdin); assert "actions" in d and "execution_boundary" in d'
+          curl --fail --silent http://localhost:8080/ | grep -qi '<html'
+          echo "Live API and dashboard smoke test passed."
